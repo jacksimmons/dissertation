@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UI.FoodOptions"
+             Title="FoodOptions">
+
+	<VerticalStackLayout>
+		<Label
+		x:Name="MainSubTitle"
+        Text="Add foods you can/will eat. Try to add some for each food group."
+        SemanticProperties.HeadingLevel="Level2"
+        FontSize="18"
+        HorizontalOptions="Center"/>
+
+		<ListView
+			x:Name="FoodList"
+			HorizontalOptions="Center"
+			/>
+
+		<Entry
+			x:Name="FoodEntry"
+			Placeholder="Search for a food..."
+			HorizontalOptions="Center"
+			/>
+			
+		<Button
+			x:Name="FoodSearchBtn"
+			Text="Search"
+			HorizontalOptions="Center"
+			Clicked="FoodSearchBtn_Clicked"
+			/>
+
+		<Picker
+			x:Name="FoodPicker"
+			Title="Select a food"
+			HorizontalOptions="Center"
+			SelectedIndexChanged="Picker_SelectedIndexChanged">
+		</Picker>
+
+		<Label
+			x:Name="FoodInfoLabel"
+			Text=""
+			HorizontalOptions="Center"
+			/>
+
+		<Button
+			Text="Save foods and return"
+			VerticalOptions="End">
+		</Button>
+	</VerticalStackLayout>
+</ContentPage>
