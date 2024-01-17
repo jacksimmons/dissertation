@@ -1,11 +1,18 @@
 using System;
 
 
-public enum WeightChangeType
+public enum WeightGoal
 {
-    LoseWeight,
     MaintainWeight,
+    LoseWeight,
     GainWeight
+}
+
+
+public enum AssignedSex
+{
+    Male,
+    Female
 }
 
 
@@ -26,8 +33,11 @@ public class Preferences : ICached
     public bool eatsLactose; // Vegetarian, i.e. no Milk
 
 
-    // -ve = Lose weight, 0 = Maintain weight, +ve = Gain weight
-    public WeightChangeType dietGoalType;
+    // Body
+    public WeightGoal weightGoal;
+    public float weightInKG;
+    public float heightInCM;
+    public AssignedSex assignedSex;
 
 
     // By default, the user's settings should permit every food type - this
@@ -38,6 +48,9 @@ public class Preferences : ICached
         eatsSeafood = true;
         eatsAnimalProduce = true;
         eatsLactose = true;
-        dietGoalType = WeightChangeType.MaintainWeight;
+        weightGoal = WeightGoal.MaintainWeight;
+        weightInKG = 70;
+        heightInCM = 170;
+        assignedSex = AssignedSex.Male;
     }
 }

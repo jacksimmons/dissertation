@@ -16,10 +16,24 @@ public partial class MenuHandler
     private TextMeshProUGUI m_animalProductsPrefBtnTxt;
     [SerializeField]
     private TextMeshProUGUI m_lactosePrefBtnTxt;
+    [SerializeField]
+    private TMP_Dropdown m_weightGoalDropdown;
+    [SerializeField]
+    private TMP_InputField m_weightInputField;
+    [SerializeField]
+    private TMP_InputField m_heightInputField;
+    [SerializeField]
+    private TextMeshProUGUI m_assignedSexText;
 
     [SerializeField]
     private GameObject[] m_preferenceCategoryPanels;
     private int m_currentPreferenceCategoryIndex = 0;
+
+
+    private void SavePreferences()
+    {
+        Saving.SaveToFile(Preferences.Saved, "Preferences.dat");
+    }
 
 
     /// <summary>
@@ -37,38 +51,115 @@ public partial class MenuHandler
     }
 
 
-    private void OnToggleFoodPreference()
+    private void OnToggleFoodPreference(ref bool pref)
     {
+        pref = !pref;
         UpdateDietPreferenceButtons();
-        Saving.SaveToFile(Preferences.Saved, "Preferences.dat");
+        SavePreferences();
     }
 
 
     public void OnToggleMeatPreference()
-    {
-        Preferences.Saved.eatsLandMeat = !Preferences.Saved.eatsLandMeat;
-        OnToggleFoodPreference();
+    { 
+        OnToggleFoodPreference(ref Preferences.Saved.eatsLandMeat);
     }
 
 
     public void OnToggleSeafoodPreference()
     {
-        Preferences.Saved.eatsSeafood = !Preferences.Saved.eatsSeafood;
-        OnToggleFoodPreference();
+        OnToggleFoodPreference(ref Preferences.Saved.eatsSeafood);
+
     }
 
 
     public void OnToggleAnimalProducePreference()
     {
-        Preferences.Saved.eatsAnimalProduce = !Preferences.Saved.eatsAnimalProduce;
-        OnToggleFoodPreference();
+        OnToggleFoodPreference(ref Preferences.Saved.eatsAnimalProduce);
     }
 
 
     public void OnToggleLactosePreference()
     {
-        Preferences.Saved.eatsLactose = !Preferences.Saved.eatsLactose;
-        OnToggleFoodPreference();
+        OnToggleFoodPreference(ref Preferences.Saved.eatsLactose);
+    }
+
+
+    public void UpdateBodyPreferenceButtons()
+    {
+        Preferences p = Preferences.Saved;
+
+        m_weightGoalDropdown.value = (int)p.weightGoal;
+        m_weightInputField.text = $"{p.weightInKG}";
+        m_heightInputField.text = $"{p.heightInCM}";
+        m_assignedSexText.text = $"Assigned Sex: {p.assignedSex}";
+    }
+
+
+    private void OnBodyPreferenceChanged()
+    {
+        UpdateBodyPreferenceButtons();
+        SavePreferences();
+    }
+
+
+    private void OnWeightGoalChanged(int value)
+    {
+        Preferences.Saved.weightGoal = (WeightGoal)value;
+        OnBodyPreferenceChanged();
+    }
+
+
+    private void ParseDecimalInputField(string value, ref float prop, TMP_InputField inputField)
+    {
+        if (float.TryParse(value, out float floatVal))
+        {
+            if (floatVal <= 0)
+            {
+                inputField.text = "Value must be greater than zero.";
+            }
+
+            prop = floatVal;
+            Saving.SaveToFile(Preferences.Saved, "Preferences.dat");
+        }
+        else
+        {
+            inputField.text = "Not a valid decimal!";
+        }
+    }
+
+
+    private void OnWeightInputChanged(string value)
+    {
+        ParseDecimalInputField(value, ref Preferences.Saved.weightInKG, m_weightInputField);
+    }
+
+
+    private void OnHeightInputChanged(string value)
+    {
+        ParseDecimalInputField(value, ref Preferences.Saved.heightInCM, m_heightInputField);
+    }
+
+
+    public void OnCycleAssignedSex()
+    {
+        Preferences.Saved.assignedSex = (AssignedSex)(1-(int)Preferences.Saved.assignedSex);
+        print(Preferences.Saved.assignedSex);
+        OnBodyPreferenceChanged();
+    }
+
+
+    private int NextArrayIndex(int current, int length, bool right)
+    {
+        if (right)
+        {
+            // Going right
+            if (current + 1 >= length) return 0;
+            return current + 1;
+        }
+
+        // Going left
+        if (current - 1 < 0) return length - 1;
+        return current - 1;
     }
 
 
@@ -83,12 +174,8 @@ public partial class MenuHandler
     {
         m_preferenceCategoryPanels[m_currentPreferenceCategoryIndex].SetActive(false);
 
-        int next = right ? m_currentPreferenceCategoryIndex + 1
-                         : m_currentPreferenceCategoryIndex - 1;
-
-        // Assign to the category index, wrapping around the array if necessary
-        int temp = next < 0 ? m_preferenceCategoryPanels.Length - 1 : next;
-        m_currentPreferenceCategoryIndex = temp > m_preferenceCategoryPanels.Length - 1 ? 0 : temp;
+        m_currentPreferenceCategoryIndex =
+            NextArrayIndex(m_currentPreferenceCategoryIndex, m_preferenceCategoryPanels.Length, right);
 
         m_preferenceCategoryPanels[m_currentPreferenceCategoryIndex].SetActive(true);
     }

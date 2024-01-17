@@ -37,6 +37,12 @@ public partial class MenuHandler : MonoBehaviour
         Saving.LoadFromFile<Preferences>("Preferences.dat");
         // Visual update in Preferences menu.
         UpdateDietPreferenceButtons();
+        UpdateBodyPreferenceButtons();
+
+        // Add listeners
+        m_weightGoalDropdown.onValueChanged.AddListener((int value) => OnWeightGoalChanged(value));
+        m_weightInputField.onSubmit.AddListener((string value) => OnWeightInputChanged(value));
+        m_heightInputField.onSubmit.AddListener((string value) => OnHeightInputChanged(value));
     }
 
 
