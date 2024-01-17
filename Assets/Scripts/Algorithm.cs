@@ -27,15 +27,6 @@ public class Algorithm : MonoBehaviour
     private readonly TextAsset m_proximatesFile;
     private List<Food> m_foods;
 
-    [SerializeField]
-    protected bool m_vegetarian;
-    [SerializeField]
-    protected bool m_pescatarian;
-    [SerializeField]
-    protected bool m_vegan;
-    [SerializeField]
-    protected bool m_dairy;
-
 
     private void Awake()
     {
@@ -148,19 +139,19 @@ public class Algorithm : MonoBehaviour
         switch (foodGroup[0])
         {
             case 'M': // Meat
-                if (m_vegetarian || m_pescatarian || m_vegan)
+                if (!Preferences.Saved.eatsLandMeat)
                     return false;
                 break;
             case 'J': // Fish
-                if (m_vegetarian || m_vegan)
+                if (!Preferences.Saved.eatsSeafood)
                     return false;
                 break;
             case 'C': // Eggs
-                if (m_vegan)
+                if (!Preferences.Saved.eatsAnimalProduce)
                     return false;
                 break;
             case 'B': // Milk
-                if (m_vegan || !m_dairy)
+                if (!Preferences.Saved.eatsAnimalProduce || !Preferences.Saved.eatsLactose)
                     return false;
                 break;
             case 'Q': // Alcohol - Excluded
@@ -171,7 +162,7 @@ public class Algorithm : MonoBehaviour
         switch (foodGroup)
         {
             case "OB": // Animal fats
-                if (m_vegetarian || m_pescatarian || m_vegan)
+                if (!Preferences.Saved.eatsLandMeat)
                     return false;
                 break;
         }

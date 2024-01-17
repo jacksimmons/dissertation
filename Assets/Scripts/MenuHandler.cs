@@ -6,7 +6,7 @@ using UnityEngine;
 /// This script specifically handles menu changes - when this happens, the
 /// current menu panel is deactivated, and the new one is activated.
 /// </summary>
-public class MenuHandler : MonoBehaviour
+public partial class MenuHandler : MonoBehaviour
 {
     [SerializeField]
     private GameObject m_menuPanel;
@@ -32,6 +32,11 @@ public class MenuHandler : MonoBehaviour
     {
         m_panelStack = new Stack<GameObject>();
         m_panelStack.Push(m_menuPanel);
+
+        // Load and cache the user's preferences into Preferences.Saved.
+        Saving.LoadFromFile<Preferences>("Preferences.dat");
+        // Visual update in Preferences menu.
+        UpdateDietPreferenceButtons();
     }
 
 
