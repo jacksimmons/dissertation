@@ -28,7 +28,7 @@ public partial class MenuHandler : MonoBehaviour
     private Stack<GameObject> m_panelStack;
 
 
-    private void Start()
+    private void Awake()
     {
         m_panelStack = new Stack<GameObject>();
         m_panelStack.Push(m_menuPanel);

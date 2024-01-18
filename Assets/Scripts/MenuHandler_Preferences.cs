@@ -119,7 +119,7 @@ public partial class MenuHandler
             }
 
             prop = floatVal;
-            Saving.SaveToFile(Preferences.Saved, "Preferences.dat");
+            SavePreferences();
         }
         else
         {
@@ -143,7 +143,6 @@ public partial class MenuHandler
     public void OnCycleAssignedSex()
     {
         Preferences.Saved.assignedSex = (AssignedSex)(1-(int)Preferences.Saved.assignedSex);
-        print(Preferences.Saved.assignedSex);
         OnBodyPreferenceChanged();
     }
 
