@@ -34,29 +34,30 @@
 
 // Continuing:
 // The ACO algorithm is just run again until the next EOP.
+using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 
 public class ACOAlgorithm : Algorithm
 {
-	private int m_numPortions;
-	private List<Portion> m_portions;
-	private float[] m_fitnesses;
-	private float[] m_pheromone;
-	
-	
-	public override void Run()
-	{
-		// Random portions (Copy from EA)
-		
-		// Pheromone and fitness initialisation
-		m_fitnesses = new float[m_numPortions];
-		m_pheromone = new float[m_numPortions];
-		
-		for (int i = 0; i < m_numPortions; i++)
-		{
-			m_pheromone[i] = Random.Range(0, 1);
-		}
-	}
+    private int m_numPortions;
+    private List<Portion> m_portions;
+    private float[] m_fitnesses;
+    private float[] m_pheromone;
+
+
+    public override void Run()
+    {
+        // Random portions (Copy from EA)
+
+        // Pheromone and fitness initialisation
+        m_fitnesses = new float[m_numPortions];
+        m_pheromone = new float[m_numPortions];
+
+        for (int i = 0; i < m_numPortions; i++)
+        {
+            m_pheromone[i] = Random.Range(0, 1);
+        }
+    }
 }

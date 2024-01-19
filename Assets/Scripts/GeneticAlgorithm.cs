@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 
 // 32-Bit Bit Field.
@@ -33,19 +34,53 @@ using UnityEngine;
 //}
 
 
-public class EvolutionaryAlgorithm : Algorithm
+public class GeneticAlgorithm : Algorithm
 {
+    public int NumStartingDaysInPop = 10;
+    public int NumStartingFoodsInDay = 10;
+    public float StartingFoodQuantityMin = 0.5f;
+    public float StartingFoodQuantityMax = 1.5f;
+
+
     public override void Run()
     {
-        // Generate random starting population of Days
-        // ...
+        // Generate population
+        List<Day> pop = GetStartingPopulation();
 
-        // Main Loop:
-        // 
-        foreach (Food f in m_foods)
+        // Selection
+
+        // Mutation
+
+        // Crossover
+
+        // Integration
+    }
+
+
+    private List<Day> GetStartingPopulation()
+    {
+        // Generate random starting population of Days
+        List<Day> days = new();
+        for (int i = 0; i < NumStartingDaysInPop; i++)
         {
-            print(f);
+            // Add a number of days to the population (each has random foods)
+            List<Portion> dayPortions = new();
+            for (int j = 0; j < NumStartingFoodsInDay; j++)
+            {
+                // Add random foods to the day
+                int randFoodIndex = Random.Range(0, m_foods.Count);
+                float randFoodQuantity = Random.Range(StartingFoodQuantityMin, StartingFoodQuantityMax);
+
+                Food food = m_foods[randFoodIndex];
+                Portion portion = new(food, randFoodQuantity);
+
+                dayPortions.Add(portion);
+            }
+
+            days.Add(new(dayPortions));
         }
+
+        return days;
     }
 }
 

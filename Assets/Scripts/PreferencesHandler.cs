@@ -1,12 +1,7 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-
-/// <summary>
-/// Menu handling implementation for the Preferences menu.
-/// </summary>
-public partial class MenuHandler
+public class PreferencesHandler : MonoBehaviour
 {
     [SerializeField]
     private TextMeshProUGUI m_landMeatPrefBtnTxt;
@@ -28,6 +23,19 @@ public partial class MenuHandler
     [SerializeField]
     private GameObject[] m_preferenceCategoryPanels;
     private int m_currentPreferenceCategoryIndex = 0;
+
+
+    private void Awake()
+    {
+        // Add UI element event listeners.
+        m_weightGoalDropdown.onValueChanged.AddListener((int value) => OnWeightGoalChanged(value));
+        m_weightInputField.onSubmit.AddListener((string value) => OnWeightInputChanged(value));
+        m_heightInputField.onSubmit.AddListener((string value) => OnHeightInputChanged(value));
+
+        // For each setting UI element, fill in the user's current settings.
+        UpdateDietPreferenceButtons();
+        UpdateBodyPreferenceButtons();
+    }
 
 
     private void SavePreferences()
@@ -60,7 +68,7 @@ public partial class MenuHandler
 
 
     public void OnToggleMeatPreference()
-    { 
+    {
         OnToggleFoodPreference(ref Preferences.Saved.eatsLandMeat);
     }
 
@@ -142,7 +150,7 @@ public partial class MenuHandler
 
     public void OnCycleAssignedSex()
     {
-        Preferences.Saved.assignedSex = (AssignedSex)(1-(int)Preferences.Saved.assignedSex);
+        Preferences.Saved.assignedSex = (AssignedSex)(1 - (int)Preferences.Saved.assignedSex);
         OnBodyPreferenceChanged();
     }
 

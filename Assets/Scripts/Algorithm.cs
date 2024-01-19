@@ -1,22 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Random = System.Random;
 using UnityEngine;
-
-
-public struct Food
-{
-    public string Name;
-    public string Description;
-    public string FoodGroup;
-    public string Reference;
-
-    public float Protein;
-    public float Fat;
-    public float Carbohydrates;
-    public float Kcal;
-}
 
 
 public abstract class Algorithm : MonoBehaviour
@@ -26,13 +11,21 @@ public abstract class Algorithm : MonoBehaviour
     [SerializeField]
     private TextAsset m_proximatesFile;
 
-    protected static Random rng = new();
+    // The constraints for each nutrient in a day.
+    protected Dictionary<Proximate, Constraint> m_constraints;
     protected List<Food> m_foods;
-
 
     private void Start()
     {
         m_foods = ReadFoods(m_proximatesFile.text);
+
+        m_constraints = new Dictionary<Proximate, Constraint>
+        {
+            { Proximate.Protein, new(ConstraintType.Converge, 1f, 180) },
+            { Proximate.Fat, new(ConstraintType.Converge, 1f, 100) },
+            { Proximate.Carbs, new(ConstraintType.Converge, 1f, 400) },
+            { Proximate.Kcal, new(ConstraintType.Converge, 1f, 3200) }
+        };
     }
 
 
@@ -43,17 +36,37 @@ public abstract class Algorithm : MonoBehaviour
     /// Each line must be separated by `\n` and values by `,`.</param>
     private List<Food> ReadFoods(string csvText)
     {
+        List<Food> foods = new List<Food>();
+
+        // Store food's properties before construction - it is a readonly class
+        string currentFoodName;
+        string currentFoodDesc;
+        string currentFoodGroup;
+        string currentFoodRef;
+        float currentFoodProtein;
+        float currentFoodFat;
+        float currentFoodCarbs;
+        float currentFoodKcal;
+        ResetCurrentFood();
+
+        void ResetCurrentFood()
+        {
+            currentFoodName = "";
+            currentFoodDesc = "";
+            currentFoodGroup = "";
+            currentFoodRef = "";
+            currentFoodProtein = -1;
+            currentFoodFat = -1;
+            currentFoodCarbs = -1;
+            currentFoodKcal = -1;
+        }
+
         string currentWord = "";
         void AddCharToWord(char c) { currentWord += c; }
 
-        List<Food> foods = new List<Food>();
         int currentWordIndex = 0;
         int firstDataRowIndex = 3; // The first 3 rows are just titles, so skip them
         int currentRowIndex = 0;
-
-        // A struct type so this can be edited and not affect foods in the list.
-        Food currentFood = new();
-
         bool speechMarkOpened = false;
 
         // Each line is a food. Each field is a food property.
@@ -94,21 +107,21 @@ public abstract class Algorithm : MonoBehaviour
                     switch (currentWordIndex)
                     {
                         case 1:
-                            currentFood.Name = currentWord; break;
+                            currentFoodName = currentWord; break;
                         case 2:
-                            currentFood.Description = currentWord; break;
+                            currentFoodDesc = currentWord; break;
                         case 3:
-                            currentFood.FoodGroup = currentWord; break;
+                            currentFoodGroup = currentWord; break;
                         case 5:
-                            currentFood.Reference = currentWord; break;
+                            currentFoodRef = currentWord; break;
                         case 9:
-                            currentFood.Protein = float.Parse(currentWord); break;
+                            currentFoodProtein = float.Parse(currentWord); break;
                         case 10:
-                            currentFood.Fat = float.Parse(currentWord); break;
+                            currentFoodFat = float.Parse(currentWord); break;
                         case 11:
-                            currentFood.Carbohydrates = float.Parse(currentWord); break;
+                            currentFoodCarbs = float.Parse(currentWord); break;
                         case 12:
-                            currentFood.Kcal = float.Parse(currentWord); break;
+                            currentFoodKcal = float.Parse(currentWord); break;
                         case 16:
                             string sugars = currentWord; break;
                         case 27:
@@ -117,7 +130,7 @@ public abstract class Algorithm : MonoBehaviour
                             string trans = currentWord; break;
                     }
 
-                    reset_word:
+                reset_word:
                     // Reset for the next word
                     currentWord = "";
                     currentWordIndex++;
@@ -136,25 +149,32 @@ public abstract class Algorithm : MonoBehaviour
 
                     // Check the current food isn't missing essential data (due to N, Tr or "")
                     // This missing data is given the value -1, as seen in the delimiter ',' case.
-                    if (currentFood.Protein < 0 || currentFood.Carbohydrates < 0 || currentFood.Fat < 0
-                        || currentFood.Kcal < 0)
+                    if (currentFoodProtein < 0 || currentFoodCarbs < 0 || currentFoodFat < 0
+                        || currentFoodKcal < 0)
                     {
                         goto next_food;
                     }
 
                     // Check the current food doesn't conflict with the user's dietary needs.
-                    if (!IsFoodGroupAllowed(currentFood.FoodGroup))
+                    if (!IsFoodGroupAllowed(currentFoodGroup))
                     {
                         goto next_food;
                     }
 
                     // Food only gets added if it fails all the invalidity checks.
-                    foods.Add(currentFood);
+                    Dictionary<Proximate, float> nutrients = new Dictionary<Proximate, float>
+                    {
+                        { Proximate.Protein, currentFoodProtein },
+                        { Proximate.Fat, currentFoodFat },
+                        { Proximate.Carbs, currentFoodCarbs },
+                        { Proximate.Kcal, currentFoodKcal }
+                    };
+                    foods.Add(new(currentFoodName, currentFoodDesc, currentFoodGroup, currentFoodRef, nutrients));
 
                     next_food:
                     currentWordIndex = 0;
                     currentRowIndex++;
-                    currentFood = new();
+                    ResetCurrentFood();
                     break;
 
                 default: // Regular character, i.e. part of the next value

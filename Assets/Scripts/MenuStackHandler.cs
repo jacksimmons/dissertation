@@ -6,16 +6,10 @@ using UnityEngine;
 /// This script specifically handles menu changes - when this happens, the
 /// current menu panel is deactivated, and the new one is activated.
 /// </summary>
-public partial class MenuHandler : MonoBehaviour
+public partial class MenuStackHandler : MonoBehaviour
 {
     [SerializeField]
     private GameObject m_menuPanel;
-    [SerializeField]
-    private GameObject m_algorithmsPanel;
-    [SerializeField]
-    private GameObject m_preferencesPanel;
-    [SerializeField]
-    private GameObject m_graphsPanel;
 
     [SerializeField]
     private GameObject m_backButton;
@@ -35,14 +29,6 @@ public partial class MenuHandler : MonoBehaviour
 
         // Load and cache the user's preferences into Preferences.Saved.
         Saving.LoadFromFile<Preferences>("Preferences.dat");
-        // Visual update in Preferences menu.
-        UpdateDietPreferenceButtons();
-        UpdateBodyPreferenceButtons();
-
-        // Add listeners
-        m_weightGoalDropdown.onValueChanged.AddListener((int value) => OnWeightGoalChanged(value));
-        m_weightInputField.onSubmit.AddListener((string value) => OnWeightInputChanged(value));
-        m_heightInputField.onSubmit.AddListener((string value) => OnHeightInputChanged(value));
     }
 
 
