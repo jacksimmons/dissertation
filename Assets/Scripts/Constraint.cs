@@ -1,8 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+
+public enum ProximateType
+{
+    Protein,
+    Fat,
+    Carbs,
+    Kcal,
+    Sugar,
+    SatFat,
+    TransFat
+}
 
 
 public enum ConstraintType
@@ -13,20 +26,11 @@ public enum ConstraintType
 }
 
 
-public enum Proximate
+public readonly struct Constraint
 {
-    Protein,
-    Fat,
-    Carbs,
-    Kcal
-}
-
-
-public class Constraint
-{
-    public ConstraintType Type;
-    public float Weight;
-    public float Goal;
+    public readonly ConstraintType Type;
+    public readonly float Weight;
+    public readonly float Goal;
 
 
     public Constraint(ConstraintType type, float weight, float goal)

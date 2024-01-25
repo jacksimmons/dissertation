@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 
 /// <summary>
@@ -16,16 +17,58 @@ public class Food
     public readonly string FoodGroup;
     public readonly string Reference;
 
-    public readonly Dictionary<Proximate, float> Nutrients;
+    public readonly Dictionary<ProximateType, float> Nutrients;
 
 
-    public Food(string name, string desc, string group, string reference, Dictionary<Proximate, float> nutrients)
+    public Food(string name, string desc, string group, string reference, Dictionary<ProximateType, float> nutrients)
     {
         Name = name;
         Description = desc;
         FoodGroup = group;
         Reference = reference;
         Nutrients = nutrients;
+    }
+
+
+    public override string ToString()
+    {
+        return $"Name: {Name}\nDescription: {Description}\nFood Group: {FoodGroup}"
+             + $"\nReference: {Reference}\n{NutrientsToString()}";
+    }
+
+
+    public string NutrientsToString()
+    {
+        string nutrientsString = "";
+        ProximateType[] proximates = (ProximateType[])Enum.GetValues(typeof(ProximateType));
+        for (int i = 0; i < proximates.Length; i++)
+        {
+            // Add newline before second and further lines
+            if (i > 0)
+                nutrientsString += "\n";
+            nutrientsString += $"{proximates[i]}: {Nutrients[proximates[i]]}{GetProximateUnit(proximates[i])}";
+        }
+        return nutrientsString;
+    }
+
+
+    public string GetProximateUnit(ProximateType proximate)
+    {
+        switch (proximate)
+        {
+            case ProximateType.Protein:
+            case ProximateType.Fat:
+            case ProximateType.Carbs:
+            case ProximateType.Sugar:
+            case ProximateType.SatFat:
+            case ProximateType.TransFat:
+                return "g";
+            case ProximateType.Kcal:
+                return "kcal";
+            default:
+                // T! Tested, but need to add to suite
+                throw new ArgumentOutOfRangeException(nameof(proximate));
+        }
     }
 }
 
@@ -36,7 +79,7 @@ public class Food
 public class Portion
 {
     public readonly Food Food;
-    public float Quantity;
+    public readonly float Quantity;
 
 
     public Portion(Food food, float quantity)
@@ -46,13 +89,11 @@ public class Portion
     }
 
 
-    /// <summary>
-    /// Calculate the fitness value of the portion (0 is perfect).
-    /// </summary>
-    /// <returns>The fitness value, lower is better.</returns>
-    public float GetFitness(Dictionary<Proximate, Constraint> constraints)
+    public override string ToString()
     {
-        return 0;
+        string str = Food.ToString();
+        str += $"\nMass: {Quantity * 100}g";
+        return str;
     }
 }
 
@@ -75,12 +116,33 @@ public class Day
 
     /// <summary>
     /// Calculates the overall fitness value based on each portion.
+    /// Calculated as a nested sum of fitness for each individual nutrient for each portion.
     /// </summary>
     /// <returns>The fitness value, lower is better.</returns>
-    public float GetFitness(Dictionary<Proximate, Constraint> constraints)
+    public float GetFitness(Dictionary<ProximateType, Constraint> constraints)
     {
-        // Returns the average of all obtained portion fitnesses.
-        return Portions.Select((Portion p) => p.GetFitness(constraints)).Average();
+        float fitness = 0;
+        foreach (Portion portion in Portions)
+        {
+            foreach (ProximateType proximate in Enum.GetValues(typeof(ProximateType)))
+            {
+                fitness += constraints[proximate].GetFitness(portion.Food.Nutrients[proximate] * portion.Quantity);
+            }
+        }
+        return fitness;
+    }
+
+
+    public override string ToString()
+    {
+        string str = "";
+        for (int i = 0; i < Portions.Count; i++)
+        {
+            if (i > 0)
+                str += "\n";
+            str += $"Portion {i}:\n{Portions[i]}";
+        }
+        return str;
     }
 }
 

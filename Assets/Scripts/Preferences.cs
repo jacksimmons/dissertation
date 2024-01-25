@@ -53,4 +53,74 @@ public class Preferences : ICached
         heightInCM = 170;
         assignedSex = AssignedSex.Male;
     }
+
+
+    public void MakeVegan()
+    {
+        eatsLandMeat = false;
+        eatsSeafood = false;
+        eatsAnimalProduce = false;
+    }
+
+
+    public void MakeVegetarian()
+    {
+        eatsLandMeat = false;
+        eatsSeafood = false;
+    }
+
+
+    public void MakePescatarian()
+    {
+        eatsLandMeat = false;
+    }
+
+
+    /// <summary>
+    /// A function to eliminate the vast majority of unacceptable foods by food group.
+    /// May still leave some in, for example chicken soup may be under the soup group - WA[A,C,E]
+    /// Will exclude all alcohol, as it is not nutritious.
+    /// </summary>
+    /// <param name="foodGroup">The food group code to check if allowed.</param>
+    /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
+    public bool IsFoodGroupAllowed(string foodGroup)
+    {
+        // In case of no food group, say it is not allowed.
+        // Safest approach - removes all foods without a proper food group label.
+        if (foodGroup.Length == 0) return false;
+
+        // Categories
+        switch (foodGroup[0])
+        {
+            case 'M': // Meat
+                if (!eatsLandMeat)
+                    return false;
+                break;
+            case 'J': // Fish
+                if (!eatsSeafood)
+                    return false;
+                break;
+            case 'C': // Eggs
+                if (!eatsAnimalProduce)
+                    return false;
+                break;
+            case 'B': // Milk
+                if (!eatsAnimalProduce || !eatsLactose)
+                    return false;
+                break;
+            case 'Q': // Alcohol - Excluded
+                return false;
+        }
+
+        // Unique cases
+        switch (foodGroup)
+        {
+            case "OB": // Animal fats
+                if (!eatsLandMeat)
+                    return false;
+                break;
+        }
+
+        return true;
+    }
 }
