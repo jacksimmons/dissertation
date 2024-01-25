@@ -3,24 +3,40 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using System.IO;
 
 
-public abstract class Algorithm : MonoBehaviour
+public abstract class Algorithm
 {
-    // A CSV file containing all proximate data. In the context of the McCance Widdowson dataset,
-    // this is most major nutrients (Protein, Fat, Carbs, Sugar, Sat Fats, Energy, Water, etc...)
-    [SerializeField]
-    private TextAsset m_proximatesFile;
-
     // The constraints for each nutrient in a day.
-    protected Dictionary<ProximateType, Constraint> m_constraints;
+    protected Dictionary<Proximate, Constraint> m_constraints;
     protected List<Food> m_foods;
     protected List<Day> m_population;
 
     public int NumStartingDaysInPop = 10;
     public int NumStartingPortionsInDay = 1;
+    public int IdealNumberOfPortionsInDay = 9; // 3 portions of food per meal, 3 meals
     public float StartingFoodQuantityMin = 0.5f;
     public float StartingFoodQuantityMax = 1.5f;
+
+
+    public Algorithm()
+    {
+        // A CSV file containing all proximate data. In the context of the McCance Widdowson dataset,
+        // this is most major nutrients (Protein, Fat, Carbs, Sugar, Sat Fats, Energy, Water, etc...)
+        string file = File.ReadAllText(Application.dataPath + "/Proximates.csv");
+        m_foods = new DatasetReader().ReadFoods(file, Preferences.Saved);
+        m_constraints = new Dictionary<Proximate, Constraint>
+        {
+            { Proximate.Protein, new ConvergeConstraint(180, 1, 0.001f, 180) },
+            { Proximate.Fat, new ConvergeConstraint(100, 1, 0.001f, 100) },
+            { Proximate.Carbs, new ConvergeConstraint(400, 1, 0.001f, 400) },
+            { Proximate.Kcal, new ConvergeConstraint(3200, 1, 0.001f, 3200) },
+            { Proximate.Sugar, new MinimiseConstraint(40, 2) },
+            { Proximate.SatFat, new MinimiseConstraint(40, 2) },
+            { Proximate.TransFat, new MinimiseConstraint(5, 4) }
+        };
+    }
 
 
     protected static string DayListToString(List<Day> days)
@@ -37,19 +53,6 @@ public abstract class Algorithm : MonoBehaviour
     }
 
 
-    private void Start()
-    {
-        m_foods = new DatasetReader().ReadFoods(m_proximatesFile.text, Preferences.Saved);
-        m_constraints = new Dictionary<ProximateType, Constraint>
-        {
-            { ProximateType.Protein, new(ConstraintType.Converge, 1f, 180) },
-            { ProximateType.Fat, new(ConstraintType.Converge, 1f, 100) },
-            { ProximateType.Carbs, new(ConstraintType.Converge, 1f, 400) },
-            { ProximateType.Kcal, new(ConstraintType.Converge, 1f, 3200) }
-        };
-    }
-
-
     public abstract void Run();
 
 
@@ -60,22 +63,29 @@ public abstract class Algorithm : MonoBehaviour
         for (int i = 0; i < NumStartingDaysInPop; i++)
         {
             // Add a number of days to the population (each has random foods)
-            List<Portion> dayPortions = new();
+            Day day = new();
             for (int j = 0; j < NumStartingPortionsInDay; j++)
             {
                 // Add random foods to the day
-                int randFoodIndex = Random.Range(0, m_foods.Count);
-                float randFoodQuantity = Random.Range(StartingFoodQuantityMin, StartingFoodQuantityMax);
-
-                Food food = m_foods[randFoodIndex];
-                Portion portion = new(food, randFoodQuantity);
-
-                dayPortions.Add(portion);
+                day.AddPortion(GenerateRandomPortion());
             }
 
-            days.Add(new(dayPortions));
+            days.Add(day);
         }
 
         return days;
+    }
+
+
+    protected Portion GenerateRandomPortion()
+    {
+        Food food = m_foods[Random.Range(0, m_foods.Count)];
+        return new(food, Random.Range(StartingFoodQuantityMin, StartingFoodQuantityMax));
+    }
+
+
+    protected Fitness GetFitness(Day day)
+    {
+        return day._GetFitness(m_constraints, IdealNumberOfPortionsInDay);
     }
 }

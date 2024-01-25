@@ -6,69 +6,81 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-public enum ProximateType
+/// <summary>
+///Legend:
+/// - OF = Objective Function
+/// - x = Value of parameter [value]
+/// - S = Steepness
+/// - T = Tolerance either side of k (y tends to infinity at x = L - T or x = L + T)
+/// - L = Limit (Maximum, or Convergence point)
+///</summary>
+public abstract class Constraint
 {
-    Protein,
-    Fat,
-    Carbs,
-    Kcal,
-    Sugar,
-    SatFat,
-    TransFat
-}
-
-
-public enum ConstraintType
-{
-    Minimise,
-    Converge,
-    Range
-}
-
-
-public readonly struct Constraint
-{
-    public readonly ConstraintType Type;
+    public readonly float Limit;
     public readonly float Weight;
-    public readonly float Goal;
 
 
-    public Constraint(ConstraintType type, float weight, float goal)
+    public Constraint(float limit, float weight)
     {
-        Type = type;
+        Limit = limit;
         Weight = weight;
-        Goal = goal;
     }
 
 
-    public float GetFitness(float value)
+    public abstract float _GetFitness(float value);
+}
+
+
+/// <summary>
+/// A negative-exponential constraint which encourages minimisation or maximisation.
+/// Graph: y = -1 - (k/(x-k)), x < k
+/// </summary>
+public class MinimiseConstraint : Constraint
+{
+    public MinimiseConstraint(float limit, float weight)
+        : base(limit, weight)
     {
-        float f;
-        float goal_pow = MathF.Pow(Goal, 4);
-        switch (Type)
-        {
-            // Note that only x > 0 is considered for these graphs.
+    }
 
-            // Legend:
-            // - OF = Objective Function
-            // - k = Critical point (Maximum, or Convergence point)
 
-            case ConstraintType.Minimise:
-                // A negative-exponential graph gives an OF which gives a very high negative value
-                // as you approach the critical point, k.
-                // Graph: y = 1 + (1/k) - (1/(k-x)), x < k
-                f = 1 + (1 / Goal) - 1 / (Goal - value);
-                if (value >= Goal) return float.MinValue;
-                return f;
+    public override float _GetFitness(float value)
+    {
+        // A negative-exponential graph gives an OF which tends to infinity
+        // as you approach the limit, L.
+        // Graph: y = -1 - (L/(x-L)), x < L (minimise)
+        if (value >= Limit) return float.PositiveInfinity; // Infinitely high fitness
+        return -1 - Limit / (value - Limit);
+    }
+}
 
-            case ConstraintType.Converge:
-                // (y = 1-(1/h^4)(x-h)^4 graph)
-                // Where h is the critical point.
-                f = 1 - MathF.Pow(value - Goal, 4) / goal_pow;
-                if (f < 0) return 0;
-                return f;
-        }
+/// <summary>
+/// A constraint which encourages convergence on a specific value (the limit), and
+/// tolerates deviation up to the tolerance parameter. Fitness increase as the tolerance
+/// limits are approached can be controlled by the steepness.
+/// Graph: y = -L^2/(ST^2) - L^2/S[(x-(L-T))(x-(L+T))], L - T < x < L + T
+/// </summary>
+public class ConvergeConstraint : Constraint
+{
+    public readonly float Steepness;
+    public readonly float Tolerance;
 
-        return 0;
+
+    public ConvergeConstraint(float goal, float weight, float steepness, float tolerance)
+        : base(goal, weight)
+    {
+        Steepness = steepness;
+        Tolerance = tolerance;
+    }
+
+
+    public override float _GetFitness(float value)
+    {
+        if (value <= Limit - Tolerance || value >= Limit + Tolerance) return float.PositiveInfinity;
+
+        float f_a = -MathF.Pow(Limit / Tolerance, 2) / Steepness;
+        float f_b_num = -MathF.Pow(Limit, 2);
+        float f_b_denom = Steepness * (value - (Limit - Tolerance)) * (value - (Limit + Tolerance));
+
+        return f_a + f_b_num / f_b_denom;
     }
 }

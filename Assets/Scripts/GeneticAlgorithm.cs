@@ -36,16 +36,19 @@ using Random = UnityEngine.Random;
 
 public class GeneticAlgorithm : Algorithm
 {
+    private float MutationMassChangeMin = 0f;
+    private float MutationMassChangeMax = 20f;
+
+    // Chances, as a probability (0 to 1)
+    private float ChanceToMutatePortion = 0.5f;
+    private float ChanceToAddOrRemovePortion = 0.01f;
+
+
     public override void Run()
     {
         // Generate population and constraints
         m_population = GetStartingPopulation();
         Debug.Log(DayListToString(m_population));
-
-        m_constraints = new Dictionary<ProximateType, Constraint>
-        {
-            { ProximateType.Kcal, new(ConstraintType.Minimise, 20, 3000) }
-        };
 
         while (true)
         {
@@ -61,18 +64,22 @@ public class GeneticAlgorithm : Algorithm
 
         for (int i = 0; i < m_population.Count; i++)
         {
-            Debug.Log($"{i}: {m_population[i].GetFitness(m_constraints)}");
+            Fitness fitness = GetFitness(m_population[i]);
+            Debug.Log($"Fitness: {fitness.Value}");
         }
 
         // Crossover
+        Tuple<Day, Day> children = Crossover(selected);
 
         // Mutation
+        MutateDay(children.Item1);
+        MutateDay(children.Item2);
 
         // Integration
     }
 
 
-    private Tuple<Day, Day> Selection(List<Day> days)
+    protected Tuple<Day, Day> Selection(List<Day> days)
     {
         float lowestFitness = float.PositiveInfinity;
         float secondLowestFitness = float.PositiveInfinity;
@@ -81,7 +88,7 @@ public class GeneticAlgorithm : Algorithm
 
         foreach (Day day in days)
         {
-            float dayFitness = day.GetFitness(m_constraints);
+            float dayFitness = GetFitness(day).Value;
 
             // Only allow a day to get one of 1st and 2nd, not both
             if (dayFitness < lowestFitness)
@@ -132,9 +139,8 @@ public class GeneticAlgorithm : Algorithm
         List<Portion> allPortions = new(parents.Item1.Portions);
         allPortions.AddRange(parents.Item2.Portions);
 
-        // By default, left child portions are empty, and right are full.
-        List<Portion> leftPortions = new();
-        List<Portion> rightPortions = new();
+        Day left = new();
+        Day right = new();
 
         int cutoffPortionIndex = -1;
 
@@ -146,7 +152,7 @@ public class GeneticAlgorithm : Algorithm
                 massSum += mass;
 
                 // Move a portion over to the left child
-                leftPortions.Add(allPortions[i]);
+                left.AddPortion(allPortions[i]);
                 continue;
             }
 
@@ -160,7 +166,7 @@ public class GeneticAlgorithm : Algorithm
                 cutoffPortionIndex = i;
 
             // Add all remaining portions to the right child
-            rightPortions.Add(allPortions[i]);
+            right.AddPortion(allPortions[i]);
         }
 
         // If the cutoff index was never defined, then the cutoffMass was never reached
@@ -173,11 +179,11 @@ public class GeneticAlgorithm : Algorithm
             * allPortions[cutoffPortionIndex].Quantity * 100; // Convert cutoff into local cutoff
         Tuple<Portion, Portion> split = SplitPortion(allPortions[cutoffPortionIndex], localCutoffPoint);
 
-        leftPortions.Add(split.Item1);
-        rightPortions.Add(split.Item2);
+        left.AddPortion(split.Item1);
+        right.AddPortion(split.Item2);
 
         // Construct a tuple of two child Days from the split portions.
-        return new(new(leftPortions), new(rightPortions));
+        return new(left, right);
     }
 
 
@@ -204,5 +210,53 @@ public class GeneticAlgorithm : Algorithm
         Portion left = new(portion.Food, portion.Quantity * cutoffPoint);
         Portion right = new(portion.Food, portion.Quantity * (1 - cutoffPoint));
         return new(left, right);
+    }
+
+
+    /// <summary>
+    /// Handles mutation for a single Day object, and delegates to MutatePortion
+    /// for all Portions in its list.
+    /// </summary>
+    /// <param name="day">The day to mutate.</param>
+    private void MutateDay(Day day)
+    {
+        // Mutate existing portions (add/remove mass)
+        foreach (Portion portion in day.Portions)
+        {
+            bool portionRemains = MutatePortion(portion);
+            if (!portionRemains)
+                day.RemovePortion(portion);   
+        }
+
+        // Add or remove portions entirely (rarely)
+        bool addPortion = Random.Range(0f, 1f) < ChanceToAddOrRemovePortion;
+        bool removePortion = Random.Range(0f, 1f) < ChanceToAddOrRemovePortion;
+
+        if (addPortion)
+            day.AddPortion(GenerateRandomPortion());
+
+        if (removePortion)
+            day.RemovePortion(day.Portions[Random.Range(0, day.Portions.Count)]);
+    }
+
+
+    /// <summary>
+    /// Applies mutation to a single Portion object.
+    /// </summary>
+    /// <param name="portion">The portion to mutate.</param>
+    /// <returns>A boolean of whether the portion remains.
+    /// True => Leave the portion, False => Delete the portion.</returns>
+    private bool MutatePortion(Portion portion)
+    {
+        // The sign of the mass change (1 => add, -1 => subtract)
+        float sign = Random.Range(0f, 1f) < ChanceToMutatePortion ? 1 : -1;
+        float massDiff = Random.Range(MutationMassChangeMin, MutationMassChangeMax);
+
+        float newMass = 100 * portion.Quantity + sign * massDiff;
+        portion.Quantity = newMass / 100;
+
+        // If the mass is zero or negative, the portion ceases to exist.
+        if (newMass <= 0) return false;
+        return true;
     }
 }

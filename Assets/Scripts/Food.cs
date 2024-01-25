@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static UnityEditor.Progress;
 
 
 /// <summary>
@@ -17,16 +18,35 @@ public class Food
     public readonly string FoodGroup;
     public readonly string Reference;
 
-    public readonly Dictionary<ProximateType, float> Nutrients;
+    public readonly Dictionary<Proximate, float> Nutrients;
 
 
-    public Food(string name, string desc, string group, string reference, Dictionary<ProximateType, float> nutrients)
+    public Food(string name, string desc, string group, string reference, Dictionary<Proximate, float> nutrients)
     {
         Name = name;
         Description = desc;
         FoodGroup = group;
         Reference = reference;
         Nutrients = nutrients;
+    }
+
+
+    public static string GetProximateUnit(Proximate proximate)
+    {
+        switch (proximate)
+        {
+            case Proximate.Protein:
+            case Proximate.Fat:
+            case Proximate.Carbs:
+            case Proximate.Sugar:
+            case Proximate.SatFat:
+            case Proximate.TransFat:
+                return "g";
+            case Proximate.Kcal:
+                return "kcal";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(proximate));
+        }
     }
 
 
@@ -40,7 +60,7 @@ public class Food
     public string NutrientsToString()
     {
         string nutrientsString = "";
-        ProximateType[] proximates = (ProximateType[])Enum.GetValues(typeof(ProximateType));
+        Proximate[] proximates = (Proximate[])Enum.GetValues(typeof(Proximate));
         for (int i = 0; i < proximates.Length; i++)
         {
             // Add newline before second and further lines
@@ -49,26 +69,6 @@ public class Food
             nutrientsString += $"{proximates[i]}: {Nutrients[proximates[i]]}{GetProximateUnit(proximates[i])}";
         }
         return nutrientsString;
-    }
-
-
-    public string GetProximateUnit(ProximateType proximate)
-    {
-        switch (proximate)
-        {
-            case ProximateType.Protein:
-            case ProximateType.Fat:
-            case ProximateType.Carbs:
-            case ProximateType.Sugar:
-            case ProximateType.SatFat:
-            case ProximateType.TransFat:
-                return "g";
-            case ProximateType.Kcal:
-                return "kcal";
-            default:
-                // T! Tested, but need to add to suite
-                throw new ArgumentOutOfRangeException(nameof(proximate));
-        }
     }
 }
 
@@ -79,13 +79,26 @@ public class Food
 public class Portion
 {
     public readonly Food Food;
-    public readonly float Quantity;
+    public float Quantity;
 
 
     public Portion(Food food, float quantity)
     {
         Food = food;
         Quantity = quantity;
+    }
+
+
+    public float _ApproximateFitness(Dictionary<Proximate, Constraint> constraints, int idealNumPortionsPerDay)
+    {
+        float rawFitness = 0;
+        foreach (Proximate proximate in constraints.Keys)
+        {
+            // An approximation for the amount of nutrient that would be consumed in an entire day of eating said portion
+            float approxDayQuantity = Food.Nutrients[proximate] * Quantity * idealNumPortionsPerDay;
+            rawFitness += constraints[proximate]._GetFitness(approxDayQuantity);
+        }
+        return rawFitness;
     }
 
 
@@ -107,29 +120,62 @@ public class Day
     private readonly List<Portion> _portions;
 
 
-    public Day(List<Portion> portions)
+    public Day()
     {
-        _portions = portions;
+        _portions = new();
         Portions = new(_portions);
     }
 
 
-    /// <summary>
-    /// Calculates the overall fitness value based on each portion.
-    /// Calculated as a nested sum of fitness for each individual nutrient for each portion.
-    /// </summary>
-    /// <returns>The fitness value, lower is better.</returns>
-    public float GetFitness(Dictionary<ProximateType, Constraint> constraints)
+    public void RemovePortion(Portion portion)
     {
-        float fitness = 0;
-        foreach (Portion portion in Portions)
+        _portions.Remove(portion);
+    }
+
+
+    public void AddPortion(Portion portion)
+    {
+        _portions.Add(portion);
+    }
+
+
+    /// <summary>
+    /// Evaluates the fitness of a Day through summing fitness of each nutrient amount (ideally), then approximate
+    /// evaluation if that yields infinity.
+    /// </summary>
+    /// <returns>The fitness as a <class>Fitness</class> object.</returns>
+    public Fitness _GetFitness(Dictionary<Proximate, Constraint> constraints, int idealNumPortionsPerDay)
+    {
+        // Calculate the overall fitness value based on the sum of the fitness of the individual
+        // nutrient amounts. (E.g. protein leads to a fitness value, which is added to the fat fitness,
+        // etc... over all nutrients).
+        // This fitness evaluation is more accurate, hence it is weighted more favourably
+        float rawFitness = 0;
+        FitnessLevel fitnessLevel = FitnessLevel.Day;
+        foreach (Proximate proximate in constraints.Keys)
         {
-            foreach (ProximateType proximate in Enum.GetValues(typeof(ProximateType)))
+            float quantity = 0;
+            foreach (Portion portion in Portions)
             {
-                fitness += constraints[proximate].GetFitness(portion.Food.Nutrients[proximate] * portion.Quantity);
+                quantity += portion.Food.Nutrients[proximate] * portion.Quantity;
+            }
+            rawFitness += constraints[proximate]._GetFitness(quantity);
+        }
+
+        // If the evaluation was infinity, it was not useful.
+        // Therefore we increase (worsen) the fitness level and approximate at the Portion level.
+        if (rawFitness == float.PositiveInfinity)
+        {
+            fitnessLevel = FitnessLevel.Portion;
+
+            rawFitness = 0;
+            foreach (Portion portion in Portions)
+            {
+                rawFitness += portion._ApproximateFitness(constraints, idealNumPortionsPerDay);
             }
         }
-        return fitness;
+
+        return new(fitnessLevel, rawFitness);
     }
 
 
@@ -200,12 +246,12 @@ public class Day
 //    {
 //        Name = old.Name;
 //        Scale = old.Scale;
-        
+
 //        _energy = old._energy;
 //        _protein = old._protein;
 //        _fat = old._fat;
 //        _carbs = old._carbs;
-        
+
 //        _saturates = old._saturates;
 //        _trans = old._trans;
 
@@ -221,10 +267,10 @@ public class Day
 //        _protein = protein;
 //        _fat = fat;
 //        _carbs = carbs;
-        
+
 //        _saturates = saturates;
 //        _trans = trans;
-        
+
 //        _sugars = sugars;
 
 //        Scale = scale;

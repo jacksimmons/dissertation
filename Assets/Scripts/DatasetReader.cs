@@ -20,7 +20,7 @@ public class DatasetReader
         string currentFoodDesc;
         string currentFoodGroup;
         string currentFoodRef;
-        Dictionary<ProximateType, float> currentFoodProximates;
+        Dictionary<Proximate, float> currentFoodProximates;
         ResetCurrentFood();
 
         void ResetCurrentFood()
@@ -34,7 +34,7 @@ public class DatasetReader
             // into Foods can still exist.
             currentFoodProximates = new();
 
-            foreach (ProximateType p in Enum.GetValues(typeof(ProximateType)))
+            foreach (Proximate p in Enum.GetValues(typeof(Proximate)))
             {
                 currentFoodProximates[p] = -1;
             }
@@ -95,19 +95,19 @@ public class DatasetReader
                         case 5:
                             currentFoodRef = currentWord; break;
                         case 9:
-                            currentFoodProximates[ProximateType.Protein] = floatVal; break;
+                            currentFoodProximates[Proximate.Protein] = floatVal; break;
                         case 10:
-                            currentFoodProximates[ProximateType.Fat] = floatVal; break;
+                            currentFoodProximates[Proximate.Fat] = floatVal; break;
                         case 11:
-                            currentFoodProximates[ProximateType.Carbs] = floatVal; break;
+                            currentFoodProximates[Proximate.Carbs] = floatVal; break;
                         case 12:
-                            currentFoodProximates[ProximateType.Kcal] = floatVal; break;
+                            currentFoodProximates[Proximate.Kcal] = floatVal; break;
                         case 16:
-                            currentFoodProximates[ProximateType.Sugar] = floatVal; break;
+                            currentFoodProximates[Proximate.Sugar] = floatVal; break;
                         case 27:
-                            currentFoodProximates[ProximateType.SatFat] = floatVal; break;
+                            currentFoodProximates[Proximate.SatFat] = floatVal; break;
                         case 45:
-                            currentFoodProximates[ProximateType.TransFat] = floatVal; break;
+                            currentFoodProximates[Proximate.TransFat] = floatVal; break;
                     }
 
                 reset_word:
@@ -129,7 +129,7 @@ public class DatasetReader
 
                     // Check the current food isn't missing essential data (due to N, Tr or "")
                     // This missing data is given the value -1, as seen in the delimiter ',' case.
-                    foreach (ProximateType p in Enum.GetValues(typeof(ProximateType)))
+                    foreach (Proximate p in Enum.GetValues(typeof(Proximate)))
                     {
                         if (currentFoodProximates[p] < 0)
                             goto next_food;
