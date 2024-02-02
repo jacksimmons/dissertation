@@ -24,17 +24,21 @@ public class Test_Food : GeneticAlgorithm
 
 
     [Test]
-    public void NonNegativeFitnessTest()
+    public void FitnessTest()
     {
-        List<Day> days = GetStartingPopulation();
-
-        foreach (Day day in days)
+        foreach (Day day in m_population.Keys)
         {
             float fitness = GetFitness(day).Value;
-            Debug.Log($"{day}\nFitness: {fitness}");
 
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
+
+            foreach (Proximate proximate in m_constraints.Keys)
+            {
+                float proxFitness = m_constraints[proximate]._GetFitness(day._GetProximateAmount(proximate));
+                // Fitness for each proximate can only be positive or 0.
+                Assert.IsTrue(proxFitness >= 0);
+            }
         }
     }
 }

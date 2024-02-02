@@ -47,7 +47,7 @@ public class ACOAlgorithm : Algorithm
     private float[] m_pheromone;
 
 
-    public override void Run()
+    protected override void RunIteration()
     {
         // Random portions (Copy from EA)
 
@@ -57,7 +57,7 @@ public class ACOAlgorithm : Algorithm
 
         for (int i = 0; i < m_numPortions; i++)
         {
-            m_pheromone[i] = Random.Range(0, 1);
+            m_pheromone[i] = Random.Range(0f, 1f);
         }
     }
 }

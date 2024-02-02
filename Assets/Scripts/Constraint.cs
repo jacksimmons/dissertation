@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 /// - S = Steepness
 /// - T = Tolerance either side of k (y tends to infinity at x = L - T or x = L + T)
 /// - L = Limit (Maximum, or Convergence point)
+/// - Min = Minimum of a range
+/// - Max = Maximum of a range
 ///</summary>
 public abstract class Constraint
 {
@@ -22,6 +24,12 @@ public abstract class Constraint
 
     public Constraint(float limit, float weight)
     {
+        if (limit < 0)
+            throw new ArgumentOutOfRangeException("limit");
+        if (weight < 0)
+            throw new ArgumentOutOfRangeException("weight");
+
+
         Limit = limit;
         Weight = weight;
     }
@@ -32,7 +40,7 @@ public abstract class Constraint
 
 
 /// <summary>
-/// A negative-exponential constraint which encourages minimisation or maximisation.
+/// A negative-exponential constraint which encourages minimisation.
 /// Graph: y = -1 - (k/(x-k)), x < k
 /// </summary>
 public class MinimiseConstraint : Constraint
@@ -53,10 +61,11 @@ public class MinimiseConstraint : Constraint
     }
 }
 
+
 /// <summary>
 /// A constraint which encourages convergence on a specific value (the limit), and
 /// tolerates deviation up to the tolerance parameter. Fitness increase as the tolerance
-/// limits are approached can be controlled by the steepness.
+/// limits are approached can be controlled by the steepness. 
 /// Graph: y = -L^2/(ST^2) - L^2/S[(x-(L-T))(x-(L+T))], L - T < x < L + T
 /// </summary>
 public class ConvergeConstraint : Constraint
@@ -68,6 +77,11 @@ public class ConvergeConstraint : Constraint
     public ConvergeConstraint(float goal, float weight, float steepness, float tolerance)
         : base(goal, weight)
     {
+        if (steepness <= 0)
+            throw new ArgumentOutOfRangeException("steepness");
+        if (tolerance <= 1)
+            throw new ArgumentOutOfRangeException("tolerance");
+
         Steepness = steepness;
         Tolerance = tolerance;
     }
@@ -83,4 +97,23 @@ public class ConvergeConstraint : Constraint
 
         return f_a + f_b_num / f_b_denom;
     }
+}
+
+
+/// <summary>
+/// A constraint which gives a fitness of 0 if in a specified range.
+/// Otherwise, gives an infinite fitness.
+/// Graph is a conditional function:
+///     { infinity, x <= Min
+/// y = { infinity, x >= Max
+///     { 0, otherwise
+///     
+/// It is constructed as an infinitely steep ConvergeConstraint.
+/// </summary>
+public class RangeConstraint : ConvergeConstraint
+{
+    // Creates a ConvergeConstraint centered at the mean of min and max.
+    // Then makes it infinitely steep with a negligable weight of 1.
+    // The tolerance either side is just half the difference between the max and the min.
+    public RangeConstraint(float min, float max) : base((min + max) / 2, 1, float.PositiveInfinity, (max - min)/2) { }
 }

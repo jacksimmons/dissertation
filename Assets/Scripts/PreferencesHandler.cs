@@ -38,7 +38,27 @@ public class PreferencesHandler : MonoBehaviour
     }
 
 
-    private void SavePreferences()
+    public static bool ParseDecimalInputField(string value, ref float prop, TMP_InputField inputField)
+    {
+        if (float.TryParse(value, out float floatVal))
+        {
+            if (floatVal <= 0)
+            {
+                inputField.text = "Value must be greater than zero.";
+            }
+
+            prop = floatVal;
+            return true;
+        }
+        else
+        {
+            inputField.text = "Not a valid decimal!";
+        }
+        return false;
+    }
+
+
+    public static void SavePreferences()
     {
         Saving.SaveToFile(Preferences.Saved, "Preferences.dat");
     }
@@ -117,34 +137,17 @@ public class PreferencesHandler : MonoBehaviour
     }
 
 
-    private void ParseDecimalInputField(string value, ref float prop, TMP_InputField inputField)
-    {
-        if (float.TryParse(value, out float floatVal))
-        {
-            if (floatVal <= 0)
-            {
-                inputField.text = "Value must be greater than zero.";
-            }
-
-            prop = floatVal;
-            SavePreferences();
-        }
-        else
-        {
-            inputField.text = "Not a valid decimal!";
-        }
-    }
-
-
     private void OnWeightInputChanged(string value)
     {
-        ParseDecimalInputField(value, ref Preferences.Saved.weightInKG, m_weightInputField);
+        if (ParseDecimalInputField(value, ref Preferences.Saved.weightInKG, m_weightInputField))
+            SavePreferences();
     }
 
 
     private void OnHeightInputChanged(string value)
     {
-        ParseDecimalInputField(value, ref Preferences.Saved.heightInCM, m_heightInputField);
+        if (ParseDecimalInputField(value, ref Preferences.Saved.heightInCM, m_heightInputField))
+            SavePreferences();
     }
 
 

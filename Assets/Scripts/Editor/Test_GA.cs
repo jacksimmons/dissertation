@@ -15,6 +15,6 @@ public class Test_GA : GeneticAlgorithm
     [Test]
     public void TestSelectionOperator()
     {
-        Tuple<Day, Day> selected = Selection(GetStartingPopulation());
+        Tuple<Day, Day> selected = Selection();
     }
 }

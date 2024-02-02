@@ -12,26 +12,21 @@ public class Test_Alg : Algorithm
     [Test]
     public void TestPopulationGeneration()
     {
-        List<Day> pop = GetStartingPopulation();
-
         // Assert number of random days and portions
-        Assert.IsTrue(pop.Count == NumStartingDaysInPop);
-        for (int i = 0; i < pop.Count; i++)
+        Assert.IsTrue(m_population.Count == NumStartingDaysInPop);
+        foreach (Day day in m_population.Keys)
         {
-            Assert.IsTrue(pop[i].Portions.Count == NumStartingPortionsInDay);
+            Assert.IsTrue(day.Portions.Count == NumStartingPortionsInDay);
 
             // Assert that the random ranges are satisfied for every portion
-            for (int j = 0; j < pop[i].Portions.Count; j++)
+            for (int j = 0; j < day.Portions.Count; j++)
             {
-                float quantity = pop[i].Portions[j].Quantity;
-                Assert.IsTrue(quantity >= StartingFoodQuantityMin && quantity <= StartingFoodQuantityMax);
+                float mass = day.Portions[j].Mass;
+                Assert.IsTrue(mass >= StartingPortionMassMin && mass <= StartingPortionMassMax);
             }
         }
-
-        // It is easier to assert that portions are random by eye
-        Debug.Log(DayListToString(pop));
     }
 
 
-    public override void Run() { }
+    protected override void RunIteration() { }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 
 public enum WeightGoal
@@ -40,6 +41,10 @@ public class Preferences : ICached
     public AssignedSex assignedSex;
 
 
+    // Goals
+    public Dictionary<Proximate, float> goals;
+
+
     // By default, the user's settings should permit every food type - this
     // best fits the average person.
     public Preferences()
@@ -52,6 +57,18 @@ public class Preferences : ICached
         weightInKG = 70;
         heightInCM = 170;
         assignedSex = AssignedSex.Male;
+
+        goals = new Dictionary<Proximate, float>
+        {
+            { Proximate.Protein, 0 },
+            { Proximate.Fat, 0 },
+            { Proximate.Carbs, 0 },
+            { Proximate.Kcal, 0 },
+
+            { Proximate.Sugar, 0 },
+            { Proximate.SatFat, 0 },
+            { Proximate.TransFat, 0 }
+        };
     }
 
 

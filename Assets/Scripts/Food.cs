@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static UnityEditor.Progress;
 
 
@@ -79,13 +80,19 @@ public class Food
 public class Portion
 {
     public readonly Food Food;
-    public float Quantity;
+
+    public float Mass
+    {
+        get { return 100 * Multiplier; }
+        set { Multiplier = value / 100; }
+    }
+    public float Multiplier { get; private set; }
 
 
-    public Portion(Food food, float quantity)
+    public Portion(Food food, float mass)
     {
         Food = food;
-        Quantity = quantity;
+        Mass = mass;
     }
 
 
@@ -95,18 +102,10 @@ public class Portion
         foreach (Proximate proximate in constraints.Keys)
         {
             // An approximation for the amount of nutrient that would be consumed in an entire day of eating said portion
-            float approxDayQuantity = Food.Nutrients[proximate] * Quantity * idealNumPortionsPerDay;
+            float approxDayQuantity = Food.Nutrients[proximate] * Multiplier * idealNumPortionsPerDay;
             rawFitness += constraints[proximate]._GetFitness(approxDayQuantity);
         }
         return rawFitness;
-    }
-
-
-    public override string ToString()
-    {
-        string str = Food.ToString();
-        str += $"\nMass: {Quantity * 100}g";
-        return str;
     }
 }
 
@@ -154,12 +153,8 @@ public class Day
         FitnessLevel fitnessLevel = FitnessLevel.Day;
         foreach (Proximate proximate in constraints.Keys)
         {
-            float quantity = 0;
-            foreach (Portion portion in Portions)
-            {
-                quantity += portion.Food.Nutrients[proximate] * portion.Quantity;
-            }
-            rawFitness += constraints[proximate]._GetFitness(quantity);
+            float amount = _GetProximateAmount(proximate);
+            rawFitness += constraints[proximate]._GetFitness(amount);
         }
 
         // If the evaluation was infinity, it was not useful.
@@ -167,6 +162,12 @@ public class Day
         if (rawFitness == float.PositiveInfinity)
         {
             fitnessLevel = FitnessLevel.Portion;
+
+            if (Portions.Count == 0)
+            {
+                // An empty day should have infinitely bad fitness - starvation is not a good diet.
+                return new(fitnessLevel, float.PositiveInfinity);
+            }
 
             rawFitness = 0;
             foreach (Portion portion in Portions)
@@ -179,126 +180,16 @@ public class Day
     }
 
 
-    public override string ToString()
+    public float _GetProximateAmount(Proximate proximate)
     {
-        string str = "";
-        for (int i = 0; i < Portions.Count; i++)
+        float quantity = 0;
+        foreach (Portion portion in Portions)
         {
-            if (i > 0)
-                str += "\n";
-            str += $"Portion {i}:\n{Portions[i]}";
+            quantity += portion.Food.Nutrients[proximate] * portion.Multiplier;
         }
-        return str;
+        return quantity;
     }
 }
-
-
-//public class Day
-//{
-//    public ReadOnlyCollection<Meal> Meals;
-//    private readonly List<Meal> _meals;
-
-
-//    public Day(List<Meal> meals)
-//    {
-//        _meals = meals;
-//        Meals = new(_meals);
-//    }
-//}
-
-
-
-///// <summary>
-///// Data for each 100g portion of food.
-///// </summary>
-//public class Portion
-//{
-//    // Raw attributes of the food, per 100g.
-//    private readonly float _energy;
-//    private readonly float _protein;
-//    private readonly float _fat, _saturates, _trans;
-//    private readonly float _carbs, _sugars;
-
-//    public string Name;
-
-//    /// <summary>
-//    /// Scales every food property, allowing different portion sizes.
-//    /// </summary>
-//    public float Scale;
-
-
-//    /// <summary>
-//    /// In Kilocalories (Kcal)
-//    /// </summary>
-//    public float Energy { get => _energy * Scale; }
-
-//    public float Protein { get => _protein * Scale; }
-//    public float Fat { get => _fat * Scale; }
-//    public float Carbs { get => _carbs * Scale; }
-
-//    public float Saturates { get => _saturates * Scale; }
-//    public float Trans { get => _trans * Scale; }
-
-//    public float Sugars { get => _sugars * Scale; }
-
-
-//    public Portion(Portion old)
-//    {
-//        Name = old.Name;
-//        Scale = old.Scale;
-
-//        _energy = old._energy;
-//        _protein = old._protein;
-//        _fat = old._fat;
-//        _carbs = old._carbs;
-
-//        _saturates = old._saturates;
-//        _trans = old._trans;
-
-//        _sugars = old._sugars;
-//    }
-
-
-//    public Portion(string name, float energy, float protein, float fat, float carbs, 
-//        float saturates, float trans, float sugars, float scale = 1)
-//    {
-//        Name = name;
-//        _energy = energy;
-//        _protein = protein;
-//        _fat = fat;
-//        _carbs = carbs;
-
-//        _saturates = saturates;
-//        _trans = trans;
-
-//        _sugars = sugars;
-
-//        Scale = scale;
-//    }
-
-
-//    //public float GetProximate(Proximate proximate)
-//    //{
-//    //    switch (proximate)
-//    //    {
-//    //        case Proximate.Energy:
-//    //            return Energy;
-//    //        case Proximate.Fat:
-//    //            return Fat;
-//    //        case Proximate.Protein:
-//    //            return Protein;
-//    //        case Proximate.Carbs:
-//    //            return Carbs;
-//    //        case Proximate.Saturates:
-//    //            return Saturates;
-//    //        case Proximate.Trans:
-//    //            return Trans;
-//    //        case Proximate.Sugars:
-//    //            return Sugars;
-//    //        default:
-//    //            return 0f;
-//    //    }
-//    //}
 
 
 //    //public float Fitness(List<Constraint> constraints, int numMeals, int numPortions)
@@ -311,43 +202,6 @@ public class Day
 //    //    }
 //    //    return fitness;
 //    //}
-
-
-//    public void Print()
-//    {
-//        Console.WriteLine($"{Name}\n Energy: {Energy}kcal, Protein: {Protein}g, Fat: {Fat}g (Saturates: {Saturates}g) (Trans: {Trans}g), Carbs: {Carbs}g (Sugars: {Sugars}g)");
-//    }
-//}
-
-
-//public class Meal
-//{
-//    public List<Portion> Portions { get; private set; } = new();
-//    public int Mutations { get; set; } = 0;
-
-
-//    /// <summary>
-//    /// Copy constructor.
-//    /// </summary>
-//    public Meal(Meal old)
-//    {
-//        foreach (Portion portion in old.Portions)
-//        {
-//            Portions.Add(new(portion));
-//        }
-
-//        LastFitness = old.LastFitness;
-//        Mutations = old.Mutations;
-//    }
-
-
-//    public Meal() { }
-
-
-//    /// <summary>
-//    /// Cached fitness value, not indicative of current fitness.
-//    /// </summary>
-//    public float LastFitness { get; private set; } = float.MinValue;
 
 
 //    public float TotalFitness(List<Constraint> constraints, int numMeals)
