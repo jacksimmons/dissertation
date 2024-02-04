@@ -1,9 +1,10 @@
+using System;
 using TMPro;
 using UnityEngine;
 
 public class AlgorithmRunner : MonoBehaviour
 {
-    private Algorithm m_algorithm;
+    public Algorithm Algorithm { get; private set; }
 
     [SerializeField]
     private TMP_Text m_populationText;
@@ -11,43 +12,39 @@ public class AlgorithmRunner : MonoBehaviour
     private TMP_Text m_iterNumText;
     [SerializeField]
     private PopulationView m_populationView;
+    [SerializeField]
+    private TMP_Text m_iterTimeTakenText;
 
 
     public void Init()
     {
-        m_algorithm = new GeneticAlgorithm();
+        Algorithm = new GeneticAlgorithm();
         UpdateAlgorithmUI();
     }
 
 
-    private void UpdateAlgorithmUI()
+    private void UpdateAlgorithmUI(float time_ms = 0)
     {
-        m_populationView.UpdatePopView(m_algorithm);
-        m_iterNumText.text = $"Iteration: {m_algorithm.NumIterations}";
-    }
-
-
-    /// <summary>
-    /// Runs a single iteration of the algorithm, and updates the UI accordingly.
-    /// </summary>
-    public void NextIteration()
-    {
-        m_populationView.ClearPortionUI();
-        m_algorithm.NextIteration();
-        UpdateAlgorithmUI();
+        m_populationView.UpdatePopView();
+        m_iterNumText.text = $"Iteration: {Algorithm.NumIterations}";
+        m_iterTimeTakenText.text = $"Average Iteration Time: {time_ms}";
     }
 
 
     /// <summary>
     /// Runs multiple next iterations, and updates the UI only once.
     /// </summary>
-    public void MultipleNextIterations(int numIters)
+    public void RunIterations(int numIters)
     {
         m_populationView.ClearPortionUI();
+
+        DateTime before = DateTime.Now;
         for (int i = 0; i < numIters; i++)
         {
-            m_algorithm.NextIteration();
+            Algorithm.NextIteration();
         }
-        UpdateAlgorithmUI();
+        DateTime after = DateTime.Now;
+        float ms = after.Subtract(before).Milliseconds / numIters;
+        UpdateAlgorithmUI(ms);
     }
 }

@@ -27,10 +27,15 @@ public class PreferencesHandler : MonoBehaviour
 
     private void Awake()
     {
-        // Add UI element event listeners.
+        //
+        // Add UI element event listeners for all input fields (buttons are done in Unity editor).
+        //
         m_weightGoalDropdown.onValueChanged.AddListener((int value) => OnWeightGoalChanged(value));
-        m_weightInputField.onSubmit.AddListener((string value) => OnWeightInputChanged(value));
-        m_heightInputField.onSubmit.AddListener((string value) => OnHeightInputChanged(value));
+
+        // When the user finishes (whether it be enter, or mouse click out)
+        // onEndEdit unifies onSubmit and onDeselect.
+        m_weightInputField.onEndEdit.AddListener((string value) => OnWeightInputChanged(value));
+        m_heightInputField.onEndEdit.AddListener((string value) => OnHeightInputChanged(value));
 
         // For each setting UI element, fill in the user's current settings.
         UpdateDietPreferenceButtons();
@@ -60,7 +65,7 @@ public class PreferencesHandler : MonoBehaviour
 
     public static void SavePreferences()
     {
-        Saving.SaveToFile(Preferences.Saved, "Preferences.dat");
+        Saving.SaveToFile(Preferences.Instance, "Preferences.dat");
     }
 
 
@@ -70,7 +75,7 @@ public class PreferencesHandler : MonoBehaviour
     /// </summary>
     public void UpdateDietPreferenceButtons()
     {
-        Preferences p = Preferences.Saved;
+        Preferences p = Preferences.Instance;
 
         m_landMeatPrefBtnTxt.text = p.eatsLandMeat ? "x" : "";
         m_seafoodPrefBtnTxt.text = p.eatsSeafood ? "x" : "";
@@ -89,32 +94,32 @@ public class PreferencesHandler : MonoBehaviour
 
     public void OnToggleMeatPreference()
     {
-        OnToggleFoodPreference(ref Preferences.Saved.eatsLandMeat);
+        OnToggleFoodPreference(ref Preferences.Instance.eatsLandMeat);
     }
 
 
     public void OnToggleSeafoodPreference()
     {
-        OnToggleFoodPreference(ref Preferences.Saved.eatsSeafood);
+        OnToggleFoodPreference(ref Preferences.Instance.eatsSeafood);
 
     }
 
 
     public void OnToggleAnimalProducePreference()
     {
-        OnToggleFoodPreference(ref Preferences.Saved.eatsAnimalProduce);
+        OnToggleFoodPreference(ref Preferences.Instance.eatsAnimalProduce);
     }
 
 
     public void OnToggleLactosePreference()
     {
-        OnToggleFoodPreference(ref Preferences.Saved.eatsLactose);
+        OnToggleFoodPreference(ref Preferences.Instance.eatsLactose);
     }
 
 
     public void UpdateBodyPreferenceButtons()
     {
-        Preferences p = Preferences.Saved;
+        Preferences p = Preferences.Instance;
 
         m_weightGoalDropdown.value = (int)p.weightGoal;
         m_weightInputField.text = $"{p.weightInKG}";
@@ -132,28 +137,28 @@ public class PreferencesHandler : MonoBehaviour
 
     private void OnWeightGoalChanged(int value)
     {
-        Preferences.Saved.weightGoal = (WeightGoal)value;
+        Preferences.Instance.weightGoal = (WeightGoal)value;
         OnBodyPreferenceChanged();
     }
 
 
     private void OnWeightInputChanged(string value)
     {
-        if (ParseDecimalInputField(value, ref Preferences.Saved.weightInKG, m_weightInputField))
+        if (ParseDecimalInputField(value, ref Preferences.Instance.weightInKG, m_weightInputField))
             SavePreferences();
     }
 
 
     private void OnHeightInputChanged(string value)
     {
-        if (ParseDecimalInputField(value, ref Preferences.Saved.heightInCM, m_heightInputField))
+        if (ParseDecimalInputField(value, ref Preferences.Instance.heightInCM, m_heightInputField))
             SavePreferences();
     }
 
 
     public void OnCycleAssignedSex()
     {
-        Preferences.Saved.assignedSex = (AssignedSex)(1 - (int)Preferences.Saved.assignedSex);
+        Preferences.Instance.assignedSex = (AssignedSex)(1 - (int)Preferences.Instance.assignedSex);
         OnBodyPreferenceChanged();
     }
 

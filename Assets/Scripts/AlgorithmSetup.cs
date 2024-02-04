@@ -31,7 +31,7 @@ public class AlgorithmSetup : MonoBehaviour
         float goal = 0;
         if (PreferencesHandler.ParseDecimalInputField(value, ref goal, input))
         {
-            Preferences.Saved.goals[proximate] = goal;
+            Preferences.Instance.goals[proximate] = goal;
             OnGoalChanged(proximate);
             PreferencesHandler.SavePreferences();
             UpdateGoalPreferencesButtons();
@@ -55,30 +55,30 @@ public class AlgorithmSetup : MonoBehaviour
 
     private void MacrosToCalories()
     {
-        Preferences.Saved.goals[Proximate.Kcal] =
-            Preferences.Saved.goals[Proximate.Protein] * 4
-            + Preferences.Saved.goals[Proximate.Fat] * 9
-            + Preferences.Saved.goals[Proximate.Carbs] * 4;
+        Preferences.Instance.goals[Proximate.Kcal] =
+            Preferences.Instance.goals[Proximate.Protein] * 4
+            + Preferences.Instance.goals[Proximate.Fat] * 9
+            + Preferences.Instance.goals[Proximate.Carbs] * 4;
     }
 
 
     private void CaloriesToMacros()
     {
         float previousCalories =
-            Preferences.Saved.goals[Proximate.Protein] * 4
-            + Preferences.Saved.goals[Proximate.Fat] * 9
-            + Preferences.Saved.goals[Proximate.Carbs] * 4;
+            Preferences.Instance.goals[Proximate.Protein] * 4
+            + Preferences.Instance.goals[Proximate.Fat] * 9
+            + Preferences.Instance.goals[Proximate.Carbs] * 4;
 
-        float multiplier = Preferences.Saved.goals[Proximate.Kcal] / previousCalories;
-        Preferences.Saved.goals[Proximate.Protein] *= multiplier;
-        Preferences.Saved.goals[Proximate.Fat] *= multiplier;
-        Preferences.Saved.goals[Proximate.Carbs] *= multiplier;
+        float multiplier = Preferences.Instance.goals[Proximate.Kcal] / previousCalories;
+        Preferences.Instance.goals[Proximate.Protein] *= multiplier;
+        Preferences.Instance.goals[Proximate.Fat] *= multiplier;
+        Preferences.Instance.goals[Proximate.Carbs] *= multiplier;
     }
 
 
     private void UpdateGoalPreferencesButtons()
     {
-        Preferences p = Preferences.Saved;
+        Preferences p = Preferences.Instance;
 
         m_kcalInputField.text = $"{p.goals[Proximate.Kcal]}";
         m_proteinInputField.text = $"{p.goals[Proximate.Protein]}";

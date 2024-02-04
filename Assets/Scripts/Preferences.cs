@@ -23,8 +23,18 @@ public enum AssignedSex
 [Serializable]
 public class Preferences : ICached
 {
-    public static Preferences Saved { get; private set; } = new();
-    public void Cache() { Saved = this; }
+    private static Preferences m_instance;
+    public static Preferences Instance
+    {
+        get
+        {
+            if (m_instance != null) return m_instance;
+
+            // This will automatically Cache() the preferences, so no need to update m_instance.
+            return Saving.LoadFromFile<Preferences>("Preferences.dat");
+        }
+    }
+    public void Cache() { m_instance = this; }
 
 
     // Food Groups

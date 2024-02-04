@@ -2,8 +2,14 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Test_Alg : Algorithm
+public class Test_Algorithm : Algorithm
 {
+    public Test_Algorithm() : base()
+    {
+        Instance = this;
+    }
+
+
     /// <summary>
     /// Tests a few key properties of population generation:
     /// - Number of random Days, and Portions
@@ -13,8 +19,8 @@ public class Test_Alg : Algorithm
     public void TestPopulationGeneration()
     {
         // Assert number of random days and portions
-        Assert.IsTrue(m_population.Count == NumStartingDaysInPop);
-        foreach (Day day in m_population.Keys)
+        Assert.IsTrue(Population.Count == NumStartingDaysInPop);
+        foreach (Day day in Population.Keys)
         {
             Assert.IsTrue(day.Portions.Count == NumStartingPortionsInDay);
 

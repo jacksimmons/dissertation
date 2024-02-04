@@ -9,19 +9,39 @@ using System.Collections.ObjectModel;
 
 public abstract class Algorithm
 {
+    // Singleton pattern
+    private static Algorithm m_instance;
+    public static Algorithm Instance
+    {
+        get
+        {
+            if (m_instance != null) return m_instance;
+
+            // Assign to the private set variable, and return it.
+            // Gets the (one) AlgorithmGlobal script through Unity.
+
+            // NOTE: In editor tests, this will throw an error as the GameObject tree is inactive.
+            // Assign the Instance variable ASAP in test classes.
+            return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmRunner>().Algorithm;
+        }
+
+        protected set { m_instance = value; }
+    }
+
+
     // The constraints for each nutrient in a day.
-    protected Dictionary<Proximate, Constraint> m_constraints;
     protected List<Food> m_foods;
 
-    protected Dictionary<Day, Fitness> m_population;
+    public readonly ReadOnlyDictionary<Proximate, Constraint> Constraints;
+    public readonly Dictionary<Day, float> Population;
 
     public int NumIterations { get; protected set; } = 1;
 
-    public int NumStartingDaysInPop = 10;
-    public int NumStartingPortionsInDay = 1;
-    public int IdealNumberOfPortionsInDay = 20; // 2kg of food as a baseline
-    public float StartingPortionMassMin = 50;
-    public float StartingPortionMassMax = 150;
+    public readonly int NumStartingDaysInPop = 10;
+    public readonly int NumStartingPortionsInDay = 1;
+    public readonly int IdealNumberOfPortionsInDay = 20; // 2kg of food as a baseline
+    public readonly float StartingPortionMassMin = 50;
+    public readonly float StartingPortionMassMax = 150;
 
 
     public Algorithm()
@@ -30,35 +50,32 @@ public abstract class Algorithm
         // this is most major nutrients (Protein, Fat, Carbs, Sugar, Sat Fats, Energy, Water, etc...)
         string file = File.ReadAllText(Application.dataPath + "/Proximates.csv");
 
-        Preferences prefs = Preferences.Saved;
+        Preferences prefs = Preferences.Instance;
 
         m_foods = new DatasetReader().ReadFoods(file, prefs);
-        m_constraints = new Dictionary<Proximate, Constraint>
+
+        Constraints = new(new Dictionary<Proximate, Constraint>
         {
-            { Proximate.Protein, new RangeConstraint(0, 200) },
-            { Proximate.Fat, new RangeConstraint(0, 200) },
-            { Proximate.Carbs, new RangeConstraint(0, 400) },
-            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[Proximate.Kcal], 2, 0.0025f, prefs.goals[Proximate.Kcal] / 2) },
-            { Proximate.Sugar, new MinimiseConstraint(40, 2) },
-            { Proximate.SatFat, new MinimiseConstraint(40, 2) },
-            { Proximate.TransFat, new MinimiseConstraint(5, 4) }
-        };
-
-        // Generate population
-        m_population = GetStartingPopulation();
+            { Proximate.Protein, new NullConstraint() },
+            { Proximate.Fat, new NullConstraint() },
+            { Proximate.Carbs, new NullConstraint() },
+            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[Proximate.Kcal], 2, 0.00025f, prefs.goals[Proximate.Kcal]) },
+            { Proximate.Sugar, new NullConstraint() },
+            { Proximate.SatFat, new NullConstraint() },
+            { Proximate.TransFat, new NullConstraint() }
+        });
+        Population = GetStartingPopulation();
     }
 
 
-    public ReadOnlyDictionary<Day, Fitness> GetPopulation()
-    {
-        return new(m_population);
-    }
-
-
-    protected Dictionary<Day, Fitness> GetStartingPopulation()
+    /// <summary>
+    /// Populates the Population data structure with randomly generated Days.
+    /// </summary>
+    /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
+    protected Dictionary<Day, float> GetStartingPopulation()
     {
         // Generate random starting population of Days
-        Dictionary<Day, Fitness> days = new();
+        Dictionary<Day, float> days = new();
         for (int i = 0; i < NumStartingDaysInPop; i++)
         {
             // Add a number of days to the population (each has random foods)
@@ -69,23 +86,21 @@ public abstract class Algorithm
                 day.AddPortion(GenerateRandomPortion());
             }
 
-            days.Add(day, GetFitness(day));
+            // Cannot add fitness yet, as this function is called during the constructor.
+            // Fitness calculations require access to this object, which doesn't exist until
+            // the constructor ends!
+            days.Add(day, -1);
         }
 
         return days;
     }
 
 
-    public void NextIteration()
-    {
-        RunIteration();
-        UpdateFitnesses();
-    }
-
-
-    protected abstract void RunIteration();
-
-
+    /// <summary>
+    /// Generates a random portion (a random food selected from the dataset, with a random
+    /// quantity multiplier).
+    /// </summary>
+    /// <returns></returns>
     protected Portion GenerateRandomPortion()
     {
         Food food = m_foods[Random.Range(0, m_foods.Count)];
@@ -93,37 +108,40 @@ public abstract class Algorithm
     }
 
 
-    protected Fitness GetFitness(Day day)
+    /// <summary>
+    /// Must evaluate the fitness first, as to begin with the Population data structure hasn't
+    /// got evaluated fitnesses.
+    /// 
+    /// Every RunIteration method call will begin with fitnesses calculated from the previous
+    /// iteration, even if there was no previous iteration (e.g. starting iteration 1)!
+    /// </summary>
+    public void NextIteration()
     {
-        return day._GetFitness(m_constraints, IdealNumberOfPortionsInDay);
+        UpdateFitnesses();
+        RunIteration();
     }
 
 
+    /// <summary>
+    /// Calculates the fitness for every element in the population, and caches it in a dictionary.
+    /// </summary>
     private void UpdateFitnesses()
     {
-        Dictionary<Day, Fitness> newFitnesses = new();
-        foreach (Day day in m_population.Keys)
+        Dictionary<Day, float> newFitnesses = new();
+
+        // Two loops: Avoidance of iteration errors and allowing Population to remain readonly.
+        foreach (Day day in Population.Keys)
         {
-            newFitnesses[day] = GetFitness(day);
+            newFitnesses[day] = day.GetFitness();
         }
-        m_population = newFitnesses;
-    }
 
-
-    private string FoodAsString(Food food)
-    {
-        string foodAsString = "";
-        foreach (Proximate proximate in Enum.GetValues(typeof(Proximate)))
+        // Iterate rather than overwrite the object itself, to satisfy readonly pattern.
+        foreach (Day day in newFitnesses.Keys)
         {
-            float proximateAmount = food.Nutrients[proximate];
-            foodAsString += proximate.ToString() + $": {proximateAmount}{Food.GetProximateUnit(proximate)} (Fitness: {m_constraints[proximate]._GetFitness(proximateAmount)})\n";
+            Population[day] = newFitnesses[day];
         }
-        return foodAsString;
     }
 
 
-    public string PortionToString(Portion portion)
-    {
-        return FoodAsString(portion.Food) + $"Mass: {portion.Mass}";
-    }
+    protected abstract void RunIteration();
 }

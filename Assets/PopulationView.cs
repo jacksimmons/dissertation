@@ -12,9 +12,6 @@ public class PopulationView : MonoBehaviour
     [SerializeField]
     private GameObject m_popContent;
 
-    private Algorithm m_currentAlg;
-    private ReadOnlyDictionary<Day, Fitness> m_currentPop;
-
     /// <summary>
     /// Buttons for selecting a portion to view details about.
     /// </summary>
@@ -33,19 +30,18 @@ public class PopulationView : MonoBehaviour
     private TMP_Text m_portionText;
 
 
-    public void UpdatePopView(Algorithm algorithm)
+    public void UpdatePopView()
     {
         foreach (Transform child in m_popContent.transform)
         {
             Destroy(child.gameObject);
         }
 
-        m_currentAlg = algorithm;
-        m_currentPop = algorithm.GetPopulation();
-        foreach (Day day in m_currentPop.Keys)
+        foreach (Day day in Algorithm.Instance.Population.Keys)
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
-            obj.transform.GetChild(0).GetComponent<TMP_Text>().text = $"Portions: {day.Portions.Count}, Fitness: {m_currentPop[day].Value}";
+            obj.transform.GetChild(0).GetComponent<TMP_Text>().text =
+                $"Portions: {day.Portions.Count}, Fitness: {Algorithm.Instance.Population[day]}";
             obj.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
         }
@@ -87,7 +83,7 @@ public class PopulationView : MonoBehaviour
         }
 
         m_portionNumText.text = $"Portion {portionIndex+1}/{day.Portions.Count}";
-        m_portionText.text = m_currentAlg.PortionToString(day.Portions[portionIndex]);
+        m_portionText.text = day.Portions[portionIndex].Verbose();
     }
 
 

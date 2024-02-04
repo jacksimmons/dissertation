@@ -10,7 +10,8 @@ using static UnityEditor.Progress;
 
 
 /// <summary>
-/// A class for the properties of a food type. E.g. Banana.
+/// A class which represents the properties of a 100g portion of
+/// a specific food from the dataset.
 /// </summary>
 public class Food
 {
@@ -96,16 +97,21 @@ public class Portion
     }
 
 
-    public float _ApproximateFitness(Dictionary<Proximate, Constraint> constraints, int idealNumPortionsPerDay)
+    /// <summary>
+    /// Gets a verbose description of this portion.
+    /// </summary>
+    /// <returns>The string data.</returns>
+    public string Verbose()
     {
-        float rawFitness = 0;
-        foreach (Proximate proximate in constraints.Keys)
+        string asString = $"Name: {Food.Name}\n";
+        foreach (Proximate proximate in Enum.GetValues(typeof(Proximate)))
         {
-            // An approximation for the amount of nutrient that would be consumed in an entire day of eating said portion
-            float approxDayQuantity = Food.Nutrients[proximate] * Multiplier * idealNumPortionsPerDay;
-            rawFitness += constraints[proximate]._GetFitness(approxDayQuantity);
+            float proximateAmount = Food.Nutrients[proximate];
+            asString += 
+                proximate.ToString() + $": {proximateAmount * Multiplier}{Food.GetProximateUnit(proximate)}"
+                + $" (Fitness = {Algorithm.Instance.Constraints[proximate]._GetFitness(proximateAmount * Multiplier)})\n";
         }
-        return rawFitness;
+        return asString + $"Mass: {Mass}g";
     }
 }
 
@@ -126,61 +132,68 @@ public class Day
     }
 
 
-    public void RemovePortion(Portion portion)
-    {
-        _portions.Remove(portion);
-    }
-
-
     public void AddPortion(Portion portion)
     {
         _portions.Add(portion);
     }
 
 
+    public void RemovePortion(Portion portion)
+    {
+        _portions.Remove(portion);
+    }
+
+
+    public bool Dominates(Day day)
+    {
+        bool betterOnOne = false;
+
+        // This loop exits if this has better or equal fitness on every constraint.
+        foreach (Proximate proximate in Algorithm.Instance.Constraints.Keys)
+        {
+            float amount = day.GetProximateAmount(proximate);
+            float fitness = Algorithm.Instance.Constraints[proximate]._GetFitness(amount);
+
+            float ourAmount = GetProximateAmount(proximate);
+            float ourFitness = Algorithm.Instance.Constraints[proximate]._GetFitness(ourAmount);
+
+            // To dominate, our fitness must be strictly lower on at least one constraint.
+            if (ourFitness < fitness)
+                betterOnOne = true;
+
+            // If on any constraint, !(ourFitness <= fitness) then this does not dominate.
+            if (ourFitness > fitness)
+                return false;
+        }
+
+        // Only return true if our fitness is strictly better on one constraint, and equal or better
+        // on every other constraint (which is true if the loop exits).
+        return betterOnOne;
+    }
+
+
     /// <summary>
-    /// Evaluates the fitness of a Day through summing fitness of each nutrient amount (ideally), then approximate
-    /// evaluation if that yields infinity.
+    /// Evaluates the fitness of this day.
     /// </summary>
-    /// <returns>The fitness as a <class>Fitness</class> object.</returns>
-    public Fitness _GetFitness(Dictionary<Proximate, Constraint> constraints, int idealNumPortionsPerDay)
+    /// <returns>The fitness as a float.</returns>
+    public float GetFitness()
     {
         // Calculate the overall fitness value based on the sum of the fitness of the individual
         // nutrient amounts. (E.g. protein leads to a fitness value, which is added to the fat fitness,
         // etc... over all nutrients).
         // This fitness evaluation is more accurate, hence it is weighted more favourably
-        float rawFitness = 0;
-        FitnessLevel fitnessLevel = FitnessLevel.Day;
-        foreach (Proximate proximate in constraints.Keys)
+        float fitness = 0;
+        foreach (Proximate proximate in Algorithm.Instance.Constraints.Keys)
         {
-            float amount = _GetProximateAmount(proximate);
-            rawFitness += constraints[proximate]._GetFitness(amount);
+            float amount = GetProximateAmount(proximate);
+            fitness += Algorithm.Instance.Constraints[proximate]._GetFitness(amount);
         }
 
-        // If the evaluation was infinity, it was not useful.
-        // Therefore we increase (worsen) the fitness level and approximate at the Portion level.
-        if (rawFitness == float.PositiveInfinity)
-        {
-            fitnessLevel = FitnessLevel.Portion;
-
-            if (Portions.Count == 0)
-            {
-                // An empty day should have infinitely bad fitness - starvation is not a good diet.
-                return new(fitnessLevel, float.PositiveInfinity);
-            }
-
-            rawFitness = 0;
-            foreach (Portion portion in Portions)
-            {
-                rawFitness += portion._ApproximateFitness(constraints, idealNumPortionsPerDay);
-            }
-        }
-
-        return new(fitnessLevel, rawFitness);
+        return fitness;
     }
 
 
-    public float _GetProximateAmount(Proximate proximate)
+    public float GetProximateAmount(Proximate proximate)
     {
         float quantity = 0;
         foreach (Portion portion in Portions)
@@ -190,7 +203,6 @@ public class Day
         return quantity;
     }
 }
-
 
 //    //public float Fitness(List<Constraint> constraints, int numMeals, int numPortions)
 //    //{

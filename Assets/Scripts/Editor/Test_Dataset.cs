@@ -18,7 +18,7 @@ public class Test_Dataset
     private List<Food> GetTestFoods()
     {
         string file = File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestProximates.csv");
-        List<Food> foods = new DatasetReader().ReadFoods(file, Preferences.Saved);
+        List<Food> foods = new DatasetReader().ReadFoods(file, Preferences.Instance);
         return foods;
     }
 

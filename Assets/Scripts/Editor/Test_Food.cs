@@ -9,6 +9,12 @@ using UnityEngine;
 /// </summary>
 public class Test_Food : GeneticAlgorithm
 {
+    public Test_Food() : base()
+    {
+        Instance = this;
+    }
+
+
     [Test]
     public void FoodErrorTest()
     {
@@ -26,16 +32,16 @@ public class Test_Food : GeneticAlgorithm
     [Test]
     public void FitnessTest()
     {
-        foreach (Day day in m_population.Keys)
+        foreach (Day day in Population.Keys)
         {
-            float fitness = GetFitness(day).Value;
+            float fitness = day.GetFitness();
 
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
 
-            foreach (Proximate proximate in m_constraints.Keys)
+            foreach (Proximate proximate in Constraints.Keys)
             {
-                float proxFitness = m_constraints[proximate]._GetFitness(day._GetProximateAmount(proximate));
+                float proxFitness = Constraints[proximate]._GetFitness(day.GetProximateAmount(proximate));
                 // Fitness for each proximate can only be positive or 0.
                 Assert.IsTrue(proxFitness >= 0);
             }

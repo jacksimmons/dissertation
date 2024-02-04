@@ -25,9 +25,9 @@ public abstract class Constraint
     public Constraint(float limit, float weight)
     {
         if (limit < 0)
-            throw new ArgumentOutOfRangeException("limit");
+            ThrowArgumentException("limit", limit);
         if (weight < 0)
-            throw new ArgumentOutOfRangeException("weight");
+            ThrowArgumentException("weight", weight);
 
 
         Limit = limit;
@@ -35,6 +35,18 @@ public abstract class Constraint
     }
 
 
+    protected static void ThrowArgumentException(string name, float value)
+    {
+        throw new ArgumentOutOfRangeException(name, $"Value: {value}");
+    }
+
+
+    /// <summary>
+    /// Get the fitness of a quantity value for a Day of food.
+    /// Can be approximated for individual portions, by multiplying by IdealNumPortionsPerDay.
+    /// </summary>
+    /// <param name="value">The quantity value for the whole Day.</param>
+    /// <returns>The fitness of the quantity value.</returns>
     public abstract float _GetFitness(float value);
 }
 
@@ -78,9 +90,9 @@ public class ConvergeConstraint : Constraint
         : base(goal, weight)
     {
         if (steepness <= 0)
-            throw new ArgumentOutOfRangeException("steepness");
+            ThrowArgumentException("steepness", steepness);
         if (tolerance <= 1)
-            throw new ArgumentOutOfRangeException("tolerance");
+            ThrowArgumentException("tolerance", tolerance);
 
         Steepness = steepness;
         Tolerance = tolerance;
@@ -116,4 +128,16 @@ public class RangeConstraint : ConvergeConstraint
     // Then makes it infinitely steep with a negligable weight of 1.
     // The tolerance either side is just half the difference between the max and the min.
     public RangeConstraint(float min, float max) : base((min + max) / 2, 1, float.PositiveInfinity, (max - min)/2) { }
+}
+
+
+/// <summary>
+/// A "non-constraint" which is not taken into consideration. Gives a fitness of 0 always.
+/// </summary>
+public class NullConstraint : Constraint
+{
+    public NullConstraint() : base(0, 0) { }
+
+
+    public override float _GetFitness(float value) { return 0; }
 }

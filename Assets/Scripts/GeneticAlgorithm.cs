@@ -50,8 +50,11 @@ public class GeneticAlgorithm : Algorithm
         // Selection
         Tuple<Day, Day> bestTwo = Selection();
 
-        if (bestTwo.Item1 == null || bestTwo.Item2 == null)
-            throw new InvalidOperationException("No elements remain in the population.");
+        if (bestTwo.Item1 == null)
+            Debug.LogError("Item1 was null");
+
+        if (bestTwo.Item2 == null)
+            Debug.LogError("Item2 was null");
 
         // Crossover
         Tuple<Day, Day> children = Crossover(bestTwo);
@@ -62,13 +65,15 @@ public class GeneticAlgorithm : Algorithm
 
         // Integration
         Tuple<Day, Day> worstTwo = Selection(false);
-        m_population.Remove(worstTwo.Item1);
-        m_population.Remove(worstTwo.Item2);
-        m_population.Add(children.Item1, GetFitness(children.Item1));
-        m_population.Add(children.Item2, GetFitness(children.Item2));
+        Population.Remove(worstTwo.Item1);
+        Population.Remove(worstTwo.Item2);
+        Population.Add(children.Item1, children.Item1.GetFitness());
+        Population.Add(children.Item2, children.Item2.GetFitness());
 
         NumIterations++;
     }
+
+
 
 
     /// <summary>
@@ -86,9 +91,9 @@ public class GeneticAlgorithm : Algorithm
         float secondSelectedFitness = selectBest ? float.PositiveInfinity : 0;
 
         // Find the best day in the list
-        foreach (Day day in m_population.Keys)
+        foreach (Day day in Population.Keys)
         {
-            float fitness = m_population[day].Value;
+            float fitness = Population[day];
 
             // If the day's fitness is the best fitness for our goals
             if (selectBest && (fitness < selectedFitness) || !selectBest && (fitness > selectedFitness))
