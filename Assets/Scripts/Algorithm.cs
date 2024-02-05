@@ -40,8 +40,8 @@ public abstract class Algorithm
     public readonly int NumStartingDaysInPop = 10;
     public readonly int NumStartingPortionsInDay = 1;
     public readonly int IdealNumberOfPortionsInDay = 20; // 2kg of food as a baseline
-    public readonly float StartingPortionMassMin = 50;
-    public readonly float StartingPortionMassMax = 150;
+    public readonly int StartingPortionMassMin = 50;
+    public readonly int StartingPortionMassMax = 150;
 
 
     public Algorithm()
@@ -65,6 +65,29 @@ public abstract class Algorithm
             { Proximate.TransFat, new NullConstraint() }
         });
         Population = GetStartingPopulation();
+    }
+
+
+    /// <summary>
+    /// Calculates the fitness for every element in the population, and caches it in a dictionary.
+    /// NOTE: This is all done in the algorithm running method, but needs to be called once to calculate
+    /// the initial fitnesses.
+    /// </summary>
+    public void CalculateInitialFitnesses()
+    {
+        Dictionary<Day, float> newFitnesses = new();
+
+        // Two loops: Avoidance of iteration errors and allowing Population to remain readonly.
+        foreach (Day day in Population.Keys)
+        {
+            newFitnesses[day] = day.GetFitness();
+        }
+
+        // Iterate rather than overwrite the object itself, to satisfy readonly pattern.
+        foreach (Day day in newFitnesses.Keys)
+        {
+            Population[day] = newFitnesses[day];
+        }
     }
 
 
@@ -117,31 +140,27 @@ public abstract class Algorithm
     /// </summary>
     public void NextIteration()
     {
-        UpdateFitnesses();
         RunIteration();
     }
 
 
-    /// <summary>
-    /// Calculates the fitness for every element in the population, and caches it in a dictionary.
-    /// </summary>
-    private void UpdateFitnesses()
-    {
-        Dictionary<Day, float> newFitnesses = new();
-
-        // Two loops: Avoidance of iteration errors and allowing Population to remain readonly.
-        foreach (Day day in Population.Keys)
-        {
-            newFitnesses[day] = day.GetFitness();
-        }
-
-        // Iterate rather than overwrite the object itself, to satisfy readonly pattern.
-        foreach (Day day in newFitnesses.Keys)
-        {
-            Population[day] = newFitnesses[day];
-        }
-    }
-
-
     protected abstract void RunIteration();
+
+
+    /// <summary>
+    /// Use this to get the number of non-null constraints defined in the Constraints
+    /// dictionary.
+    /// </summary>
+    public int GetNumConstraints()
+    {
+        int cnt = 0;
+        foreach (Constraint c in Constraints.Values)
+        {
+            if (c.GetType() != typeof(NullConstraint))
+            {
+                cnt++;
+            }
+        }
+        return cnt;
+    }
 }

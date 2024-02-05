@@ -13,8 +13,8 @@ using UnityEngine.TestTools;
 public class Test_GA : GeneticAlgorithm
 {
     [Test]
-    public void TestSelectionOperator()
+    public void TestCrossoverOperator()
     {
-        Tuple<Day, Day> selected = Selection();
+
     }
 }

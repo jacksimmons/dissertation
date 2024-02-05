@@ -21,6 +21,21 @@ public abstract class Constraint
     public readonly float Limit;
     public readonly float Weight;
 
+    public virtual float BestValue
+    {
+        get
+        {
+            return Limit;
+        }
+    }
+    public virtual float WorstValue
+    {
+        get
+        {
+            return float.PositiveInfinity;
+        }
+    }
+
 
     public Constraint(float limit, float weight)
     {
@@ -57,6 +72,12 @@ public abstract class Constraint
 /// </summary>
 public class MinimiseConstraint : Constraint
 {
+    public override float BestValue
+    {
+        get { return 0; }
+    }
+
+
     public MinimiseConstraint(float limit, float weight)
         : base(limit, weight)
     {

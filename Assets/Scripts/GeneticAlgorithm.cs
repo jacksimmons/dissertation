@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
@@ -37,36 +39,39 @@ using Random = UnityEngine.Random;
 
 public class GeneticAlgorithm : Algorithm
 {
-    private const float MutationMassChangeMin = 0f;
-    private const float MutationMassChangeMax = 20f;
+    private const int MutationMassChangeMin = 0;
+    private const int MutationMassChangeMax = 10;
 
     // Chances, as a probability (0 to 1)
     private const float ChanceToMutatePortion = 0.5f;
-    private const float ChanceToAddOrRemovePortion = 0.01f;
+    private const float ChanceToAddOrRemovePortion = 0.001f;
 
 
     protected override void RunIteration()
     {
         // Selection
-        Tuple<Day, Day> bestTwo = Selection();
+        List<Day> candidates = Population.Keys.ToList();
 
-        if (bestTwo.Item1 == null)
-            Debug.LogError("Item1 was null");
-
-        if (bestTwo.Item2 == null)
-            Debug.LogError("Item2 was null");
+        Day selectedDayA = Selection(candidates);
+        candidates.Remove(selectedDayA);
+        Day selectedDayB = Selection(candidates);
+        candidates.Remove(selectedDayB);
 
         // Crossover
-        Tuple<Day, Day> children = Crossover(bestTwo);
+        Tuple<Day, Day> children = Crossover(new(selectedDayA, selectedDayB));
 
         // Mutation
         MutateDay(children.Item1);
         MutateDay(children.Item2);
 
         // Integration
-        Tuple<Day, Day> worstTwo = Selection(false);
-        Population.Remove(worstTwo.Item1);
-        Population.Remove(worstTwo.Item2);
+        Day worstDayA = Selection(candidates, false);
+        candidates.Remove(worstDayA);
+        Day worstDayB = Selection(candidates, false);
+
+        // The only fitness changes occur here
+        Population.Remove(worstDayA);
+        Population.Remove(worstDayB);
         Population.Add(children.Item1, children.Item1.GetFitness());
         Population.Add(children.Item2, children.Item2.GetFitness());
 
@@ -74,48 +79,31 @@ public class GeneticAlgorithm : Algorithm
     }
 
 
-
-
     /// <summary>
-    /// Selects the best (or worst) two days in the population provided.
+    /// Selects the best day out of a random duel.
     /// </summary>
-    /// <param name="days">The population to select from.</param>
-    /// <param name="selectBest">`true` if selecting the best two, `false` if selecting the worst two.</param>
-    /// <returns></returns>
-    protected Tuple<Day, Day> Selection(bool selectBest = true)
+    protected Day Selection(List<Day> candidates, bool selectBest = true)
     {
-        Day selectedDay = null;
-        Day secondSelectedDay = null;
+        int indexA = Random.Range(0, candidates.Count);
+        // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
+        int indexB = (indexA + Random.Range(0, candidates.Count - 1)) % candidates.Count;
 
-        float selectedFitness = selectBest ? float.PositiveInfinity : 0;
-        float secondSelectedFitness = selectBest ? float.PositiveInfinity : 0;
-
-        // Find the best day in the list
-        foreach (Day day in Population.Keys)
+        switch (Day.Compare(candidates[indexA], candidates[indexB]))
         {
-            float fitness = Population[day];
-
-            // If the day's fitness is the best fitness for our goals
-            if (selectBest && (fitness < selectedFitness) || !selectBest && (fitness > selectedFitness))
-            {
-                // The old selected fitness is still better (or as good) for our goals as 2nd place
-                secondSelectedFitness = selectedFitness;
-                secondSelectedDay = selectedDay;
-
-                // Replace the best (for our goals) fitness
-                selectedDay = day;
-                selectedFitness = fitness;
-            }
-
-            // If the day's fitness is better for our goals than 2nd place
-            else if (selectBest && (fitness < secondSelectedFitness) || !selectBest && (fitness > secondSelectedFitness))
-            {
-                secondSelectedDay = day;
-                secondSelectedFitness = fitness;
-            }
+            case ParetoComparison.Dominates:
+                return selectBest ? candidates[indexA] : candidates[indexB];
+            case ParetoComparison.Dominated:
+                return selectBest ? candidates[indexB] : candidates[indexA];
         }
+        return SelectionTiebreak(candidates[indexA], candidates[indexB]);
+    }
 
-        return new(selectedDay, secondSelectedDay);
+
+    protected Day SelectionTiebreak(Day a, Day b)
+    {
+        if (Random.Range(0, 2) == 0)
+            return a;
+        return b;
     }
 
 
@@ -140,10 +128,20 @@ public class GeneticAlgorithm : Algorithm
     {
         float crossoverPoint = Random.Range(0f, 1f);
 
-        float massSum = 0;
-        float massGrandTotal = 
+        int massSum = 0;
+        int massGrandTotal = 
             CalculateMassTotal(parents.Item1) + CalculateMassTotal(parents.Item2);
-        float cutoffMass = massGrandTotal * crossoverPoint;
+
+        float floatCutoffMass = massGrandTotal * crossoverPoint;
+        int cutoffMass = (int)(floatCutoffMass);
+
+        // Remove LB edge case, where left gets all portions and right gets none
+        if (cutoffMass == 0)
+            cutoffMass++;
+        // Remove UB edge case (need to confirm if this is possible)
+        else if (cutoffMass == massGrandTotal)
+            cutoffMass--;
+
 
         // List to store every portion for iteration
         List<Portion> allPortions = new(parents.Item1.Portions);
@@ -152,55 +150,67 @@ public class GeneticAlgorithm : Algorithm
         Day left = new();
         Day right = new();
 
-        int cutoffPortionIndex = -1;
-
+        int splitPortionIndex = -1;
         for (int i = 0; i < allPortions.Count; i++)
         {
-            float mass = allPortions[i].Mass;
-            if (massSum + mass < cutoffMass)
+            int mass = allPortions[i].Mass;
+
+            // Add any portions that don't exceed the cutoff to the left child.
+            if (massSum + mass <= cutoffMass)
             {
                 massSum += mass;
 
                 // Move a portion over to the left child
                 left.AddPortion(allPortions[i]);
-                continue;
             }
 
-            // If the new mass would make the massSum >= the cutoffMass,
-            // then identify the cutoff index, add all remaining portions
-            // to the right child, and split the cutoff portion at its local
-            // cutoff point.
+            // Once exceeded the cutoff, identify the portion to be split.
+            else if (splitPortionIndex == -1)
+            {
+                splitPortionIndex = i;
+            }
 
-            // Define the cutoff portion when it is reached (only once)
-            if (cutoffPortionIndex == -1)
-                cutoffPortionIndex = i;
-
-            // Add all remaining portions to the right child
-            right.AddPortion(allPortions[i]);
+            // Add every remaining portion to the right child.
+            else
+            {
+                right.AddPortion(allPortions[i]);
+            }
         }
 
-
-        if (cutoffPortionIndex == -1)
+        if (splitPortionIndex == -1)
         {
             // If the cutoff index was never defined, then the cutoffMass was never reached
             // i.e. cutoffMass > total mass of both parents
-            throw new ArgumentOutOfRangeException("Selected cutoff mass > sum of all masses in both parents.");
+            Debug.LogError("No portion was set to be split.");
         }
 
-        float localCutoffPoint = cutoffMass - massSum; // The remaining cutoff after last whole portion
-        Tuple<Portion, Portion> split = SplitPortion(allPortions[cutoffPortionIndex], localCutoffPoint);
+        //
+        // Sub-portion splitting (split a portion into two smaller portions according to the local cutoff point
+        //
+        int localCutoffMass = cutoffMass - massSum; // The remaining cutoff after last whole portion
 
-        left.AddPortion(split.Item1);
-        right.AddPortion(split.Item2);
+        if (localCutoffMass != 0)
+        {
+            Tuple<Portion, Portion> split = SplitPortion(allPortions[splitPortionIndex], localCutoffMass);
 
-        // Construct a tuple of two child Days from the split portions.
+            left.AddPortion(split.Item1);
+            right.AddPortion(split.Item2);
+        }
+        // If the local cutoff point is 0, then no sub-portion splitting needs to be done. We just need to add the
+        // portion to the right child.
+        else
+        {
+            right.AddPortion(allPortions[splitPortionIndex]);
+        }
+
+        // Construct a tuple of two child Days from the portion split.
         return new(left, right);
     }
 
 
-    private float CalculateMassTotal(Day day)
+    private int CalculateMassTotal(Day day)
     {
-        float sum = 0;
+        int sum = 0;
         for (int i = 0; i < day.Portions.Count; i++)
         {
             sum += day.Portions[i].Mass;
@@ -213,18 +223,18 @@ public class GeneticAlgorithm : Algorithm
     /// Splits a portion into two, at a given cutoff point in grams.
     /// </summary>
     /// <param name="portion">The portion to split.</param>
-    /// <param name="cutoffPoint">The local cutoff point - amount of mass
+    /// <param name="cutoffMass">The local cutoff point - amount of mass
     /// which goes into the left portion. The rest of the portion goes to
     /// the right portion.</param>
     /// <returns>Two new portions, split from the original.</returns>
-    private Tuple<Portion, Portion> SplitPortion(Portion portion, float cutoffPoint)
+    private Tuple<Portion, Portion> SplitPortion(Portion portion, int cutoffMass)
     {
-        Portion left = new(portion.Food, cutoffPoint);
-        Portion right = new(portion.Food, portion.Mass - cutoffPoint);
+        Portion left = new(portion.Food, cutoffMass);
+        Portion right = new(portion.Food, portion.Mass - cutoffMass);
 
-        if (cutoffPoint < 0 || portion.Mass - cutoffPoint < 0)
+        if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
         {
-            Debug.Log($"Mass: {portion.Mass}, cutoff pt: {cutoffPoint}");
+            Debug.Log($"Mass: {portion.Mass}, cutoff pt: {cutoffMass}");
         }
 
         return new(left, right);
@@ -238,21 +248,26 @@ public class GeneticAlgorithm : Algorithm
     /// <param name="day">The day to mutate.</param>
     private void MutateDay(Day day)
     {
+        // Only mutate if day has more than 0 portions.
+        if (day.Portions.Count == 0)
+        { 
+            Debug.LogError("Day has no portions");
+            return; 
+        } 
+
         // Mutate existing portions (add/remove mass)
-        for (int i = 0; i < day.Portions.Count; i++)
+        foreach (Portion portion in day.Portions.ToArray())
         {
-            bool portionRemains = MutatePortion(day.Portions[i]);
+            // Exit early if the portion is not to be mutated
+            if (Random.Range(0f, 1f) > ChanceToMutatePortion)
+                continue;
+
+            bool portionRemains = MutatePortion(portion);
             if (!portionRemains)
-            {
-                day.RemovePortion(day.Portions[i]);
-                i--; // The following items move down one index
-            }
+                day.RemovePortion(portion);
         }
 
         // Add or remove portions entirely (rarely)
-        // Only if the day has more than 0 portions.
-        if (day.Portions.Count == 0) return;
-
         bool addPortion = Random.Range(0f, 1f) < ChanceToAddOrRemovePortion;
         bool removePortion = Random.Range(0f, 1f) < ChanceToAddOrRemovePortion;
 
@@ -273,13 +288,15 @@ public class GeneticAlgorithm : Algorithm
     private bool MutatePortion(Portion portion)
     {
         // The sign of the mass change (1 => add, -1 => subtract)
-        float sign = Random.Range(0f, 1f) < ChanceToMutatePortion ? 1 : -1;
-        float massDiff = Random.Range(MutationMassChangeMin, MutationMassChangeMax);
+        int sign = Random.Range(0, 2) == 1 ? 1 : -1;
+        int massDiff = Random.Range(MutationMassChangeMin, MutationMassChangeMax);
 
+        // If the new mass is zero or negative, the portion ceases to exist.
+        if (portion.Mass + sign * massDiff <= 0)
+            return false;
+
+        // Otherwise, add to the portion's mass.
         portion.Mass += sign * massDiff;
-
-        // If the mass is zero or negative, the portion ceases to exist.
-        if (portion.Mass <= 0) return false;
         return true;
     }
 }

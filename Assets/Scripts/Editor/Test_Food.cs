@@ -47,4 +47,44 @@ public class Test_Food : GeneticAlgorithm
             }
         }
     }
+
+
+    /// <summary>
+    /// Tests the pareto comparison method in the Day class.
+    /// </summary>
+    [Test]
+    public void ParetoComparisonTest()
+    {
+        // Create a best Day (this will dominate any Day object)
+        Day bestDay = new();
+        Dictionary<Proximate, float> bestNutrients = new();
+        bestDay.AddPortion(new(new("", "", "", "", bestNutrients), 100));
+
+        // Create the worst Day (will be dominated by any Day object which doesn't
+        // have a fitness of PositiveInfinity).
+        Day worstDay = new();
+        Dictionary<Proximate, float> worstNutrients = new();
+        worstDay.AddPortion(new(new("", "", "", "", worstNutrients), 100));
+
+        foreach (var kvp in Constraints)
+        {
+            bestNutrients[kvp.Key] = Constraints[kvp.Key].BestValue;
+            worstNutrients[kvp.Key] = Constraints[kvp.Key].WorstValue;
+        }
+
+        foreach (Day day in Population.Keys)
+        {
+            // Test that the best day is always at least as good as any randomly selected day.
+            Assert.IsFalse(Day.Compare(bestDay, day) == ParetoComparison.Dominated);
+            Assert.IsFalse(day.Dominates(bestDay));
+
+            // Test that the worst day is always at least as bad as any randomly selected day.
+            Assert.IsFalse(Day.Compare(worstDay, day) == ParetoComparison.Dominated);
+            Assert.IsFalse(worstDay.Dominates(day));
+
+            // Test that the best day STRICTLY dominates the worst day
+            Assert.IsTrue(Day.Compare(bestDay, worstDay) == ParetoComparison.StrictlyDominates);
+            Assert.IsTrue(Day.Compare(worstDay, bestDay) == ParetoComparison.StrictlyDominated);
+        }
+    }
 }

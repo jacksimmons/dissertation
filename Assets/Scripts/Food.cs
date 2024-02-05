@@ -82,15 +82,20 @@ public class Portion
 {
     public readonly Food Food;
 
-    public float Mass
+    public int Mass
     {
-        get { return 100 * Multiplier; }
-        set { Multiplier = value / 100; }
+        get { return Mathf.RoundToInt(100 * Multiplier); }
+        set
+        {
+            if (value <= 0)
+                Debug.LogError($"Mass was not positive: {value}");
+            Multiplier = (float)value / 100;
+        }
     }
     public float Multiplier { get; private set; }
 
 
-    public Portion(Food food, float mass)
+    public Portion(Food food, int mass)
     {
         Food = food;
         Mass = mass;
@@ -116,6 +121,16 @@ public class Portion
 }
 
 
+public enum ParetoComparison
+{
+    StrictlyDominates,
+    Dominates,
+    MutuallyNonDominating,
+    Dominated,
+    StrictlyDominated
+}
+
+
 /// <summary>
 /// A class for all the food eaten in a day.
 /// </summary>
@@ -132,43 +147,95 @@ public class Day
     }
 
 
+    public Day(Day day)
+    {
+        _portions = new(day.Portions);
+        Portions = new(_portions);
+    }
+
+
     public void AddPortion(Portion portion)
     {
         _portions.Add(portion);
     }
 
 
+    /// <summary>
+    /// Tries to remove the portion from the list. If it is the last remaining portion,
+    /// it will not be removed.
+    /// </summary>
+    /// <param name="portion">The portion to remove if it is not the only one left.</param>
     public void RemovePortion(Portion portion)
     {
+        if (_portions.Count <= 1)
+        {
+            Debug.LogWarning("No portion was removed. A Day must have at least one portion.");
+            return;
+        }
         _portions.Remove(portion);
+    }
+
+
+    public static ParetoComparison Compare(Day a, Day b)
+    {
+        // Store how many constraints this is better/worse than `day` on.
+        int betterCount = 0;
+        int worseCount = 0;
+
+        // This loop exits if this has better or equal fitness on every constraint.
+        foreach (Proximate proximate in Algorithm.Instance.Constraints.Keys)
+        {
+            float amountA = a.GetProximateAmount(proximate);
+            float fitnessA = Algorithm.Instance.Constraints[proximate]._GetFitness(amountA);
+
+            float amountB = b.GetProximateAmount(proximate);
+            float fitnessB = Algorithm.Instance.Constraints[proximate]._GetFitness(amountB);
+
+            if (fitnessA < fitnessB)
+                betterCount++;
+            else if (fitnessA > fitnessB)
+                worseCount++;
+        }
+
+        // If on any constraint, !(ourFitness <= fitness) then this does not dominate.
+        if (worseCount > 0)
+        {
+            // Worse on 1+, and better on 1+ => MND
+            if (betterCount > 0)
+                return ParetoComparison.MutuallyNonDominating;
+
+            // Worse on all => Strictly Dominated
+            if (worseCount == Algorithm.Instance.GetNumConstraints())
+                return ParetoComparison.StrictlyDominated;
+
+            // Worse on 1+, and not better on any => Dominated
+            return ParetoComparison.Dominated;
+        }
+        else
+        {
+            // Better on all => Strictly Dominates
+            if (betterCount == Algorithm.Instance.GetNumConstraints())
+                return ParetoComparison.StrictlyDominates;
+
+            // Not worse on any, and better on 1+ => Dominates
+            if (betterCount > 0)
+                return ParetoComparison.Dominates;
+
+            // Not worse on any, and not better on any => MND (They are equal)
+            return ParetoComparison.MutuallyNonDominating;
+        }
     }
 
 
     public bool Dominates(Day day)
     {
-        bool betterOnOne = false;
-
-        // This loop exits if this has better or equal fitness on every constraint.
-        foreach (Proximate proximate in Algorithm.Instance.Constraints.Keys)
+        switch (Compare(this, day))
         {
-            float amount = day.GetProximateAmount(proximate);
-            float fitness = Algorithm.Instance.Constraints[proximate]._GetFitness(amount);
-
-            float ourAmount = GetProximateAmount(proximate);
-            float ourFitness = Algorithm.Instance.Constraints[proximate]._GetFitness(ourAmount);
-
-            // To dominate, our fitness must be strictly lower on at least one constraint.
-            if (ourFitness < fitness)
-                betterOnOne = true;
-
-            // If on any constraint, !(ourFitness <= fitness) then this does not dominate.
-            if (ourFitness > fitness)
-                return false;
+            case ParetoComparison.StrictlyDominates:
+            case ParetoComparison.Dominates:
+                return true;
         }
-
-        // Only return true if our fitness is strictly better on one constraint, and equal or better
-        // on every other constraint (which is true if the loop exits).
-        return betterOnOne;
+        return false;
     }
 
 
@@ -244,7 +311,7 @@ public class Day
 //    }
 
 
-//    public static int Compare(Meal a, Meal b)
+//    public static int CompareTo(Meal a, Meal b)
 //    {
 //        if (a.LastFitness < b.LastFitness)
 //            return -1;
