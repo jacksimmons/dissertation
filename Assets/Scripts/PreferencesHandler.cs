@@ -65,7 +65,7 @@ public class PreferencesHandler : MonoBehaviour
 
     public static void SavePreferences()
     {
-        Saving.SaveToFile(Preferences.Instance, "Preferences.dat");
+        Saving.SaveToFile(Preferences.Instance, "Preferences.json");
     }
 
 

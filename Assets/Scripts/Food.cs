@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEditor.Progress;
 
 
 /// <summary>
@@ -20,7 +19,7 @@ public class Food
     public readonly string FoodGroup;
     public readonly string Reference;
 
-    public readonly Dictionary<Proximate, float> Nutrients;
+    public readonly Dictionary<Proximate, float> Proximates;
 
 
     public Food(string name, string desc, string group, string reference, Dictionary<Proximate, float> nutrients)
@@ -29,7 +28,7 @@ public class Food
         Description = desc;
         FoodGroup = group;
         Reference = reference;
-        Nutrients = nutrients;
+        Proximates = nutrients;
     }
 
 
@@ -62,13 +61,12 @@ public class Food
     public string NutrientsToString()
     {
         string nutrientsString = "";
-        Proximate[] proximates = (Proximate[])Enum.GetValues(typeof(Proximate));
-        for (int i = 0; i < proximates.Length; i++)
+        for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
         {
             // Add newline before second and further lines
             if (i > 0)
                 nutrientsString += "\n";
-            nutrientsString += $"{proximates[i]}: {Nutrients[proximates[i]]}{GetProximateUnit(proximates[i])}";
+            nutrientsString += $"{(Proximate)i}: {Proximates[(Proximate)i]}{GetProximateUnit((Proximate)i)}";
         }
         return nutrientsString;
     }
@@ -109,11 +107,12 @@ public class Portion
     public string Verbose()
     {
         string asString = $"Name: {Food.Name}\n";
-        foreach (Proximate proximate in Enum.GetValues(typeof(Proximate)))
+        for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
         {
-            float proximateAmount = Food.Nutrients[proximate];
-            asString += 
-                proximate.ToString() + $": {proximateAmount * Multiplier}{Food.GetProximateUnit(proximate)}"
+            Proximate proximate = (Proximate)i;
+            float proximateAmount = Food.Proximates[proximate];
+            asString +=
+                $"{proximate}: {proximateAmount * Multiplier}{Food.GetProximateUnit(proximate)}"
                 + $" (Fitness = {Algorithm.Instance.Constraints[proximate]._GetFitness(proximateAmount * Multiplier)})\n";
         }
         return asString + $"Mass: {Mass}g";
@@ -176,6 +175,10 @@ public class Day
     }
 
 
+    /// <summary>
+    /// Compares two days, and returns a detailed enum value on the dominance hierarchy between
+    /// the two.
+    /// </summary>
     public static ParetoComparison Compare(Day a, Day b)
     {
         // Store how many constraints this is better/worse than `day` on.
@@ -196,6 +199,7 @@ public class Day
             else if (fitnessA > fitnessB)
                 worseCount++;
         }
+
 
         // If on any constraint, !(ourFitness <= fitness) then this does not dominate.
         if (worseCount > 0)
@@ -227,15 +231,31 @@ public class Day
     }
 
 
-    public bool Dominates(Day day)
+    /// <summary>
+    /// A simpler form of Compare, which merges strict domination and regular domination, to simplify
+    /// usage of the ParetoComparison enum.
+    /// Allows conversion of:
+    /// 
+    /// switch (Compare(a, b)) {
+    ///     case ParetoComparison.StrictlyDominates:
+    ///     case ParetoComparison.Dominates:
+    ///         ...
+    /// }
+    /// 
+    /// Into:
+    /// switch (SimpleCompare(a,b)) {
+    ///     case ParetoComparison.Dominates:
+    ///         ...
+    /// }
+    /// </summary>
+    public static ParetoComparison SimpleCompare(Day a, Day b)
     {
-        switch (Compare(this, day))
+        return Compare(a, b) switch
         {
-            case ParetoComparison.StrictlyDominates:
-            case ParetoComparison.Dominates:
-                return true;
-        }
-        return false;
+            ParetoComparison.StrictlyDominates or ParetoComparison.Dominates => ParetoComparison.Dominates,
+            ParetoComparison.StrictlyDominated or ParetoComparison.Dominated => ParetoComparison.Dominated,
+            _ => ParetoComparison.MutuallyNonDominating,
+        };
     }
 
 
@@ -250,8 +270,10 @@ public class Day
         // etc... over all nutrients).
         // This fitness evaluation is more accurate, hence it is weighted more favourably
         float fitness = 0;
-        foreach (Proximate proximate in Algorithm.Instance.Constraints.Keys)
+
+        for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
         {
+            Proximate proximate = (Proximate)i;
             float amount = GetProximateAmount(proximate);
             fitness += Algorithm.Instance.Constraints[proximate]._GetFitness(amount);
         }
@@ -265,9 +287,17 @@ public class Day
         float quantity = 0;
         foreach (Portion portion in Portions)
         {
-            quantity += portion.Food.Nutrients[proximate] * portion.Multiplier;
+            quantity += portion.Food.Proximates[proximate] * portion.Multiplier;
         }
         return quantity;
+    }
+
+
+    public float GetDistance(Day day)
+    {
+        // Square root of all differences squared = Pythagorean Distance
+        Proximate[] vals = (Proximate[])Enum.GetValues(typeof(Proximate));
+        return Mathf.Sqrt(vals.Sum(o => Mathf.Pow(GetProximateAmount(o) - day.GetProximateAmount(o), 2)));
     }
 }
 

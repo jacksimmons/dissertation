@@ -7,38 +7,10 @@ using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 
-// 32-Bit Bit Field.
-
-// Saves on memory usage for boolean values
-// bool = 1 byte, but T/F can be stored in 1 bit.
-// + BitField can store data 8x more memory efficiently.
-// - Accessing a single value is more computationally expensive.
-// + But performing bitwise operations negates this issue.
-//public class BitField8
-//{
-//    // 8 bit integer - 8 fields
-//    // Undefined behaviour if !(0 <= index <= 7)
-//    public byte Data { get; private set; }
-
-//    // Set every bit to 0 by default
-//    public BitField8(byte data = 0) { Data = data; }
-
-//    public void SetBit(int index, bool value)
-//    {
-//        byte mask = (byte)(1 << index);
-//        Data = (byte)(value ? (Data | mask) : (Data & ~mask));
-//    }
-
-//    public bool GetBit(int index)
-//    {
-//        int mask = 1 << index;
-//        return (Data & mask) != 0;
-//    }
-//}
-
-
 public class GeneticAlgorithm : Algorithm
 {
+    private const int SELECTION_PRESSURE = 3;
+
     private const int MutationMassChangeMin = 0;
     private const int MutationMassChangeMax = 10;
 
@@ -64,23 +36,29 @@ public class GeneticAlgorithm : Algorithm
         MutateDay(children.Item1);
         MutateDay(children.Item2);
 
-        // Integration
+        // Next generation - The only fitness changes occur here
+        // Add children
+        Population.Add(children.Item1, children.Item1.GetFitness());
+        Population.Add(children.Item2, children.Item2.GetFitness());
+        candidates.Add(children.Item1);
+        candidates.Add(children.Item2);
+
         Day worstDayA = Selection(candidates, false);
         candidates.Remove(worstDayA);
         Day worstDayB = Selection(candidates, false);
 
-        // The only fitness changes occur here
+        Debug.Log($"Removed fitness {Population[worstDayA]} and {Population[worstDayB]}");
+
+        // Slight elitism - children can be killed off as soon as they are added if they are bad
         Population.Remove(worstDayA);
         Population.Remove(worstDayB);
-        Population.Add(children.Item1, children.Item1.GetFitness());
-        Population.Add(children.Item2, children.Item2.GetFitness());
 
         NumIterations++;
     }
 
-
+    
     /// <summary>
-    /// Selects the best day out of a random duel.
+    /// Basic tournament selection.
     /// </summary>
     protected Day Selection(List<Day> candidates, bool selectBest = true)
     {
@@ -88,6 +66,7 @@ public class GeneticAlgorithm : Algorithm
         // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
         int indexB = (indexA + Random.Range(0, candidates.Count - 1)) % candidates.Count;
 
+        // If one dominates the other, the selection is simple.
         switch (Day.Compare(candidates[indexA], candidates[indexB]))
         {
             case ParetoComparison.Dominates:
@@ -95,13 +74,56 @@ public class GeneticAlgorithm : Algorithm
             case ParetoComparison.Dominated:
                 return selectBest ? candidates[indexB] : candidates[indexA];
         }
+
+        // Otherwise, tiebreak by comparison set
         return SelectionTiebreak(candidates[indexA], candidates[indexB]);
     }
 
 
+    /// <summary>
+    /// Calculates how dominant a day is over a comparison set.
+    /// </summary>
+    /// <param name="day"></param>
+    /// <param name="comparisonSet"></param>
+    /// <returns>An integer, which starts at 0 and increments every time the day dominates,
+    /// and decrements every time it is dominated.</returns>
+    protected int GetDominanceOverComparisonSet(Day day, List<Day> comparisonSet)
+    {
+        int dominance = 0;
+        for (int i = 0; i < comparisonSet.Count; i++)
+        {
+            switch (Day.SimpleCompare(day, comparisonSet[i]))
+            {
+                case ParetoComparison.Dominates:
+                    dominance++;
+                    break;
+                case ParetoComparison.Dominated:
+                    dominance--;
+                    break;
+            }
+        }
+
+        return dominance;
+    }
+
+
+    // Reference: ECM3412 Lecture 14 2023/2024
     protected Day SelectionTiebreak(Day a, Day b)
     {
-        if (Random.Range(0, 2) == 0)
+        List<Day> comparisonSet = new(Population.Keys);
+        comparisonSet.Remove(a);
+        comparisonSet.Remove(b);
+
+        int dominanceA = GetDominanceOverComparisonSet(a, comparisonSet);
+        int dominanceB = GetDominanceOverComparisonSet(b, comparisonSet);
+
+        if (dominanceA > dominanceB)
+            return a;
+        if (dominanceB > dominanceA)
+            return b;
+
+        // If they are equal in dominance, resort to random selection.
+        if (Random.Range(0, 2) == 1)
             return a;
         return b;
     }
@@ -124,12 +146,71 @@ public class GeneticAlgorithm : Algorithm
     /// </summary>
     /// <param name="parents">The two parents. Expects non-null Days.</param>
     /// <returns>Two children with only crossover applied.</returns>
-    private Tuple<Day, Day> Crossover(Tuple<Day, Day> parents)
+    protected Tuple<Day, Day> Crossover(Tuple<Day, Day> parents)
     {
+        int massSum = 0;
+        int cutoffMass = GetCutoffMass(parents);
+
+        // List to store every portion for iteration
+        List<Portion> allPortions = new(parents.Item1.Portions);
+        allPortions.AddRange(parents.Item2.Portions);
+
+        Tuple<Day, Day> children = new(new(), new());
+        int splitPortionIndex = -1;
+        
+        //
+        // Loop to crossover portions between left and right children.
+        //
+        for (int i = 0; i < allPortions.Count; i++)
+        {
+            int mass = allPortions[i].Mass;
+
+            // Add any portions that don't exceed the cutoff to the left child.
+            if (massSum + mass <= cutoffMass)
+            {
+                massSum += mass;
+
+                // Move a portion over to the left child
+                children.Item1.AddPortion(allPortions[i]);
+            }
+
+            // Once exceeded the cutoff, identify the portion to be split.
+            else if (splitPortionIndex == -1)
+            {
+                splitPortionIndex = i;
+            }
+
+            // Add every remaining portion to the right child.
+            else
+            {
+                children.Item2.AddPortion(allPortions[i]);
+            }
+        }
+
+        if (splitPortionIndex == -1)
+        {
+            // If the cutoff index was never defined, then the cutoffMass was never reached
+            // i.e. cutoffMass > total mass of both parents
+            Debug.LogError("No portion was set to be split.");
+        }
+
+        HandleCutoffPortion(children, cutoffMass - massSum, allPortions[splitPortionIndex]);
+        return children;
+    }
+
+
+    /// <summary>
+    /// Generates a cutoff mass value, from a random proportion of 0 to 1.
+    /// </summary>
+    /// <param name="parents">The parents to crossover from.</param>
+    /// <returns>The mass where crossover applies to the genetic material.</returns>
+    protected int GetCutoffMass(Tuple<Day, Day> parents)
+    {
+        // A random split between the two parents
         float crossoverPoint = Random.Range(0f, 1f);
 
-        int massSum = 0;
-        int massGrandTotal = 
+        // Total mass stored in both days
+        int massGrandTotal =
             CalculateMassTotal(parents.Item1) + CalculateMassTotal(parents.Item2);
 
         float floatCutoffMass = massGrandTotal * crossoverPoint;
@@ -142,80 +223,43 @@ public class GeneticAlgorithm : Algorithm
         else if (cutoffMass == massGrandTotal)
             cutoffMass--;
 
-
-        // List to store every portion for iteration
-        List<Portion> allPortions = new(parents.Item1.Portions);
-        allPortions.AddRange(parents.Item2.Portions);
-
-        Day left = new();
-        Day right = new();
-
-        int splitPortionIndex = -1;
-        for (int i = 0; i < allPortions.Count; i++)
-        {
-            int mass = allPortions[i].Mass;
-
-            // Add any portions that don't exceed the cutoff to the left child.
-            if (massSum + mass <= cutoffMass)
-            {
-                massSum += mass;
-
-                // Move a portion over to the left child
-                left.AddPortion(allPortions[i]);
-            }
-
-            // Once exceeded the cutoff, identify the portion to be split.
-            else if (splitPortionIndex == -1)
-            {
-                splitPortionIndex = i;
-            }
-
-            // Add every remaining portion to the right child.
-            else
-            {
-                right.AddPortion(allPortions[i]);
-            }
-        }
-
-        if (splitPortionIndex == -1)
-        {
-            // If the cutoff index was never defined, then the cutoffMass was never reached
-            // i.e. cutoffMass > total mass of both parents
-            Debug.LogError("No portion was set to be split.");
-        }
-
-        //
-        // Sub-portion splitting (split a portion into two smaller portions according to the local cutoff point
-        //
-        int localCutoffMass = cutoffMass - massSum; // The remaining cutoff after last whole portion
-
-        if (localCutoffMass != 0)
-        {
-            Tuple<Portion, Portion> split = SplitPortion(allPortions[splitPortionIndex], localCutoffMass);
-
-            left.AddPortion(split.Item1);
-            right.AddPortion(split.Item2);
-        }
-        // If the local cutoff point is 0, then no sub-portion splitting needs to be done. We just need to add the
-        // portion to the right child.
-        else
-        {
-            right.AddPortion(allPortions[splitPortionIndex]);
-        }
-
-        // Construct a tuple of two child Days from the portion split.
-        return new(left, right);
+        return cutoffMass;
     }
 
 
-    private int CalculateMassTotal(Day day)
+    /// <summary>
+    /// Gets the sum of all portion masses in a Day.
+    /// </summary>
+    /// <param name="day">The day to sum over.</param>
+    protected int CalculateMassTotal(Day day)
     {
-        int sum = 0;
-        for (int i = 0; i < day.Portions.Count; i++)
+        return day.Portions.Sum(p => p.Mass);
+    }
+
+
+    /// <summary>
+    /// Handles splitting of the middle (cutoff) portion in the portion list.
+    /// Generally splits the portion at the cutoff mass provided, giving the "left" side to the left
+    /// child and the rest to the right child.
+    /// </summary>
+    /// <param name="localCutoffMass">The remaining cutoff after last whole portion</param>
+    protected void HandleCutoffPortion(Tuple<Day, Day> children, int localCutoffMass, Portion portion)
+    {
+        if (localCutoffMass != 0)
         {
-            sum += day.Portions[i].Mass;
+            Tuple<Portion, Portion> split = SplitPortion(portion, localCutoffMass);
+
+            children.Item1.AddPortion(split.Item1);
+            children.Item2.AddPortion(split.Item2);
         }
-        return sum;
+
+        // If the local cutoff point is 0, then the right child takes 100% of the portion.
+        // Note: The opposite case for the left child is already handled in the portion split for loop,
+        // so unlike this case, it will not lead to empty portions.
+        else
+        {
+            children.Item2.AddPortion(portion);
+        }
     }
 
 

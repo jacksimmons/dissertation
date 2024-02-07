@@ -59,7 +59,7 @@ public abstract class Algorithm
             { Proximate.Protein, new NullConstraint() },
             { Proximate.Fat, new NullConstraint() },
             { Proximate.Carbs, new NullConstraint() },
-            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[Proximate.Kcal], 2, 0.00025f, prefs.goals[Proximate.Kcal]) },
+            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[(int)Proximate.Kcal], 2, 0.00025f, prefs.goals[(int)Proximate.Kcal]) },
             { Proximate.Sugar, new NullConstraint() },
             { Proximate.SatFat, new NullConstraint() },
             { Proximate.TransFat, new NullConstraint() }

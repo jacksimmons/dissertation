@@ -34,9 +34,9 @@ public class DatasetReader
             // into Foods can still exist.
             currentFoodProximates = new();
 
-            foreach (Proximate p in Enum.GetValues(typeof(Proximate)))
+            for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
             {
-                currentFoodProximates[p] = -1;
+                currentFoodProximates[(Proximate)i] = -1;
             }
         }
 
@@ -129,9 +129,9 @@ public class DatasetReader
 
                     // Check the current food isn't missing essential data (due to N, Tr or "")
                     // This missing data is given the value -1, as seen in the delimiter ',' case.
-                    foreach (Proximate p in Enum.GetValues(typeof(Proximate)))
+                    for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
                     {
-                        if (currentFoodProximates[p] < 0)
+                        if (currentFoodProximates[(Proximate)i] < 0)
                             goto next_food;
                     }
 

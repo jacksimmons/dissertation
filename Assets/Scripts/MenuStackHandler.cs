@@ -28,7 +28,7 @@ public partial class MenuStackHandler : MonoBehaviour
         m_panelStack.Push(m_menuPanel);
 
         // Load and cache the user's preferences into Preferences.Instance.
-        Saving.LoadFromFile<Preferences>("Preferences.dat");
+        Saving.LoadFromFile<Preferences>("Preferences.json");
     }
 
 

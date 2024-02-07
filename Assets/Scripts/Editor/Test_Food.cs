@@ -76,11 +76,11 @@ public class Test_Food : GeneticAlgorithm
         {
             // Test that the best day is always at least as good as any randomly selected day.
             Assert.IsFalse(Day.Compare(bestDay, day) == ParetoComparison.Dominated);
-            Assert.IsFalse(day.Dominates(bestDay));
+            Assert.IsFalse(Day.SimpleCompare(bestDay, day) == ParetoComparison.Dominated);
 
             // Test that the worst day is always at least as bad as any randomly selected day.
-            Assert.IsFalse(Day.Compare(worstDay, day) == ParetoComparison.Dominated);
-            Assert.IsFalse(worstDay.Dominates(day));
+            Assert.IsFalse(Day.Compare(worstDay, day) == ParetoComparison.Dominates);
+            Assert.IsFalse(Day.SimpleCompare(worstDay, day) == ParetoComparison.Dominates);
 
             // Test that the best day STRICTLY dominates the worst day
             Assert.IsTrue(Day.Compare(bestDay, worstDay) == ParetoComparison.StrictlyDominates);

@@ -17,7 +17,9 @@ public interface ICached
 
 
 /// <summary>
-/// A static class for saving generic [Serializable] types.
+/// A static class for saving generic serialisable types.
+/// It serialises/deserialises using a JSON formatter, and stores them at the
+/// persistent data path on your computer (%APPDATA%/../LocalLow/JackSimmons/Dissertation/{FileName})
 /// 
 /// References:
 /// This is a modified version of a Saving class I used in an unpublished project.
@@ -26,57 +28,42 @@ public static class Saving
 {
     /// <summary>
     /// Serialises objects and saves them to a given file location.
+    /// Also calls .Cache() on the object beforehand if it : ICached.
     /// </summary>
     public static void SaveToFile<T>(T serializable, string filename)
     {
-        Type type = serializable.GetType();
-        if (!type.IsSerializable)
+        if (serializable is ICached cached)
+            cached.Cache();
+
+        string dest = Application.persistentDataPath + "/" + filename;
+        if (!File.Exists(dest)) File.Create(dest).Close();
+
+        // If the provided object is null, delete the file.
+        if (serializable == null)
         {
-            Debug.LogError("Provided object is not serializable, so cannot be saved.");
+            File.Delete(dest);
             return;
         }
 
-        string dest = Application.dataPath + "/" + filename;
-        FileStream fs;
-
-        if (File.Exists(dest)) fs = File.OpenWrite(dest);
-        else fs = File.Create(dest);
-
-        BinaryFormatter bf = new();
-        bf.Serialize(fs, serializable);
-        fs.Close();
-
-        // If the type is cache-able, cache it. (Full explanation in ICached).
-        if (serializable is ICached cached)
-        {
-            cached.Cache();
-        }
-
-        Debug.Log(filename);
+        string json = JsonUtility.ToJson(serializable, true);
+        File.WriteAllText(dest, json);
     }
 
     /// <summary>
     /// Deserialises a serialised object stored in a file.
+    /// Calls .Cache() on the object if it : ICached.
     /// </summary>
     public static T LoadFromFile<T>(string filename) where T : new()
     {
-        string dest = Application.dataPath + "/" + filename;
-        FileStream fs;
+        string dest = Application.persistentDataPath + "/" + filename;
 
         if (File.Exists(dest))
         {
-            Debug.Log(dest);
-            fs = File.OpenRead(dest);
-            BinaryFormatter bf = new();
+            string json = File.ReadAllText(dest);
+            T val = (T)JsonUtility.FromJson(json, typeof(T));
 
-            T val = (T)bf.Deserialize(fs);
-            fs.Close();
-
-            // If the type is cache-able, cache it. (Full explanation in ICached).
             if (val is ICached cached)
-            {
                 cached.Cache();
-            }
 
             return val;
         }
@@ -84,7 +71,7 @@ public static class Saving
         {
             // Restart the function after creating a new T save
             SaveToFile(new T(), filename);
-            Debug.LogError("File does NOT exist! Returning empty object");
+            Debug.LogWarning("File does NOT exist! Returning empty object");
             return LoadFromFile<T>(filename);
         }
     }

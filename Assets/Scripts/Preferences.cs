@@ -31,7 +31,7 @@ public class Preferences : ICached
             if (m_instance != null) return m_instance;
 
             // This will automatically Cache() the preferences, so no need to update m_instance.
-            return Saving.LoadFromFile<Preferences>("Preferences.dat");
+            return Saving.LoadFromFile<Preferences>("Preferences.json");
         }
     }
     public void Cache() { m_instance = this; }
@@ -52,7 +52,7 @@ public class Preferences : ICached
 
 
     // Goals
-    public Dictionary<Proximate, float> goals;
+    public float[] goals;
 
 
     // By default, the user's settings should permit every food type - this
@@ -68,17 +68,7 @@ public class Preferences : ICached
         heightInCM = 170;
         assignedSex = AssignedSex.Male;
 
-        goals = new Dictionary<Proximate, float>
-        {
-            { Proximate.Protein, 0 },
-            { Proximate.Fat, 0 },
-            { Proximate.Carbs, 0 },
-            { Proximate.Kcal, 0 },
-
-            { Proximate.Sugar, 0 },
-            { Proximate.SatFat, 0 },
-            { Proximate.TransFat, 0 }
-        };
+        goals = new float[Nutrients.EnumLengths[typeof(Proximate)]];
     }
 
 

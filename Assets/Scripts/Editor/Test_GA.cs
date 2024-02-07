@@ -15,6 +15,15 @@ public class Test_GA : GeneticAlgorithm
     [Test]
     public void TestCrossoverOperator()
     {
+        // Test that crossover submethods work
+        foreach (Day day in Population.Keys)
+        {
+            // Test two different methods of summing
+            int massSum = 0;
+            for (int i = 0; i < day.Portions.Count; i++)
+                massSum += day.Portions[i].Mass;
 
+            Assert.AreEqual(massSum, CalculateMassTotal(day));
+        }
     }
 }
