@@ -19,7 +19,6 @@ using System.Threading.Tasks;
 public abstract class Constraint
 {
     public readonly float Limit;
-    public readonly float Weight;
 
     public virtual float BestValue
     {
@@ -37,16 +36,12 @@ public abstract class Constraint
     }
 
 
-    public Constraint(float limit, float weight)
+    public Constraint(float limit)
     {
         if (limit < 0)
             ThrowArgumentException("limit", limit);
-        if (weight < 0)
-            ThrowArgumentException("weight", weight);
-
 
         Limit = limit;
-        Weight = weight;
     }
 
 
@@ -78,8 +73,8 @@ public class MinimiseConstraint : Constraint
     }
 
 
-    public MinimiseConstraint(float limit, float weight)
-        : base(limit, weight)
+    public MinimiseConstraint(float limit)
+        : base(limit)
     {
     }
 
@@ -107,8 +102,8 @@ public class ConvergeConstraint : Constraint
     public readonly float Tolerance;
 
 
-    public ConvergeConstraint(float goal, float weight, float steepness, float tolerance)
-        : base(goal, weight)
+    public ConvergeConstraint(float goal, float steepness, float tolerance)
+        : base(goal)
     {
         if (steepness <= 0)
             ThrowArgumentException("steepness", steepness);
@@ -148,7 +143,7 @@ public class RangeConstraint : ConvergeConstraint
     // Creates a ConvergeConstraint centered at the mean of min and max.
     // Then makes it infinitely steep with a negligable weight of 1.
     // The tolerance either side is just half the difference between the max and the min.
-    public RangeConstraint(float min, float max) : base((min + max) / 2, 1, float.PositiveInfinity, (max - min)/2) { }
+    public RangeConstraint(float min, float max) : base((min + max) / 2, 1, (max - min)/2) { }
 }
 
 
@@ -157,7 +152,7 @@ public class RangeConstraint : ConvergeConstraint
 /// </summary>
 public class NullConstraint : Constraint
 {
-    public NullConstraint() : base(0, 0) { }
+    public NullConstraint() : base(float.PositiveInfinity) { }
 
 
     public override float _GetFitness(float value) { return 0; }

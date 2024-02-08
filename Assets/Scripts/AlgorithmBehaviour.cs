@@ -7,14 +7,10 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class AlgorithmRunner : MonoBehaviour
+public class AlgorithmBehaviour : MonoBehaviour
 {
     public Algorithm Algorithm { get; private set; }
 
-    [SerializeField]
-    private TMP_Text m_domFitnessText;
-    [SerializeField]
-    private TMP_Text m_avgFitnessText;
     [SerializeField]
     private TMP_Text m_iterTimeTakenText;
     [SerializeField]
@@ -29,21 +25,14 @@ public class AlgorithmRunner : MonoBehaviour
     {
         m_champions = new();
         Algorithm = new GeneticAlgorithm();
-        Algorithm.CalculateInitialFitnesses();
+        Algorithm.AssignDominanceHierarchy();
         UpdateAlgorithmUI(0, 0);
     }
 
 
     private void UpdateAlgorithmUI(float time_ms, int iters)
     {
-        float fitnessSum = 0;
-        foreach (var kvp in Algorithm.Population)
-        {
-            fitnessSum += kvp.Value;
-        }
-        float fitnessAvg = fitnessSum / Algorithm.Population.Count;
-
-        List<Day> challengers = Algorithm.Population.Keys.ToList();
+        List<Day> challengers = new(Algorithm.Population);
 
         //
         // For every day in the population, check if we have any that are better
@@ -86,8 +75,7 @@ public class AlgorithmRunner : MonoBehaviour
         }
 
         float domFitness = m_champions.Count > 0 ? m_champions[0].GetFitness() : 0;
-        m_domFitnessText.text = $"Dominant Fitness ({m_champions.Count}): {domFitness}";
-        m_avgFitnessText.text = $"Average Fitness: {fitnessAvg}";
+        //m_domFitnessText.text = $"Dominant Fitness ({m_champions.Count}): {domFitness}";
         m_populationView.UpdatePopView();
         m_iterNumText.text = $"Iteration: {Algorithm.NumIterations}";
         m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";
@@ -99,8 +87,6 @@ public class AlgorithmRunner : MonoBehaviour
     /// </summary>
     public void RunIterations(int numIters)
     {
-        m_populationView.ClearPortionUI();
-
         Stopwatch sw = Stopwatch.StartNew();
         for (int i = 0; i < numIters; i++)
         {

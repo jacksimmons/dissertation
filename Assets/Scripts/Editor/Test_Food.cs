@@ -32,7 +32,7 @@ public class Test_Food : GeneticAlgorithm
     [Test]
     public void FitnessTest()
     {
-        foreach (Day day in Population.Keys)
+        foreach (Day day in Population)
         {
             float fitness = day.GetFitness();
 
@@ -72,7 +72,7 @@ public class Test_Food : GeneticAlgorithm
             worstNutrients[kvp.Key] = Constraints[kvp.Key].WorstValue;
         }
 
-        foreach (Day day in Population.Keys)
+        foreach (Day day in Population)
         {
             // Test that the best day is always at least as good as any randomly selected day.
             Assert.IsFalse(Day.Compare(bestDay, day) == ParetoComparison.Dominated);

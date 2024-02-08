@@ -16,7 +16,7 @@ public class Test_GA : GeneticAlgorithm
     public void TestCrossoverOperator()
     {
         // Test that crossover submethods work
-        foreach (Day day in Population.Keys)
+        foreach (Day day in Population)
         {
             // Test two different methods of summing
             int massSum = 0;

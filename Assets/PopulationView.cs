@@ -29,29 +29,46 @@ public class PopulationView : MonoBehaviour
     [SerializeField]
     private TMP_Text m_portionText;
 
+    private Day m_currentlyDisplayedDay;
+
 
     public void UpdatePopView()
     {
-        foreach (Transform child in m_popContent.transform)
+        foreach (Transform transform in m_popContent.transform)
         {
-            Destroy(child.gameObject);
+            Destroy(transform.gameObject);
         }
 
-        foreach (Day day in Algorithm.Instance.Population.Keys)
+        int index = 0;
+        foreach (Day day in Algorithm.Instance.Population)
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
             obj.transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"Portions: {day.Portions.Count}, Fitness: {Algorithm.Instance.Population[day]}";
-            obj.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(day));
+                $"[{index}] Portions: {day.Portions.Count} DominanceSet: {Algorithm.Instance.PopHierarchy[day]}";
+            Button btn = obj.GetComponent<Button>();
+            btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
+
+            index++;
+        }
+
+        if (m_currentlyDisplayedDay != null)
+        {
+            if (Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
+                UpdatePortionUI(m_currentlyDisplayedDay, 0);
+            else
+                ClearPortionUI();
         }
     }
 
 
     private void OnPopButtonPressed(Day day)
     {
+        m_currentlyDisplayedDay = day;
+
         if (day.Portions.Count > 0)
         {
+            m_currentPortionIndex = 0;
             UpdatePortionUI(day, 0);
         }
 

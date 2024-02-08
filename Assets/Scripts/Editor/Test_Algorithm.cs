@@ -20,7 +20,7 @@ public class Test_Algorithm : Algorithm
     {
         // Assert number of random days and portions
         Assert.IsTrue(Population.Count == NumStartingDaysInPop);
-        foreach (Day day in Population.Keys)
+        foreach (Day day in Population)
         {
             Assert.IsTrue(day.Portions.Count == NumStartingPortionsInDay);
 

@@ -22,7 +22,7 @@ public abstract class Algorithm
 
             // NOTE: In editor tests, this will throw an error as the GameObject tree is inactive.
             // Assign the Instance variable ASAP in test classes.
-            return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmRunner>().Algorithm;
+            return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmBehaviour>().Algorithm;
         }
 
         protected set { m_instance = value; }
@@ -33,15 +33,16 @@ public abstract class Algorithm
     protected List<Food> m_foods;
 
     public readonly ReadOnlyDictionary<Proximate, Constraint> Constraints;
-    public readonly Dictionary<Day, float> Population;
+    public readonly List<Day> Population;
+
+    public ReadOnlyDictionary<Day, uint> PopHierarchy;
 
     public int NumIterations { get; protected set; } = 1;
 
-    public readonly int NumStartingDaysInPop = 10;
-    public readonly int NumStartingPortionsInDay = 1;
-    public readonly int IdealNumberOfPortionsInDay = 20; // 2kg of food as a baseline
-    public readonly int StartingPortionMassMin = 50;
-    public readonly int StartingPortionMassMax = 150;
+    public const int NumStartingDaysInPop = 10;
+    public const int NumStartingPortionsInDay = 1;
+    public const int StartingPortionMassMin = 50;
+    public const int StartingPortionMassMax = 150;
 
 
     public Algorithm()
@@ -56,10 +57,10 @@ public abstract class Algorithm
 
         Constraints = new(new Dictionary<Proximate, Constraint>
         {
-            { Proximate.Protein, new NullConstraint() },
-            { Proximate.Fat, new NullConstraint() },
-            { Proximate.Carbs, new NullConstraint() },
-            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[(int)Proximate.Kcal], 2, 0.00025f, prefs.goals[(int)Proximate.Kcal]) },
+            { Proximate.Protein, new ConvergeConstraint(prefs.goals[(int)Proximate.Protein], 0.00025f, prefs.goals[(int)Proximate.Protein]) },
+            { Proximate.Fat, new ConvergeConstraint(prefs.goals[(int)Proximate.Fat], 0.00025f, prefs.goals[(int)Proximate.Fat]) },
+            { Proximate.Carbs, new ConvergeConstraint(prefs.goals[(int)Proximate.Carbs], 0.00025f, prefs.goals[(int)Proximate.Carbs]) },
+            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[(int)Proximate.Kcal], 0.00025f, prefs.goals[(int)Proximate.Kcal]) },
             { Proximate.Sugar, new NullConstraint() },
             { Proximate.SatFat, new NullConstraint() },
             { Proximate.TransFat, new NullConstraint() }
@@ -69,36 +70,13 @@ public abstract class Algorithm
 
 
     /// <summary>
-    /// Calculates the fitness for every element in the population, and caches it in a dictionary.
-    /// NOTE: This is all done in the algorithm running method, but needs to be called once to calculate
-    /// the initial fitnesses.
-    /// </summary>
-    public void CalculateInitialFitnesses()
-    {
-        Dictionary<Day, float> newFitnesses = new();
-
-        // Two loops: Avoidance of iteration errors and allowing Population to remain readonly.
-        foreach (Day day in Population.Keys)
-        {
-            newFitnesses[day] = day.GetFitness();
-        }
-
-        // Iterate rather than overwrite the object itself, to satisfy readonly pattern.
-        foreach (Day day in newFitnesses.Keys)
-        {
-            Population[day] = newFitnesses[day];
-        }
-    }
-
-
-    /// <summary>
     /// Populates the Population data structure with randomly generated Days.
     /// </summary>
     /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
-    protected Dictionary<Day, float> GetStartingPopulation()
+    protected List<Day> GetStartingPopulation()
     {
         // Generate random starting population of Days
-        Dictionary<Day, float> days = new();
+        List<Day> days = new();
         for (int i = 0; i < NumStartingDaysInPop; i++)
         {
             // Add a number of days to the population (each has random foods)
@@ -109,10 +87,7 @@ public abstract class Algorithm
                 day.AddPortion(GenerateRandomPortion());
             }
 
-            // Cannot add fitness yet, as this function is called during the constructor.
-            // Fitness calculations require access to this object, which doesn't exist until
-            // the constructor ends!
-            days.Add(day, -1);
+            days.Add(day);
         }
 
         return days;
@@ -131,6 +106,12 @@ public abstract class Algorithm
     }
 
 
+    public void AssignDominanceHierarchy()
+    {
+        PopHierarchy = new(Pareto.GetDominanceHierarchy(new(Population)));
+    }
+
+
     /// <summary>
     /// Must evaluate the fitness first, as to begin with the Population data structure hasn't
     /// got evaluated fitnesses.
@@ -141,6 +122,7 @@ public abstract class Algorithm
     public void NextIteration()
     {
         RunIteration();
+        AssignDominanceHierarchy();
     }
 
 

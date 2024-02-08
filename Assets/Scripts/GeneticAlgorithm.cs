@@ -9,20 +9,20 @@ using Random = UnityEngine.Random;
 
 public class GeneticAlgorithm : Algorithm
 {
-    private const int SELECTION_PRESSURE = 3;
-
     private const int MutationMassChangeMin = 0;
     private const int MutationMassChangeMax = 10;
 
-    // Chances, as a probability (0 to 1)
     private const float ChanceToMutatePortion = 0.5f;
-    private const float ChanceToAddOrRemovePortion = 0.001f;
+    
+    // Impacts determinism. Low value => High determinism, High value => Random chaos
+    // Also leads to days with more portions.
+    private const float ChanceToAddOrRemovePortion = 0.05f;
 
 
     protected override void RunIteration()
     {
         // Selection
-        List<Day> candidates = Population.Keys.ToList();
+        List<Day> candidates = new(Population);
 
         Day selectedDayA = Selection(candidates);
         candidates.Remove(selectedDayA);
@@ -38,16 +38,14 @@ public class GeneticAlgorithm : Algorithm
 
         // Next generation - The only fitness changes occur here
         // Add children
-        Population.Add(children.Item1, children.Item1.GetFitness());
-        Population.Add(children.Item2, children.Item2.GetFitness());
+        Population.Add(children.Item1);
+        Population.Add(children.Item2);
         candidates.Add(children.Item1);
         candidates.Add(children.Item2);
 
         Day worstDayA = Selection(candidates, false);
         candidates.Remove(worstDayA);
         Day worstDayB = Selection(candidates, false);
-
-        Debug.Log($"Removed fitness {Population[worstDayA]} and {Population[worstDayB]}");
 
         // Slight elitism - children can be killed off as soon as they are added if they are bad
         Population.Remove(worstDayA);
@@ -75,7 +73,7 @@ public class GeneticAlgorithm : Algorithm
                 return selectBest ? candidates[indexB] : candidates[indexA];
         }
 
-        // Otherwise, tiebreak by comparison set
+        // Otherwise, tiebreak by comparison set then fitness
         return SelectionTiebreak(candidates[indexA], candidates[indexB]);
     }
 
@@ -110,7 +108,7 @@ public class GeneticAlgorithm : Algorithm
     // Reference: ECM3412 Lecture 14 2023/2024
     protected Day SelectionTiebreak(Day a, Day b)
     {
-        List<Day> comparisonSet = new(Population.Keys);
+        List<Day> comparisonSet = new(Population);
         comparisonSet.Remove(a);
         comparisonSet.Remove(b);
 
@@ -122,7 +120,6 @@ public class GeneticAlgorithm : Algorithm
         if (dominanceB > dominanceA)
             return b;
 
-        // If they are equal in dominance, resort to random selection.
         if (Random.Range(0, 2) == 1)
             return a;
         return b;

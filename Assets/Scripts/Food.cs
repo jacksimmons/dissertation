@@ -51,25 +51,25 @@ public class Food
     }
 
 
-    public override string ToString()
-    {
-        return $"Name: {Name}\nDescription: {Description}\nFood Group: {FoodGroup}"
-             + $"\nReference: {Reference}\n{NutrientsToString()}";
-    }
+    //public override string ToString()
+    //{
+    //    return $"Name: {Name}\nDescription: {Description}\nFood Group: {FoodGroup}"
+    //         + $"\nReference: {Reference}\n{NutrientsToString()}";
+    //}
 
 
-    public string NutrientsToString()
-    {
-        string nutrientsString = "";
-        for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
-        {
-            // Add newline before second and further lines
-            if (i > 0)
-                nutrientsString += "\n";
-            nutrientsString += $"{(Proximate)i}: {Proximates[(Proximate)i]}{GetProximateUnit((Proximate)i)}";
-        }
-        return nutrientsString;
-    }
+    //public string NutrientsToString()
+    //{
+    //    string nutrientsString = "";
+    //    for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
+    //    {
+    //        // Add newline before second and further lines
+    //        if (i > 0)
+    //            nutrientsString += "\n";
+    //        nutrientsString += $"{(Proximate)i}: {Proximates[(Proximate)i]}{GetProximateUnit((Proximate)i)}";
+    //    }
+    //    return nutrientsString;
+    //}
 }
 
 
@@ -111,9 +111,7 @@ public class Portion
         {
             Proximate proximate = (Proximate)i;
             float proximateAmount = Food.Proximates[proximate];
-            asString +=
-                $"{proximate}: {proximateAmount * Multiplier}{Food.GetProximateUnit(proximate)}"
-                + $" (Fitness = {Algorithm.Instance.Constraints[proximate]._GetFitness(proximateAmount * Multiplier)})\n";
+            asString += $"{proximate}: {proximateAmount * Multiplier}{Food.GetProximateUnit(proximate)}\n";
         }
         return asString + $"Mass: {Mass}g";
     }
