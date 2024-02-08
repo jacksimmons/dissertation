@@ -44,7 +44,7 @@ public class PopulationView : MonoBehaviour
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
             obj.transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"[{index}] Portions: {day.Portions.Count} DominanceSet: {Algorithm.Instance.PopHierarchy[day]}";
+                $"[{index}] Portions: {day.Portions.Count} Rank: {Algorithm.Instance.PopHierarchy[day]}";
             Button btn = obj.GetComponent<Button>();
             btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active

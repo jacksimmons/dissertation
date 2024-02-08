@@ -12,14 +12,17 @@ using UnityEngine;
 public class Test_Intolerance
 {
     /// <summary>
-    /// Gets the list of foods contained in the whole dataset (Proximates.csv).
+    /// Gets the list of foods contained in the whole dataset (Nutrients.csv).
     /// Then asserts that all foods obtained are valid for the given preferences.
     /// (DatasetReader should do this automatically)
     /// </summary>
     private void AssertAllFoodsValid(Preferences prefs)
     {
-        string file = File.ReadAllText(Application.dataPath + "/Proximates.csv");
-        List<Food> foods = new DatasetReader().ReadFoods(file, prefs);
+        Dictionary<DatasetFile, string> files = new()
+        {
+            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Nutrients.csv") }
+        };
+        List<Food> foods = new DatasetReader(files, Preferences.Instance).ReadFoods();
         Debug.Log($"Number of foods permitted: {foods.Count}");
 
         foreach (Food food in foods)

@@ -12,13 +12,16 @@ using UnityEngine.TestTools;
 public class Test_Dataset
 {
     /// <summary>
-    /// Gets the list of foods contained in the testing dataset (TestProximates.csv).
+    /// Gets the list of foods contained in the testing dataset (TestNutrients.csv).
     /// </summary>
     /// <returns>A list of Food objects, which are the testing data.</returns>
     private List<Food> GetTestFoods()
     {
-        string file = File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestProximates.csv");
-        List<Food> foods = new DatasetReader().ReadFoods(file, Preferences.Instance);
+        Dictionary<DatasetFile, string> files = new()
+        {
+            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestProximates.csv") }
+        };
+        List<Food> foods = new DatasetReader(files, Preferences.Instance).ReadFoods();
         return foods;
     }
 
@@ -39,13 +42,13 @@ public class Test_Dataset
         Assert.AreEqual(food.Description, "Desc1", $"Desc name was incorrect.");
         Assert.AreEqual(food.FoodGroup, "Group1", $"Group name was incorrect.");
         Assert.AreEqual(food.Reference, "Ref1", $"Ref name was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Protein], 10, $"Protein was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Fat], 20, $"Fat was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Carbs], 30, $"Carbs was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Kcal], 340, $"Kcal was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Sugar], 25, $"Sugar was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.SatFat], 9, $"SatFat was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.TransFat], 1, $"TransFat was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Protein], 10, $"Protein was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Fat], 20, $"Fat was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Carbs], 30, $"Carbs was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Kcal], 340, $"Kcal was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Sugar], 25, $"Sugar was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.SatFat], 9, $"SatFat was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.TransFat], 1, $"TransFat was incorrect.");
     }
 
 
@@ -54,13 +57,13 @@ public class Test_Dataset
     /// </summary>
     private void EqualFloatTest(Food food, float value)
     {
-        Assert.AreEqual(food.Proximates[Proximate.Protein], value, $"Protein was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Fat], value, $"Fat was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Carbs], value, $"Carbs was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Kcal], value, $"Kcal was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.Sugar], value, $"Sugar was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.SatFat], value, $"SatFat was incorrect.");
-        Assert.AreEqual(food.Proximates[Proximate.TransFat], value, $"TransFat was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Protein], value, $"Protein was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Fat], value, $"Fat was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Carbs], value, $"Carbs was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Kcal], value, $"Kcal was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.Sugar], value, $"Sugar was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.SatFat], value, $"SatFat was incorrect.");
+        Assert.AreEqual(food.Nutrients[Nutrient.TransFat], value, $"TransFat was incorrect.");
     }
 
 

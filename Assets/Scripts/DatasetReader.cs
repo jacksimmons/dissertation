@@ -2,56 +2,106 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
+
+public enum DatasetFile
+{
+    Proximates,
+    Inorganics,
+    Vitamins
+}
+
+
+public struct FoodData
+{
+    public string Name;
+    public string Description;
+    public string Group;
+    public string Reference;
+    public Dictionary<Nutrient, float> Nutrients;
+}
+
+
+/// <summary>
+/// This is a pessimistic class which assumes the different files from the dataset are NOT
+/// lined up perfectly (even though at first glance it appears they are).
+/// 
+/// It reads each file one-by-one, putting data into a dictionary by its food code.
+/// It then constructs all of the food objects that are valid (no missing fields) and returns
+/// them.
+/// </summary>
 public class DatasetReader
 {
-    /// <summary>
-    /// This method converts a dataset file into a list of Food structs.
-    /// </summary>
-    /// <param name="csvText">The CSV data as a unformatted string.
-    /// Each line must be separated by `\n` and values by `,`.</param>
-    public List<Food> ReadFoods(string csvText, Preferences prefs)
+    // --- Input Data ---
+    private ReadOnlyDictionary<DatasetFile, string> m_files;
+    private readonly Preferences m_prefs;
+
+
+    private Dictionary<string, FoodData> m_dataset;
+
+
+    public DatasetReader(Dictionary<DatasetFile, string> csvFiles, Preferences prefs)
     {
-        List<Food> foods = new();
+        m_files = new(csvFiles);
+        m_prefs = prefs;
+    }
 
-        // Store food's properties before construction - it is a readonly class
-        string currentFoodName;
-        string currentFoodDesc;
-        string currentFoodGroup;
-        string currentFoodRef;
-        Dictionary<Proximate, float> currentFoodProximates;
-        ResetCurrentFood();
 
-        void ResetCurrentFood()
+    /// <summary>
+    /// This method converts the dataset into a list of Food objects.
+    /// </summary>
+    public List<Food> ReadFoods()
+    {
+        foreach (DatasetFile file in m_files.Keys)
         {
-            currentFoodName = "";
-            currentFoodDesc = "";
-            currentFoodGroup = "";
-            currentFoodRef = "";
-
-            // Change the reference, so that existing dictionaries passed
-            // into Foods can still exist.
-            currentFoodProximates = new();
-
-            for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
-            {
-                currentFoodProximates[(Proximate)i] = -1;
-            }
+            ReadFile(file);
         }
 
+
+        List<Food> foods = new();
+        foreach (FoodData data in m_dataset.Values)
+        {
+            // Check the food is allowed.
+            if (!m_prefs.IsFoodGroupAllowed(data.Group))
+                continue;
+
+            // Check the current food isn't missing essential data (due to N, Tr or "")
+            // This missing data is given the value -1, as seen in the delimiter ',' case.
+            for (int i = 0; i < Nutrients.Count; i++)
+            {
+                if (data.Nutrients[(Nutrient)i] < 0)
+                    goto NextFood;
+            }
+
+            Food food = new(data);
+            foods.Add(food);
+
+            NextFood: continue;
+        }
+
+
+        return foods;
+    }
+
+
+    private void ReadFile(DatasetFile file)
+    {
+        const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
+
+        string currentFoodCode = "";
         string currentWord = "";
-        void AddCharToWord(char c) { currentWord += c; }
 
         int currentWordIndex = 0;
-        int firstDataRowIndex = 3; // The first 3 rows are just titles, so skip them
         int currentRowIndex = 0;
+
         bool speechMarkOpened = false;
 
-        // Each line is a food. Each field is a food property.
-        // Iterate over every character in the CSV file.
-        foreach (char ch in csvText)
+
+        for (int i = 0; i < m_files[file].Length; i++)
         {
+            char ch = m_files[file][i];
             switch (ch)
             {
                 case '\"':
@@ -61,10 +111,11 @@ public class DatasetReader
                     break;
 
                 case ',': // Delimiter, move onto the next word
-                    // If in speech marks, cancel the delimiting
+                          // If in speech marks, cancel the delimiting
                     if (speechMarkOpened)
                     {
-                        AddCharToWord(ch); break;
+                        currentWord += ch;
+                        break;
                     }
 
                     // Parses the word into a float, if possible.
@@ -73,88 +124,101 @@ public class DatasetReader
                         floatVal = -1;
 
                     // If the word is just a title, ignore it
-                    if (currentRowIndex < firstDataRowIndex)
-                        goto reset_word;
-
-                    // Trace values are given a value of 0
-                    if (currentWord == "Tr")
-                        floatVal = 0;
-
-                    // For string fields, just assign the value.
-                    // For float or int fields, we can safely parse the string, as
-                    // the only string values these fields can have are checked
-                    // in the containing if-clause.
-                    switch (currentWordIndex)
+                    if (currentRowIndex >= FIRST_ROW)
                     {
-                        case 1:
-                            currentFoodName = currentWord; break;
-                        case 2:
-                            currentFoodDesc = currentWord; break;
-                        case 3:
-                            currentFoodGroup = currentWord; break;
-                        case 5:
-                            currentFoodRef = currentWord; break;
-                        case 9:
-                            currentFoodProximates[Proximate.Protein] = floatVal; break;
-                        case 10:
-                            currentFoodProximates[Proximate.Fat] = floatVal; break;
-                        case 11:
-                            currentFoodProximates[Proximate.Carbs] = floatVal; break;
-                        case 12:
-                            currentFoodProximates[Proximate.Kcal] = floatVal; break;
-                        case 16:
-                            currentFoodProximates[Proximate.Sugar] = floatVal; break;
-                        case 27:
-                            currentFoodProximates[Proximate.SatFat] = floatVal; break;
-                        case 45:
-                            currentFoodProximates[Proximate.TransFat] = floatVal; break;
+                        // Trace values are given a value of 0
+                        if (currentWord == "Tr")
+                            floatVal = 0;
+
+                        currentFoodCode = HandleLookupTable(file, currentFoodCode, currentWord, currentWordIndex, floatVal);
                     }
 
-                reset_word:
                     // Reset for the next word
                     currentWord = "";
                     currentWordIndex++;
                     break;
 
                 case '\n': // New line
-                    // If in speech marks, ignore new row
+                           // If in speech marks, ignore new row
                     if (speechMarkOpened)
                     {
-                        AddCharToWord(ch); break;
+                        currentWord += ch;
+                        break;
                     }
 
-                    // If the finished row is just titles, ignore it
-                    if (currentRowIndex < firstDataRowIndex)
-                        goto next_food;
-
-                    // Check the current food isn't missing essential data (due to N, Tr or "")
-                    // This missing data is given the value -1, as seen in the delimiter ',' case.
-                    for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
-                    {
-                        if (currentFoodProximates[(Proximate)i] < 0)
-                            goto next_food;
-                    }
-
-                    // Check the current food doesn't conflict with the user's dietary needs.
-                    if (!prefs.IsFoodGroupAllowed(currentFoodGroup))
-                    {
-                        goto next_food;
-                    }
-
-                    // Food only gets added if it fails all the invalidity checks.
-                    foods.Add(new(currentFoodName, currentFoodDesc, currentFoodGroup, currentFoodRef, currentFoodProximates));
-
-                next_food:
+                    // Otherwise, reset the word data and increment the row.
+                    currentFoodCode = "";
+                    currentWord = "";
                     currentWordIndex = 0;
                     currentRowIndex++;
-                    ResetCurrentFood();
                     break;
 
                 default: // Regular character, i.e. part of the next value
-                    AddCharToWord(ch); break;
+                    currentWord += ch;
+                    break;
             }
         }
+    }
 
-        return foods;
+
+    /// <summary>
+    /// </summary>
+    /// <param name="file"></param>
+    /// <param name="code"></param>
+    /// <param name="currentWord"></param>
+    /// <param name="wordIndex"></param>
+    /// <param name="floatVal"></param>
+    /// <returns>The food code provided to it, or the correct food code (if the current field is food code).</returns>
+    private string HandleLookupTable(DatasetFile file, string code, string currentWord, int wordIndex, float floatVal)
+    {
+        // For string fields, just assign the value.
+        // For float or int fields, we can safely parse the string, as
+        // the only string values these fields can have are checked
+        // in the containing if-clause.
+
+        FoodData data = new();
+        if (code != "")
+            data = m_dataset[code];
+
+        switch (file)
+        {
+            case DatasetFile.Proximates:
+                switch (wordIndex)
+                {
+                    case 0:
+                        m_dataset[currentWord] = data;
+                        data.Nutrients = new();
+                        code = currentWord;
+                        break;
+                    case 1:
+                        data.Name = currentWord;
+                        break;
+                    case 2:
+                        data.Description = currentWord;
+                        break;
+                    case 3:
+                        data.Group = currentWord;
+                        break;
+                    case 5:
+                        data.Reference = currentWord;
+                        break;
+                    case 9:
+                        data.Nutrients[Nutrient.Protein] = floatVal; break;
+                    case 10:
+                        data.Nutrients[Nutrient.Fat] = floatVal; break;
+                    case 11:
+                        data.Nutrients[Nutrient.Carbs] = floatVal; break;
+                    case 12:
+                        data.Nutrients[Nutrient.Kcal] = floatVal; break;
+                    case 16:
+                        data.Nutrients[Nutrient.Sugar] = floatVal; break;
+                    case 27:
+                        data.Nutrients[Nutrient.SatFat] = floatVal; break;
+                    case 45:
+                        data.Nutrients[Nutrient.TransFat] = floatVal; break;
+                }
+                break;
+        }
+        return code;
     }
 }

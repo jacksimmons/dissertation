@@ -19,35 +19,26 @@ public class Food
     public readonly string FoodGroup;
     public readonly string Reference;
 
-    public readonly Dictionary<Proximate, float> Proximates;
+    public readonly Dictionary<Nutrient, float> Nutrients;
 
 
-    public Food(string name, string desc, string group, string reference, Dictionary<Proximate, float> nutrients)
+    public Food(string name, string desc, string group, string reference, Dictionary<Nutrient, float> nutrients)
     {
         Name = name;
         Description = desc;
         FoodGroup = group;
         Reference = reference;
-        Proximates = nutrients;
+        Nutrients = nutrients;
     }
 
 
-    public static string GetProximateUnit(Proximate proximate)
+    public Food(FoodData data)
     {
-        switch (proximate)
-        {
-            case Proximate.Protein:
-            case Proximate.Fat:
-            case Proximate.Carbs:
-            case Proximate.Sugar:
-            case Proximate.SatFat:
-            case Proximate.TransFat:
-                return "g";
-            case Proximate.Kcal:
-                return "kcal";
-            default:
-                throw new ArgumentOutOfRangeException(nameof(proximate));
-        }
+        Name = data.Name;
+        Description = data.Description;
+        FoodGroup = data.Group;
+        Reference = data.Reference;
+        Nutrients = data.Nutrients;
     }
 
 
@@ -61,12 +52,12 @@ public class Food
     //public string NutrientsToString()
     //{
     //    string nutrientsString = "";
-    //    for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
+    //    for (int i = 0; i < Nutrients.Count; i++)
     //    {
     //        // Add newline before second and further lines
     //        if (i > 0)
     //            nutrientsString += "\n";
-    //        nutrientsString += $"{(Proximate)i}: {Proximates[(Proximate)i]}{GetProximateUnit((Proximate)i)}";
+    //        nutrientsString += $"{(Nutrient)i}: {Nutrients[(Nutrient)i]}{GetNutrientUnit((Nutrient)i)}";
     //    }
     //    return nutrientsString;
     //}
@@ -107,11 +98,11 @@ public class Portion
     public string Verbose()
     {
         string asString = $"Name: {Food.Name}\n";
-        for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
-            Proximate proximate = (Proximate)i;
-            float proximateAmount = Food.Proximates[proximate];
-            asString += $"{proximate}: {proximateAmount * Multiplier}{Food.GetProximateUnit(proximate)}\n";
+            Nutrient nutrient = (Nutrient)i;
+            float nutrientAmount = Food.Nutrients[nutrient];
+            asString += $"{nutrient}: {nutrientAmount * Multiplier}{Nutrients.GetUnit(nutrient)}\n";
         }
         return asString + $"Mass: {Mass}g";
     }
@@ -184,13 +175,13 @@ public class Day
         int worseCount = 0;
 
         // This loop exits if this has better or equal fitness on every constraint.
-        foreach (Proximate proximate in Algorithm.Instance.Constraints.Keys)
+        foreach (Nutrient nutrient in Algorithm.Instance.Constraints.Keys)
         {
-            float amountA = a.GetProximateAmount(proximate);
-            float fitnessA = Algorithm.Instance.Constraints[proximate]._GetFitness(amountA);
+            float amountA = a.GetNutrientAmount(nutrient);
+            float fitnessA = Algorithm.Instance.Constraints[nutrient]._GetFitness(amountA);
 
-            float amountB = b.GetProximateAmount(proximate);
-            float fitnessB = Algorithm.Instance.Constraints[proximate]._GetFitness(amountB);
+            float amountB = b.GetNutrientAmount(nutrient);
+            float fitnessB = Algorithm.Instance.Constraints[nutrient]._GetFitness(amountB);
 
             if (fitnessA < fitnessB)
                 betterCount++;
@@ -269,23 +260,23 @@ public class Day
         // This fitness evaluation is more accurate, hence it is weighted more favourably
         float fitness = 0;
 
-        for (int i = 0; i < Nutrients.EnumLengths[typeof(Proximate)]; i++)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
-            Proximate proximate = (Proximate)i;
-            float amount = GetProximateAmount(proximate);
-            fitness += Algorithm.Instance.Constraints[proximate]._GetFitness(amount);
+            Nutrient nutrient = (Nutrient)i;
+            float amount = GetNutrientAmount(nutrient);
+            fitness += Algorithm.Instance.Constraints[nutrient]._GetFitness(amount);
         }
 
         return fitness;
     }
 
 
-    public float GetProximateAmount(Proximate proximate)
+    public float GetNutrientAmount(Nutrient nutrient)
     {
         float quantity = 0;
         foreach (Portion portion in Portions)
         {
-            quantity += portion.Food.Proximates[proximate] * portion.Multiplier;
+            quantity += portion.Food.Nutrients[nutrient] * portion.Multiplier;
         }
         return quantity;
     }
@@ -294,8 +285,8 @@ public class Day
     public float GetDistance(Day day)
     {
         // Square root of all differences squared = Pythagorean Distance
-        Proximate[] vals = (Proximate[])Enum.GetValues(typeof(Proximate));
-        return Mathf.Sqrt(vals.Sum(o => Mathf.Pow(GetProximateAmount(o) - day.GetProximateAmount(o), 2)));
+        Nutrient[] vals = (Nutrient[])Enum.GetValues(typeof(Nutrient));
+        return Mathf.Sqrt(vals.Sum(o => Mathf.Pow(GetNutrientAmount(o) - day.GetNutrientAmount(o), 2)));
     }
 }
 
@@ -305,7 +296,7 @@ public class Day
 //    //    foreach (Constraint constraint in constraints)
 //    //    {
 //    //        // Multiply the parameter by the number of portions & number of meals to calculate average fitness
-//    //        fitness += constraint.GetFitness(GetProximate(constraint.Parameter) * numMeals * numPortions);
+//    //        fitness += constraint.GetFitness(GetNutrient(constraint.Parameter) * numMeals * numPortions);
 //    //    }
 //    //    return fitness;
 //    //}

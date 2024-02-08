@@ -6,32 +6,27 @@ using Unity.VisualScripting;
 
 /// <summary>
 /// These enums are based on the naming convention of the dataset I am using.
-/// Proximates = Macronutrients; Protein Fat Carbohydrates Energy Sugar SatFat TransFat etc.
+/// Nutrients = Macronutrients; Protein Fat Carbohydrates Energy Sugar SatFat TransFat etc.
 /// Inorganics = Elements; Sodium Potassium Calcium Magnesium etc.
 /// Vitamins = Vitamin A, B, etc.
 /// </summary>
-public enum Proximate
+public enum Nutrient
 {
+    // Nutrients
     Protein,
     Fat,
     Carbs,
     Kcal,
     Sugar,
     SatFat,
-    TransFat
-}
+    TransFat,
 
-
-public enum Inorganic
-{
+    // Inorganics
     Calcium,
     Iodine,
-    Iron
-}
+    Iron,
 
-
-public enum Vitamin
-{
+    // Vitamins
     A,
     B1,
     B2,
@@ -49,18 +44,24 @@ public enum Vitamin
 
 public static class Nutrients
 {
-    private static int GetEnumLength(Type enumType)
+    public static int Count = Enum.GetValues(typeof(Nutrient)).Length - 1;
+
+
+    public static string GetUnit(Nutrient nutrient)
     {
-        return Enum.GetValues(enumType).Length;
+        switch (nutrient)
+        {
+            case Nutrient.Protein:
+            case Nutrient.Fat:
+            case Nutrient.Carbs:
+            case Nutrient.Sugar:
+            case Nutrient.SatFat:
+            case Nutrient.TransFat:
+                return "g";
+            case Nutrient.Kcal:
+                return "kcal";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(nutrient));
+        }
     }
-
-
-    // Simple "caching" attributes for lengths of the above enums.
-    // Improves code brevity and performance.
-    public static ReadOnlyDictionary<Type, int> EnumLengths { get; } = new(new Dictionary<Type, int>
-    {
-        { typeof(Proximate), GetEnumLength(typeof(Proximate)) },
-        { typeof(Inorganic), GetEnumLength(typeof(Inorganic)) },
-        { typeof(Vitamin), GetEnumLength(typeof(Vitamin)) },
-    });
 }

@@ -68,7 +68,7 @@ public class Preferences : ICached
         heightInCM = 170;
         assignedSex = AssignedSex.Male;
 
-        goals = new float[Nutrients.EnumLengths[typeof(Proximate)]];
+        goals = new float[Nutrients.Count];
     }
 
 

@@ -65,6 +65,8 @@ public class GeneticAlgorithm : Algorithm
         int indexB = (indexA + Random.Range(0, candidates.Count - 1)) % candidates.Count;
 
         // If one dominates the other, the selection is simple.
+        // Don't make use of PopHierarchy, because this method is sometimes called before PopHierarchy
+        // is updated with the new population.
         switch (Day.Compare(candidates[indexA], candidates[indexB]))
         {
             case ParetoComparison.Dominates:
@@ -73,7 +75,7 @@ public class GeneticAlgorithm : Algorithm
                 return selectBest ? candidates[indexB] : candidates[indexA];
         }
 
-        // Otherwise, tiebreak by comparison set then fitness
+        // Otherwise, tiebreak by comparison set
         return SelectionTiebreak(candidates[indexA], candidates[indexB]);
     }
 

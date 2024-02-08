@@ -19,13 +19,13 @@ public class Test_Food : GeneticAlgorithm
     public void FoodErrorTest()
     {
         // Assertation to ensure the next test works
-        Assert.IsTrue(Enum.GetValues(typeof(Proximate)).Length < int.MaxValue);
+        Assert.IsTrue(Nutrients.Count < int.MaxValue);
 
         // Ensure GetProximateUnit throws an exception when given an out-of-range input.
         // This error is impossible to achieve unless casting an int to a ProximateType.
         Assert.Throws(
             typeof(ArgumentOutOfRangeException),
-            new(() => Food.GetProximateUnit((Proximate)int.MaxValue)));
+            new(() => Nutrients.GetUnit((Nutrient)int.MaxValue)));
     }
 
 
@@ -39,9 +39,9 @@ public class Test_Food : GeneticAlgorithm
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
 
-            foreach (Proximate proximate in Constraints.Keys)
+            foreach (Nutrient proximate in Constraints.Keys)
             {
-                float proxFitness = Constraints[proximate]._GetFitness(day.GetProximateAmount(proximate));
+                float proxFitness = Constraints[proximate]._GetFitness(day.GetNutrientAmount(proximate));
                 // Fitness for each proximate can only be positive or 0.
                 Assert.IsTrue(proxFitness >= 0);
             }
@@ -57,13 +57,13 @@ public class Test_Food : GeneticAlgorithm
     {
         // Create a best Day (this will dominate any Day object)
         Day bestDay = new();
-        Dictionary<Proximate, float> bestNutrients = new();
+        Dictionary<Nutrient, float> bestNutrients = new();
         bestDay.AddPortion(new(new("", "", "", "", bestNutrients), 100));
 
         // Create the worst Day (will be dominated by any Day object which doesn't
         // have a fitness of PositiveInfinity).
         Day worstDay = new();
-        Dictionary<Proximate, float> worstNutrients = new();
+        Dictionary<Nutrient, float> worstNutrients = new();
         worstDay.AddPortion(new(new("", "", "", "", worstNutrients), 100));
 
         foreach (var kvp in Constraints)

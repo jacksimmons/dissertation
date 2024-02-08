@@ -32,7 +32,7 @@ public abstract class Algorithm
     // The constraints for each nutrient in a day.
     protected List<Food> m_foods;
 
-    public readonly ReadOnlyDictionary<Proximate, Constraint> Constraints;
+    public readonly ReadOnlyDictionary<Nutrient, Constraint> Constraints;
     public readonly List<Day> Population;
 
     public ReadOnlyDictionary<Day, uint> PopHierarchy;
@@ -47,25 +47,49 @@ public abstract class Algorithm
 
     public Algorithm()
     {
-        // A CSV file containing all proximate data. In the context of the McCance Widdowson dataset,
-        // this is most major nutrients (Protein, Fat, Carbs, Sugar, Sat Fats, Energy, Water, etc...)
-        string file = File.ReadAllText(Application.dataPath + "/Proximates.csv");
-
         Preferences prefs = Preferences.Instance;
 
-        m_foods = new DatasetReader().ReadFoods(file, prefs);
-
-        Constraints = new(new Dictionary<Proximate, Constraint>
+        Dictionary<DatasetFile, string> files = new()
         {
-            { Proximate.Protein, new ConvergeConstraint(prefs.goals[(int)Proximate.Protein], 0.00025f, prefs.goals[(int)Proximate.Protein]) },
-            { Proximate.Fat, new ConvergeConstraint(prefs.goals[(int)Proximate.Fat], 0.00025f, prefs.goals[(int)Proximate.Fat]) },
-            { Proximate.Carbs, new ConvergeConstraint(prefs.goals[(int)Proximate.Carbs], 0.00025f, prefs.goals[(int)Proximate.Carbs]) },
-            { Proximate.Kcal, new ConvergeConstraint(prefs.goals[(int)Proximate.Kcal], 0.00025f, prefs.goals[(int)Proximate.Kcal]) },
-            { Proximate.Sugar, new NullConstraint() },
-            { Proximate.SatFat, new NullConstraint() },
-            { Proximate.TransFat, new NullConstraint() }
-        });
+            // A CSV file containing all nutrient data. In the context of the McCance Widdowson dataset,
+            // this is most major nutrients (Protein, Fat, Carbs, Sugar, Sat Fats, Energy, Water, etc...)
+            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Proximates.csv") }
+        };
+
+        DatasetReader dr = new(files, prefs);
+        m_foods = dr.ReadFoods();
+
+        var constraints = new Dictionary<Nutrient, Constraint>
+        {
+            //{ Nutrient.Protein, new ConvergeConstraint(prefs.goals[(int)Nutrient.Protein], 0.00025f, prefs.goals[(int)Nutrient.Protein]) },
+            //{ Nutrient.Fat, new ConvergeConstraint(prefs.goals[(int)Nutrient.Fat], 0.00025f, prefs.goals[(int)Nutrient.Fat]) },
+            //{ Nutrient.Carbs, new ConvergeConstraint(prefs.goals[(int)Nutrient.Carbs], 0.00025f, prefs.goals[(int)Nutrient.Carbs]) },
+            { Nutrient.Kcal, new ConvergeConstraint(prefs.goals[(int)Nutrient.Kcal], 0.00025f, prefs.goals[(int)Nutrient.Kcal]) },
+
+            { Nutrient.Sugar, new MinimiseConstraint(30) },
+            { Nutrient.SatFat, new MinimiseConstraint(30) },
+            { Nutrient.TransFat, new MinimiseConstraint(5) }
+        };
+
+        AddNullConstraints(constraints);
+        Constraints = new(constraints);
         Population = GetStartingPopulation();
+    }
+
+
+    /// <summary>
+    /// Fills in all elements of the constraints dictionary that are not present, with a null constraint.
+    /// This ensures indexing over the enum length still works on this dictionary.
+    /// </summary>
+    private void AddNullConstraints(Dictionary<Nutrient, Constraint> constraints)
+    {
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            if (!constraints.ContainsKey((Nutrient)i))
+            {
+                constraints[(Nutrient)i] = new NullConstraint();
+            }
+        }
     }
 
 
