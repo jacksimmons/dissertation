@@ -18,11 +18,7 @@ public class Test_Intolerance
     /// </summary>
     private void AssertAllFoodsValid(Preferences prefs)
     {
-        Dictionary<DatasetFile, string> files = new()
-        {
-            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Nutrients.csv") }
-        };
-        List<Food> foods = new DatasetReader(files, Preferences.Instance).ReadFoods();
+        List<Food> foods = new DatasetReader(prefs).ReadFoods();
         Debug.Log($"Number of foods permitted: {foods.Count}");
 
         foreach (Food food in foods)

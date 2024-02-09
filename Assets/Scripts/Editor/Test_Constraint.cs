@@ -93,17 +93,12 @@ public class Test_Constraint
         CCThrowsOutOfRangeTest(goal, steepness, tolerance);
         MCThrowsOutOfRangeTest(goal);
 
-        // Weight
-        goal = 100;
-        CCThrowsOutOfRangeTest(goal, steepness, tolerance);
-        MCThrowsOutOfRangeTest(goal);
-
         //
         // Convergence constraint only - no other constraints have steepness or tolerance parameters.
         //
 
         // Steepness
-        steepness = 0;
+        goal = 100; steepness = 0;
         CCThrowsOutOfRangeTest(goal, steepness, tolerance);
 
         // Tolerance

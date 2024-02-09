@@ -12,7 +12,7 @@ using Unity.VisualScripting;
 /// </summary>
 public enum Nutrient
 {
-    // Nutrients
+    // Proximates
     Protein,
     Fat,
     Carbs,
@@ -23,28 +23,29 @@ public enum Nutrient
 
     // Inorganics
     Calcium,
-    Iodine,
     Iron,
+    Iodine,
 
     // Vitamins
-    A,
-    B1,
-    B2,
-    B3,
-    B6,
-    B7,
-    B9,
-    B12,
-    C,
-    D,
-    E,
-    K1
+    //A,
+    //B1,
+    //B2,
+    //B3,
+    //B6,
+    //B7,
+    //B9,
+    //B12,
+    //C,
+    //D,
+    //E,
+    //K1
 }
 
 
 public static class Nutrients
 {
     public static int Count = Enum.GetValues(typeof(Nutrient)).Length - 1;
+    public static Nutrient[] Values = (Nutrient[])Enum.GetValues(typeof(Nutrient));
 
 
     public static string GetUnit(Nutrient nutrient)
@@ -58,6 +59,11 @@ public static class Nutrients
             case Nutrient.SatFat:
             case Nutrient.TransFat:
                 return "g";
+            case Nutrient.Calcium:
+            case Nutrient.Iron:
+                return "mg";
+            case Nutrient.Iodine:
+                return "µg";
             case Nutrient.Kcal:
                 return "kcal";
             default:

@@ -12,16 +12,18 @@ using UnityEngine.TestTools;
 public class Test_Dataset
 {
     /// <summary>
-    /// Gets the list of foods contained in the testing dataset (TestNutrients.csv).
+    /// Gets the list of foods contained in the testing dataset (Test*.csv).
     /// </summary>
     /// <returns>A list of Food objects, which are the testing data.</returns>
     private List<Food> GetTestFoods()
     {
         Dictionary<DatasetFile, string> files = new()
         {
-            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestProximates.csv") }
+            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestProximates.csv") },
+            { DatasetFile.Inorganics, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestInorganics.csv") }
         };
-        List<Food> foods = new DatasetReader(files, Preferences.Instance).ReadFoods();
+        List<Food> foods = new DatasetReader(Preferences.Instance, "Scripts/Editor/TestProximates.csv", "/Scripts/Editor/TestInorganics.csv",
+            "/Scripts/Editor/TestVitamins.csv").ReadFoods();
         return foods;
     }
 
@@ -42,13 +44,18 @@ public class Test_Dataset
         Assert.AreEqual(food.Description, "Desc1", $"Desc name was incorrect.");
         Assert.AreEqual(food.FoodGroup, "Group1", $"Group name was incorrect.");
         Assert.AreEqual(food.Reference, "Ref1", $"Ref name was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Protein], 10, $"Protein was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Fat], 20, $"Fat was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Carbs], 30, $"Carbs was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Kcal], 340, $"Kcal was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Sugar], 25, $"Sugar was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.SatFat], 9, $"SatFat was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.TransFat], 1, $"TransFat was incorrect.");
+        Assert.AreEqual(10, food.Nutrients[Nutrient.Protein], $"Protein was incorrect.");
+        Assert.AreEqual(20, food.Nutrients[Nutrient.Fat], $"Fat was incorrect.");
+        Assert.AreEqual(30, food.Nutrients[Nutrient.Carbs], $"Carbs was incorrect.");
+        Assert.AreEqual(340, food.Nutrients[Nutrient.Kcal], $"Kcal was incorrect.");
+        Assert.AreEqual(25, food.Nutrients[Nutrient.Sugar], $"Sugar was incorrect.");
+        Assert.AreEqual(9, food.Nutrients[Nutrient.SatFat], $"SatFat was incorrect.");
+        Assert.AreEqual(1, food.Nutrients[Nutrient.TransFat], $"TransFat was incorrect.");
+
+        Assert.AreEqual(100, food.Nutrients[Nutrient.Calcium], $"Calcium was incorrect.");
+        Assert.AreEqual(30, food.Nutrients[Nutrient.Iron], $"Iron was incorrect.");
+        Assert.AreEqual(20, food.Nutrients[Nutrient.Iodine], $"Iodine was incorrect.");
+
     }
 
 
@@ -57,13 +64,10 @@ public class Test_Dataset
     /// </summary>
     private void EqualFloatTest(Food food, float value)
     {
-        Assert.AreEqual(food.Nutrients[Nutrient.Protein], value, $"Protein was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Fat], value, $"Fat was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Carbs], value, $"Carbs was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Kcal], value, $"Kcal was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.Sugar], value, $"Sugar was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.SatFat], value, $"SatFat was incorrect.");
-        Assert.AreEqual(food.Nutrients[Nutrient.TransFat], value, $"TransFat was incorrect.");
+        foreach (Nutrient nutrient in Nutrients.Values)
+        {
+            Assert.AreEqual(value, food.Nutrients[nutrient], $"{nutrient} was incorrect.");
+        }
     }
 
 
@@ -90,5 +94,13 @@ public class Test_Dataset
 
         // Assert that the three erroneous foods were not added.
         Assert.IsTrue(foods.Count == 3);
+    }
+
+
+    [Test]
+    public void ReadDatasetThrowsNoError()
+    {
+        List<Food> foods = new DatasetReader(Preferences.Instance).ReadFoods();
+        Assert.IsTrue(foods.Count > 0);
     }
 }

@@ -49,14 +49,7 @@ public abstract class Algorithm
     {
         Preferences prefs = Preferences.Instance;
 
-        Dictionary<DatasetFile, string> files = new()
-        {
-            // A CSV file containing all nutrient data. In the context of the McCance Widdowson dataset,
-            // this is most major nutrients (Protein, Fat, Carbs, Sugar, Sat Fats, Energy, Water, etc...)
-            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Proximates.csv") }
-        };
-
-        DatasetReader dr = new(files, prefs);
+        DatasetReader dr = new(prefs);
         m_foods = dr.ReadFoods();
 
         var constraints = new Dictionary<Nutrient, Constraint>

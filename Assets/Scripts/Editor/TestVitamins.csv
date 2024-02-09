@@ -1,0 +1,9 @@
+Food Code,Food Name,Description,Group,Previous,Main data references,Footnote,Sodium (mg),Potassium (mg),Calcium (mg),Magnesium (mg),Phosphorus (mg),Iron (mg),Copper (mg),Zinc (mg),Chloride (mg),Manganese (mg),Selenium (µg),Iodine (µg)
+,,,,,,,NA,K,CA,MG,P,FE,CU,ZN,CL,MN,SE,I
+,,,,,,,Sodium,Potassium,Calcium,Magnesium,Phosphorus,Iron,Copper,Zinc,Chloride,Manganese,Selenium,Iodine
+Normal,Test1,Desc1,Group1,,Ref1,,,,100,,,30,,,,,,20
+Boundary1,TestB1,DescB1,GroupB1,,,,,,0,,,0,,,,,,0
+Boundary2,TestB2,DescB2,GroupB2,,,,,,Tr,,,Tr,,,,,,Tr
+Erroneous1,TestE1,DescE1,GroupE1,,,,,,N,,,N,,,,,,N
+Erroneous2,TestE2,DescE2,GroupE2,,,,,,-1,,,-1,,,,,,-1
+Erroneous3,TestE3,DescE3,GroupE3,,,,,,-2,,,-2,,,,,,-2
