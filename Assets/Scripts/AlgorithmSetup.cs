@@ -38,7 +38,7 @@ public class AlgorithmSetup : MonoBehaviour
             }
 
             TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();
-            goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value, goalInput));
+            goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value));
 
             TMP_InputField toleranceInput = go.transform.Find("ToleranceInput").GetComponent<TMP_InputField>();
             toleranceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.tolerances[(int)nutrient], value));
@@ -54,7 +54,7 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void OnGoalInputChanged(Nutrient nutrient, string value, TMP_InputField input)
+    private void OnGoalInputChanged(Nutrient nutrient, string value)
     {
         OnFloatInputChanged(ref Preferences.Instance.goals[(int)nutrient], value);
         OnGoalChanged(nutrient);
@@ -158,6 +158,8 @@ public class AlgorithmSetup : MonoBehaviour
             go.transform.Find("GoalInput").GetComponent<TMP_InputField>().text = p.goals[(int)nutrient].ToString();
             go.transform.Find("ToleranceInput").GetComponent<TMP_InputField>().text = p.tolerances[(int)nutrient].ToString();
             go.transform.Find("SteepnessInput").GetComponent<TMP_InputField>().text = p.steepnesses[(int)nutrient].ToString();
+
+            go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = $"Goal:\n{p.constraintTypes[(int)nutrient]}";
         }
     }
 

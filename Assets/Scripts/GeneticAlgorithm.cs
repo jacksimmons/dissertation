@@ -80,6 +80,31 @@ public class GeneticAlgorithm : Algorithm
     }
 
 
+    // Reference: ECM3412 Lecture 14 2023/2024
+    protected Day SelectionTiebreak(Day a, Day b)
+    {
+        List<Day> comparisonSet = new(Population);
+        for (int i = 0; i < PopHierarchy.Count && i <= SELECTION_PRESSURE; i++)
+        {
+            comparisonSet.AddRange(PopHierarchy[i]);
+        }
+        comparisonSet.Remove(a);
+        comparisonSet.Remove(b);
+
+        int dominanceA = GetDominanceOverComparisonSet(a, comparisonSet);
+        int dominanceB = GetDominanceOverComparisonSet(b, comparisonSet);
+
+        if (dominanceA > dominanceB)
+            return a;
+        if (dominanceB > dominanceA)
+            return b;
+
+        if (Random.Range(0, 2) == 1)
+            return a;
+        return b;
+    }
+
+
     /// <summary>
     /// Calculates how dominant a day is over a comparison set.
     /// </summary>
@@ -104,27 +129,6 @@ public class GeneticAlgorithm : Algorithm
         }
 
         return dominance;
-    }
-
-
-    // Reference: ECM3412 Lecture 14 2023/2024
-    protected Day SelectionTiebreak(Day a, Day b)
-    {
-        List<Day> comparisonSet = new(Population);
-        comparisonSet.Remove(a);
-        comparisonSet.Remove(b);
-
-        int dominanceA = GetDominanceOverComparisonSet(a, comparisonSet);
-        int dominanceB = GetDominanceOverComparisonSet(b, comparisonSet);
-
-        if (dominanceA > dominanceB)
-            return a;
-        if (dominanceB > dominanceA)
-            return b;
-
-        if (Random.Range(0, 2) == 1)
-            return a;
-        return b;
     }
 
 

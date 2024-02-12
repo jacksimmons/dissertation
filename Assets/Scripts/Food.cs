@@ -282,11 +282,34 @@ public class Day
     }
 
 
+    public float GetMass()
+    {
+        return Portions.Sum(portion => portion.Mass);
+    }
+
+
     public float GetDistance(Day day)
     {
         // Square root of all differences squared = Pythagorean Distance
         Nutrient[] vals = (Nutrient[])Enum.GetValues(typeof(Nutrient));
         return Mathf.Sqrt(vals.Sum(o => Mathf.Pow(GetNutrientAmount(o) - day.GetNutrientAmount(o), 2)));
+    }
+
+
+    /// <summary>
+    /// Gets a verbose description of this day.
+    /// </summary>
+    /// <returns>The string data.</returns>
+    public string Verbose()
+    {
+        string asString = "";
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            Nutrient nutrient = (Nutrient)i;
+            float nutrientAmount = GetNutrientAmount(nutrient);
+            asString += $"{nutrient}: {nutrientAmount}{Nutrients.GetUnit(nutrient)}\n";
+        }
+        return asString + $"Mass: {GetMass()}g";
     }
 }
 

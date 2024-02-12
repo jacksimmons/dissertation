@@ -22,6 +22,12 @@ public class PopulationView : MonoBehaviour
     private Button m_nextPortionBtn;
 
     /// </summary>
+    /// Text fields displaying details about the selected day.
+    /// <summary>
+    [SerializeField]
+    private TMP_Text m_dayText;
+
+    /// </summary>
     /// Text fields displaying details about the selected portion.
     /// <summary>
     [SerializeField]
@@ -44,7 +50,7 @@ public class PopulationView : MonoBehaviour
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
             obj.transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.PopHierarchy[day]} Fitness: {day.GetFitness()}";
+                $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.GetDayRank(day)} Fitness: {day.GetFitness()}";
             Button btn = obj.GetComponent<Button>();
             btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
@@ -65,6 +71,7 @@ public class PopulationView : MonoBehaviour
     private void OnPopButtonPressed(Day day)
     {
         m_currentlyDisplayedDay = day;
+        UpdateDayUI(day);
 
         if (day.Portions.Count > 0)
         {
@@ -88,9 +95,18 @@ public class PopulationView : MonoBehaviour
 
 
     /// <summary>
+    /// Displays details for the currently selected day.
+    /// </summary>
+    private void UpdateDayUI(Day day)
+    {
+        m_dayText.text = day.Verbose();
+    }
+
+
+    /// <summary>
     /// Displays details for the portion at the provided index.
     /// </summary>
-    /// <param name="portionIndex"></param>
+    /// <param name="portionIndex">The provided portion index.</param>
     private void UpdatePortionUI(Day day, int portionIndex)
     {
         if (portionIndex > day.Portions.Count)

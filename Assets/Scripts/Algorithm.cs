@@ -35,7 +35,22 @@ public abstract class Algorithm
     public readonly ReadOnlyDictionary<Nutrient, Constraint> Constraints;
     public readonly List<Day> Population;
 
-    public ReadOnlyDictionary<Day, uint> PopHierarchy;
+    // The index of the list a day is in represents the non-dominated set it is in.
+    // The higher the index, the more dominated the set is.
+    // Set 0 - Mutually non-dominated by all
+    // Set 1 - Mutually non-dominated by all once set 0 is removed
+    // etc...
+    // Up to Set N - The maximum sorting set
+    public ReadOnlyCollection<ReadOnlyCollection<Day>> PopHierarchy;
+    
+    // [PopHierarchy.Length, inf)
+    protected const int NUM_SORTING_SETS = 10;
+
+    // The index of sorting set the algorithm goes up to during a tiebreak.
+    // The higher it is, the more likely to resolve a tiebreak.
+    //
+    // [0, PopHierarchy.Length)
+    protected const int SELECTION_PRESSURE = 3;
 
     public int NumIterations { get; protected set; } = 1;
 
@@ -128,7 +143,26 @@ public abstract class Algorithm
 
     public void AssignDominanceHierarchy()
     {
-        PopHierarchy = new(Pareto.GetDominanceHierarchy(new(Population)));
+        // Populate the population hierarchy
+        List<List<Day>> sortedRanks = Pareto.GetSortedNonDominatedSets(new(Population));
+
+        List<ReadOnlyCollection<Day>> readOnlySortedRanks = new();
+        for (int i = 0; i < sortedRanks.Count; i++)
+        {
+            readOnlySortedRanks.Add(new(sortedRanks[i]));
+        }
+
+        PopHierarchy = new(readOnlySortedRanks);
+    }
+
+
+    public int GetDayRank(Day day)
+    {
+        for (int i = 0; i < PopHierarchy.Count; i++)
+        {
+            if (PopHierarchy[i].Contains(day)) return i;
+        }
+        return -1;
     }
 
 

@@ -4,12 +4,14 @@ using System.Collections.ObjectModel;
 
 public static class Pareto
 {
-    public static Dictionary<Day, uint> GetDominanceHierarchy(ReadOnlyCollection<Day> population)
+    public static List<List<Day>> GetSortedNonDominatedSets(ReadOnlyCollection<Day> population)
     {
         if (population.Count < 1) throw new IndexOutOfRangeException("Population was empty.");
 
         List<Day> days = new(population);
-        Dictionary<Day, uint> popHierarchy = new();
+        List<List<Day>> popHierarchy = new();
+
+        int sortedCount = 0;
 
 
         // Init:   Set `days` equal to `population`.
@@ -17,8 +19,7 @@ public static class Pareto
         //         Once iteration completes, remove these from `days` and continue. Take a note of the
         //         set number.
 
-        uint setNumber = 0;
-        while (popHierarchy.Count < population.Count)
+        while (sortedCount < population.Count)
         {
             List<Day> nonDominatedSet = new();
             foreach (Day day in days)
@@ -26,16 +27,15 @@ public static class Pareto
                 if (IsNonDominated(day, days))
                 {
                     nonDominatedSet.Add(day);
+                    sortedCount++;
                 }
             }
 
+            popHierarchy.Add(nonDominatedSet);
             foreach (Day day in nonDominatedSet)
             {
-                popHierarchy[day] = setNumber;
                 days.Remove(day);
             }
-
-            setNumber++;
         }
 
         return popHierarchy;
