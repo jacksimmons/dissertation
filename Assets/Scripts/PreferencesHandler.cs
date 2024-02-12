@@ -22,7 +22,7 @@ public class PreferencesHandler : MonoBehaviour
 
     [SerializeField]
     private GameObject[] m_preferenceCategoryPanels;
-    private int m_currentPreferenceCategoryIndex = 0;
+    private int m_currentPanelIndex = 0;
 
 
     private void Awake()
@@ -40,32 +40,6 @@ public class PreferencesHandler : MonoBehaviour
         // For each setting UI element, fill in the user's current settings.
         UpdateDietPreferenceButtons();
         UpdateBodyPreferenceButtons();
-    }
-
-
-    public static bool ParseDecimalInputField(string value, ref float prop, TMP_InputField inputField)
-    {
-        if (float.TryParse(value, out float floatVal))
-        {
-            if (floatVal <= 0)
-            {
-                inputField.text = "Value must be greater than zero.";
-            }
-
-            prop = floatVal;
-            return true;
-        }
-        else
-        {
-            inputField.text = "Not a valid decimal!";
-        }
-        return false;
-    }
-
-
-    public static void SavePreferences()
-    {
-        Saving.SaveToFile(Preferences.Instance, "Preferences.json");
     }
 
 
@@ -88,7 +62,7 @@ public class PreferencesHandler : MonoBehaviour
     {
         pref = !pref;
         UpdateDietPreferenceButtons();
-        SavePreferences();
+        Static.SavePreferences();
     }
 
 
@@ -101,7 +75,6 @@ public class PreferencesHandler : MonoBehaviour
     public void OnToggleSeafoodPreference()
     {
         OnToggleFoodPreference(ref Preferences.Instance.eatsSeafood);
-
     }
 
 
@@ -131,7 +104,7 @@ public class PreferencesHandler : MonoBehaviour
     private void OnBodyPreferenceChanged()
     {
         UpdateBodyPreferenceButtons();
-        SavePreferences();
+        Static.SavePreferences();
     }
 
 
@@ -144,15 +117,15 @@ public class PreferencesHandler : MonoBehaviour
 
     private void OnWeightInputChanged(string value)
     {
-        if (ParseDecimalInputField(value, ref Preferences.Instance.weightInKG, m_weightInputField))
-            SavePreferences();
+        Preferences.Instance.weightInKG = float.Parse(value);
+        Static.SavePreferences();
     }
 
 
     private void OnHeightInputChanged(string value)
     {
-        if (ParseDecimalInputField(value, ref Preferences.Instance.heightInCM, m_heightInputField))
-            SavePreferences();
+        Preferences.Instance.heightInCM = float.Parse(value);
+        Static.SavePreferences();
     }
 
 
@@ -163,35 +136,8 @@ public class PreferencesHandler : MonoBehaviour
     }
 
 
-    private int NextArrayIndex(int current, int length, bool right)
+    public void OnPreferencesNavBtnPressed(bool right)
     {
-        if (right)
-        {
-            // Going right
-            if (current + 1 >= length) return 0;
-            return current + 1;
-        }
-
-        // Going left
-        if (current - 1 < 0) return length - 1;
-        return current - 1;
-    }
-
-
-    /// <summary>
-    /// When the left/right button is pressed in the preferences menu (to navigate
-    /// between preference categories).
-    /// Disables the previous panel, and enables the new one.
-    /// </summary>
-    /// <param name="right">`true` if the right button was pressed, `false` if the
-    /// left button was pressed.</param>
-    public void OnPreferencesMenuNavBtnPressed(bool right)
-    {
-        m_preferenceCategoryPanels[m_currentPreferenceCategoryIndex].SetActive(false);
-
-        m_currentPreferenceCategoryIndex =
-            NextArrayIndex(m_currentPreferenceCategoryIndex, m_preferenceCategoryPanels.Length, right);
-
-        m_preferenceCategoryPanels[m_currentPreferenceCategoryIndex].SetActive(true);
+        Static.OnNavBtnPressed(right, m_preferenceCategoryPanels, ref m_currentPanelIndex);
     }
 }

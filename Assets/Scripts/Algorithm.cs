@@ -52,37 +52,40 @@ public abstract class Algorithm
         DatasetReader dr = new(prefs);
         m_foods = dr.ReadFoods();
 
-        var constraints = new Dictionary<Nutrient, Constraint>
+        // Load constraints from disk.
+        Dictionary<Nutrient, Constraint> constraints = new();
+        foreach (Nutrient nutrient in Nutrients.Values)
         {
-            //{ Nutrient.Protein, new ConvergeConstraint(prefs.goals[(int)Nutrient.Protein], 0.00025f, prefs.goals[(int)Nutrient.Protein]) },
-            //{ Nutrient.Fat, new ConvergeConstraint(prefs.goals[(int)Nutrient.Fat], 0.00025f, prefs.goals[(int)Nutrient.Fat]) },
-            //{ Nutrient.Carbs, new ConvergeConstraint(prefs.goals[(int)Nutrient.Carbs], 0.00025f, prefs.goals[(int)Nutrient.Carbs]) },
-            { Nutrient.Kcal, new ConvergeConstraint(prefs.goals[(int)Nutrient.Kcal], 0.00025f, prefs.goals[(int)Nutrient.Kcal]) },
+            // If the constraintTypes arraylength is insufficient, the nutrient has no constraintType setting.
+            if (Preferences.Instance.constraintTypes.Length <= (int)nutrient)
+            {
+                constraints.Add(nutrient, new NullConstraint());
+                continue;
+            }
 
-            { Nutrient.Sugar, new MinimiseConstraint(30) },
-            { Nutrient.SatFat, new MinimiseConstraint(30) },
-            { Nutrient.TransFat, new MinimiseConstraint(5) }
-        };
+            // Otherwise create the required constraint
+            Constraint constraint;
+            float goal = Preferences.Instance.goals[(int)nutrient];
+            float tolerance = Preferences.Instance.tolerances[(int)nutrient];
+            float steepness = Preferences.Instance.steepnesses[(int)nutrient];
+            switch (Preferences.Instance.constraintTypes[(int)nutrient])
+            {
+                case ConstraintType.Minimise:
+                    constraint = new MinimiseConstraint(goal);
+                    break;
+                case ConstraintType.Converge:
+                    constraint = new ConvergeConstraint(goal, steepness, tolerance);
+                    break;
+                default:
+                    constraint = new NullConstraint();
+                    break;
+            }
 
-        AddNullConstraints(constraints);
+            constraints.Add(nutrient, constraint);
+        }
+
         Constraints = new(constraints);
         Population = GetStartingPopulation();
-    }
-
-
-    /// <summary>
-    /// Fills in all elements of the constraints dictionary that are not present, with a null constraint.
-    /// This ensures indexing over the enum length still works on this dictionary.
-    /// </summary>
-    private void AddNullConstraints(Dictionary<Nutrient, Constraint> constraints)
-    {
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            if (!constraints.ContainsKey((Nutrient)i))
-            {
-                constraints[(Nutrient)i] = new NullConstraint();
-            }
-        }
     }
 
 

@@ -1,45 +1,75 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AlgorithmSetup : MonoBehaviour
 {
+    // Nutrient fields (each object's index represents its Nutrient enum value)
     [SerializeField]
-    private TMP_InputField m_kcalInputField;
+    private GameObject[] m_nutrientFields;
+
     [SerializeField]
-    private TMP_InputField m_proteinInputField;
-    [SerializeField]
-    private TMP_InputField m_fatInputField;
-    [SerializeField]
-    private TMP_InputField m_carbsInputField;
+    private GameObject[] m_algSetupCategoryPanels;
+    private int m_currentPanelIndex = 0;
 
 
     private void Start()
     {
-        m_kcalInputField.onEndEdit.AddListener((string value) => OnGoalInputChanged(Nutrient.Kcal, value, m_kcalInputField));
-        m_proteinInputField.onEndEdit.AddListener((string value) => OnGoalInputChanged(Nutrient.Protein, value, m_proteinInputField));
-        m_fatInputField.onEndEdit.AddListener((string value) => OnGoalInputChanged(Nutrient.Fat, value, m_fatInputField));
-        m_carbsInputField.onEndEdit.AddListener((string value) => OnGoalInputChanged(Nutrient.Carbs, value, m_carbsInputField));
+        //
+        // Set up listeners for all UI elements in the menu.
+        //
 
-        UpdateGoalPreferencesButtons();
+        // Iteration variable should be used sparingly in listener declarations! Hence the variable name.
+        for (int _i = 0; _i < m_nutrientFields.Length; _i++)
+        {
+            GameObject go;
+            Nutrient nutrient;
+
+            // _i usage scoped
+            {
+                go = m_nutrientFields[_i];
+
+                // Must store the nutrient as a local variable, for use in the listener declarations.
+                // Using iter var directly would lead to := m_nutrientFields.Length whenever a listener event occurred.
+                nutrient = (Nutrient)_i;
+            }
+
+            TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();
+            goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value, goalInput));
+
+            TMP_InputField toleranceInput = go.transform.Find("ToleranceInput").GetComponent<TMP_InputField>();
+            toleranceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.tolerances[(int)nutrient], value));
+
+            TMP_InputField steepnessInput = go.transform.Find("SteepnessInput").GetComponent<TMP_InputField>();
+            steepnessInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.steepnesses[(int)nutrient], value));
+
+            Button constraintTypeBtn = go.transform.Find("ConstraintTypeBtn").GetComponent<Button>();
+            constraintTypeBtn.onClick.AddListener(() => OnConstraintTypeChanged(nutrient, constraintTypeBtn));
+        }
+
+        UpdateUI();
     }
 
 
     private void OnGoalInputChanged(Nutrient nutrient, string value, TMP_InputField input)
     {
-        float goal = 0;
-        if (PreferencesHandler.ParseDecimalInputField(value, ref goal, input))
-        {
-            Preferences.Instance.goals[(int)nutrient] = goal;
-            OnGoalChanged(nutrient);
-            PreferencesHandler.SavePreferences();
-            UpdateGoalPreferencesButtons();
-        }
+        OnFloatInputChanged(ref Preferences.Instance.goals[(int)nutrient], value);
+        OnGoalChanged(nutrient);
+        UpdateUI();
     }
 
 
-    public void OnGoalChanged(Nutrient nutrient)
+    private void OnFloatInputChanged(ref float pref, string value)
+    {
+        pref = float.Parse(value);
+        Static.SavePreferences();
+    }
+
+
+    private void OnGoalChanged(Nutrient nutrient)
     {
         switch (nutrient)
         {
@@ -50,6 +80,22 @@ public class AlgorithmSetup : MonoBehaviour
                 CaloriesToMacros();
                 break;
         }
+        Static.SavePreferences();
+    }
+
+
+    private void OnConstraintTypeChanged(Nutrient nutrient, Button pressedBtn)
+    {
+        ConstraintType type = Preferences.Instance.constraintTypes[(int)nutrient];
+
+        // Store the following in an easy to write variable name
+        ConstraintType newType =
+        // Increment the constraint type by 1 (index is circularly wrapped by an extension method)
+        Preferences.Instance.constraintTypes[(int)nutrient] =
+            (ConstraintType)Static.NextCircularArrayIndex((int)type, Enum.GetValues(typeof(ConstraintType)).Length, true);
+
+        pressedBtn.GetComponentInChildren<TMP_Text>().text = $"Goal:\n{newType}";
+        Static.SavePreferences();
     }
 
 
@@ -92,13 +138,32 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void UpdateGoalPreferencesButtons()
+    private void UpdateUI()
     {
         Preferences p = Preferences.Instance;
 
-        m_kcalInputField.text = $"{p.goals[(int)Nutrient.Kcal]}";
-        m_proteinInputField.text = $"{p.goals[(int)Nutrient.Protein]}";
-        m_fatInputField.text = $"{p.goals[(int)Nutrient.Fat]}";
-        m_carbsInputField.text = $"{p.goals[(int)Nutrient.Carbs]}";
+        for (int _i = 0; _i < m_nutrientFields.Length; _i++)
+        {
+            GameObject go;
+            Nutrient nutrient;
+
+            {
+                go = m_nutrientFields[_i];
+
+                // Must store the nutrient as a local variable, for use in the listener declarations.
+                // Using iter var directly would lead to := m_nutrientFields.Length whenever a listener event occurred.
+                nutrient = (Nutrient)_i;
+            }
+
+            go.transform.Find("GoalInput").GetComponent<TMP_InputField>().text = p.goals[(int)nutrient].ToString();
+            go.transform.Find("ToleranceInput").GetComponent<TMP_InputField>().text = p.tolerances[(int)nutrient].ToString();
+            go.transform.Find("SteepnessInput").GetComponent<TMP_InputField>().text = p.steepnesses[(int)nutrient].ToString();
+        }
+    }
+
+
+    public void OnAlgSetupNavBtnPressed(bool right)
+    {
+        Static.OnNavBtnPressed(right, m_algSetupCategoryPanels, ref m_currentPanelIndex);
     }
 }

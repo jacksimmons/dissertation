@@ -255,9 +255,9 @@ public class Day
     public float GetFitness()
     {
         // Calculate the overall fitness value based on the sum of the fitness of the individual
-        // nutrient amounts. (E.g. protein leads to a fitness value, which is added to the fat fitness,
+        // nutrient amounts. (E.g. protein leads to a fitness value, which is multiplied to the fat fitness,
         // etc... over all nutrients).
-        // This fitness evaluation is more accurate, hence it is weighted more favourably
+
         float fitness = 0;
 
         for (int i = 0; i < Nutrients.Count; i++)

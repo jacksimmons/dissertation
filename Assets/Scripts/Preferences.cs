@@ -17,6 +17,14 @@ public enum AssignedSex
 }
 
 
+public enum ConstraintType
+{
+    Null,
+    Minimise,
+    Converge
+}
+
+
 /// <summary>
 /// A class which saves the user's preferences when serialized into a file.
 /// </summary>
@@ -51,8 +59,11 @@ public class Preferences : ICached
     public AssignedSex assignedSex;
 
 
-    // Goals
+    // Parameters for each constraint (indices matching enum values)
     public float[] goals;
+    public float[] tolerances;
+    public float[] steepnesses;
+    public ConstraintType[] constraintTypes;
 
 
     // By default, the user's settings should permit every food type - this
@@ -69,6 +80,9 @@ public class Preferences : ICached
         assignedSex = AssignedSex.Male;
 
         goals = new float[Nutrients.Count];
+        tolerances = new float[Nutrients.Count];
+        steepnesses = new float[Nutrients.Count];
+        constraintTypes = new ConstraintType[Nutrients.Count];
     }
 
 
