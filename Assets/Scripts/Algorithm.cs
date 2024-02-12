@@ -50,11 +50,11 @@ public abstract class Algorithm
     // The higher it is, the more likely to resolve a tiebreak.
     //
     // [0, PopHierarchy.Length)
-    protected const int SELECTION_PRESSURE = 3;
+    protected const int SELECTION_PRESSURE = 5;
 
     public int NumIterations { get; protected set; } = 1;
 
-    public const int NumStartingDaysInPop = 10;
+    public const int NumStartingDaysInPop = 20;
     public const int NumStartingPortionsInDay = 1;
     public const int StartingPortionMassMin = 50;
     public const int StartingPortionMassMax = 150;

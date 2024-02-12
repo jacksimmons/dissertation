@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +12,8 @@ public class PopulationView : MonoBehaviour
     private GameObject m_dayItem;
     [SerializeField]
     private GameObject m_popContent;
+
+    private Day m_currentlyDisplayedDay;
 
     /// <summary>
     /// Buttons for selecting a portion to view details about.
@@ -35,7 +38,12 @@ public class PopulationView : MonoBehaviour
     [SerializeField]
     private TMP_Text m_portionText;
 
-    private Day m_currentlyDisplayedDay;
+    /// <summary>
+    /// Text field displaying averaged details about the whole population.
+    /// </summary>
+    [SerializeField]
+    private TMP_Text m_avgDayText;
+    private Dictionary<Nutrient, float> m_avgStats = new();
 
 
     public void UpdatePopView()
@@ -50,7 +58,7 @@ public class PopulationView : MonoBehaviour
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
             obj.transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.GetDayRank(day)} Fitness: {day.GetFitness()}";
+                $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.GetDayRank(day)} Fitness: {day.GetFitness():F2}";
             Button btn = obj.GetComponent<Button>();
             btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
@@ -61,10 +69,37 @@ public class PopulationView : MonoBehaviour
         if (m_currentlyDisplayedDay != null)
         {
             if (Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
+            {
                 UpdatePortionUI(m_currentlyDisplayedDay, 0);
+                UpdateDayUI(m_currentlyDisplayedDay);
+            }
             else
+            {
                 ClearPortionUI();
+                ClearDayUI();
+            }
         }
+
+
+        // Set the average stats text
+        string avgStr = "";
+        foreach (Nutrient nutrient in Nutrients.Values)
+        {
+            float sum = 0;
+
+            float oldVal;
+            if (!m_avgStats.ContainsKey(nutrient)) oldVal = 0;
+            else oldVal = m_avgStats[nutrient];
+
+            foreach (Day day in Algorithm.Instance.Population)
+            {
+                sum += day.GetNutrientAmount(nutrient);
+            }
+            m_avgStats[nutrient] = sum / Nutrients.Count;
+
+            avgStr += $"{nutrient}: {m_avgStats[nutrient]:F2}(+{m_avgStats[nutrient] - oldVal:F2}){Nutrients.GetUnit(nutrient)}\n";
+        }
+        m_avgDayText.text = avgStr;
     }
 
 
@@ -120,7 +155,7 @@ public class PopulationView : MonoBehaviour
     }
 
 
-    public void OnPortionNavBtnPressed(Day day, bool right)
+    private void OnPortionNavBtnPressed(Day day, bool right)
     {
         int nextIndex;
         if (right)
@@ -139,7 +174,7 @@ public class PopulationView : MonoBehaviour
     }
 
 
-    public void ClearPortionUI()
+    private void ClearPortionUI()
     {
         // Reset associated variables
         m_currentPortionIndex = 0;
@@ -151,5 +186,11 @@ public class PopulationView : MonoBehaviour
         // Make the portion details text fields invisible
         m_portionNumText.text = "";
         m_portionText.text = "";
+    }
+
+
+    private void ClearDayUI()
+    {
+        m_dayText.text = "";
     }
 }

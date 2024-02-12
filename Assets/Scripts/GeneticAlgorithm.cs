@@ -16,7 +16,7 @@ public class GeneticAlgorithm : Algorithm
     
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // Also leads to days with more portions.
-    private const float ChanceToAddOrRemovePortion = 0.05f;
+    private const float ChanceToAddOrRemovePortion = 0f;
 
 
     protected override void RunIteration()
