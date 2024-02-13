@@ -44,18 +44,13 @@ public class Test_Dataset
         Assert.AreEqual(food.Description, "Desc1", $"Desc name was incorrect.");
         Assert.AreEqual(food.FoodGroup, "Group1", $"Group name was incorrect.");
         Assert.AreEqual(food.Reference, "Ref1", $"Ref name was incorrect.");
-        Assert.AreEqual(10, food.Nutrients[Nutrient.Protein], $"Protein was incorrect.");
-        Assert.AreEqual(20, food.Nutrients[Nutrient.Fat], $"Fat was incorrect.");
-        Assert.AreEqual(30, food.Nutrients[Nutrient.Carbs], $"Carbs was incorrect.");
-        Assert.AreEqual(340, food.Nutrients[Nutrient.Kcal], $"Kcal was incorrect.");
-        Assert.AreEqual(25, food.Nutrients[Nutrient.Sugar], $"Sugar was incorrect.");
-        Assert.AreEqual(9, food.Nutrients[Nutrient.SatFat], $"SatFat was incorrect.");
-        Assert.AreEqual(1, food.Nutrients[Nutrient.TransFat], $"TransFat was incorrect.");
 
-        Assert.AreEqual(100, food.Nutrients[Nutrient.Calcium], $"Calcium was incorrect.");
-        Assert.AreEqual(30, food.Nutrients[Nutrient.Iron], $"Iron was incorrect.");
-        Assert.AreEqual(20, food.Nutrients[Nutrient.Iodine], $"Iodine was incorrect.");
 
+        float[] nutrientAmounts = new float[] { 10, 20, 30, 340, 25, 9, 1, 100, 30, 20 };
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            Assert.AreEqual(nutrientAmounts[i], food.Nutrients[i], $"{Nutrients.Values[i]} was incorrect.");
+        }
     }
 
 
@@ -64,9 +59,9 @@ public class Test_Dataset
     /// </summary>
     private void EqualFloatTest(Food food, float value)
     {
-        foreach (Nutrient nutrient in Nutrients.Values)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
-            Assert.AreEqual(value, food.Nutrients[nutrient], $"{nutrient} was incorrect.");
+            Assert.AreEqual(value, food.Nutrients[i], $"{i} was incorrect.");
         }
     }
 

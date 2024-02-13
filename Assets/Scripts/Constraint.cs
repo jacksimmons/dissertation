@@ -107,7 +107,7 @@ public class ConvergeConstraint : Constraint
     {
         if (steepness <= 0)
             ThrowArgumentException("steepness", steepness);
-        if (tolerance <= 1)
+        if (tolerance <= 0)
             ThrowArgumentException("tolerance", tolerance);
 
         Steepness = steepness;

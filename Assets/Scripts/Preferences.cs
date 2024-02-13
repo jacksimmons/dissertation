@@ -95,6 +95,13 @@ public class Preferences : ICached
         goals = new float[Nutrients.Count];
         tolerances = new float[Nutrients.Count];
         steepnesses = new float[Nutrients.Count];
+
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            tolerances[i] = 1;
+            steepnesses[i] = 0.001f;
+        }
+        
         constraintTypes = new ConstraintType[Nutrients.Count];
     }
 

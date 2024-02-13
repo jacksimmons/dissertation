@@ -16,7 +16,7 @@ public class GeneticAlgorithm : Algorithm
     
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // Also leads to days with more portions.
-    private const float ChanceToAddOrRemovePortion = 0.05f;
+    private const float ChanceToAddOrRemovePortion = 0.0f;
 
 
     protected override void RunIteration()
@@ -99,17 +99,28 @@ public class GeneticAlgorithm : Algorithm
         // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
         int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
 
-        float fitA = candidates[indexA].GetFitness();
-        float fitB = candidates[indexB].GetFitness();
+        float fitA = candidates[indexA].Fitness;
+        float fitB = candidates[indexB].Fitness;
 
-        bool pickedA;
+        Day selected;
 
-        if (fitA < fitB) pickedA = selectBest;
-        else if (fitB < fitA) pickedA = !selectBest;
-        else pickedA = Random.Range(0, 2) == 1;
+        if (fitA < fitB)
+        {
+            if (selectBest) selected = candidates[indexA];
+            else selected = candidates[indexB];
+        }
+        else if (fitB < fitA)
+        {
+            if (selectBest) selected = candidates[indexB];
+            else selected = candidates[indexA];
+        }
+        else
+        {
+            if (Random.Range(0, 2) == 1) selected = candidates[indexA];
+            else selected = candidates[indexB];
+        }
 
-        if (pickedA) return candidates[indexA];
-        return candidates[indexB];
+        return selected;
     }
 
 
@@ -246,8 +257,7 @@ public class GeneticAlgorithm : Algorithm
         float crossoverPoint = Random.Range(0f, 1f);
 
         // Total mass stored in both days
-        int massGrandTotal =
-            CalculateMassTotal(parents.Item1) + CalculateMassTotal(parents.Item2);
+        int massGrandTotal = parents.Item1.GetMass() + parents.Item2.GetMass();
 
         float floatCutoffMass = massGrandTotal * crossoverPoint;
         int cutoffMass = (int)(floatCutoffMass);
@@ -260,16 +270,6 @@ public class GeneticAlgorithm : Algorithm
             cutoffMass--;
 
         return cutoffMass;
-    }
-
-
-    /// <summary>
-    /// Gets the sum of all portion masses in a Day.
-    /// </summary>
-    /// <param name="day">The day to sum over.</param>
-    protected int CalculateMassTotal(Day day)
-    {
-        return day.Portions.Sum(p => p.Mass);
     }
 
 
@@ -336,15 +336,17 @@ public class GeneticAlgorithm : Algorithm
         } 
 
         // Mutate existing portions (add/remove mass)
-        foreach (Portion portion in day.Portions.ToArray())
+        for (int i = 0; i < day.Portions.Count; i++)
         {
             // Exit early if the portion is not to be mutated
             if (Random.Range(0f, 1f) > ChanceToMutatePortion)
                 continue;
 
-            bool portionRemains = MutatePortion(portion);
-            if (!portionRemains)
-                day.RemovePortion(portion);
+            Tuple<bool, int> result = MutatePortion(day.Portions[i]);
+            if (!result.Item1)
+                day.RemovePortion(i);
+            else
+                day.ModifyPortion(i, result.Item2);
         }
 
         // Add or remove portions entirely (rarely)
@@ -355,7 +357,7 @@ public class GeneticAlgorithm : Algorithm
             day.AddPortion(GenerateRandomPortion());
 
         if (removePortion)
-            day.RemovePortion(day.Portions[Random.Range(0, day.Portions.Count)]);
+            day.RemovePortion(Random.Range(0, day.Portions.Count));
     }
 
 
@@ -363,20 +365,25 @@ public class GeneticAlgorithm : Algorithm
     /// Applies mutation to a single Portion object.
     /// </summary>
     /// <param name="portion">The portion to mutate.</param>
-    /// <returns>A boolean of whether the portion remains.
-    /// True => Leave the portion, False => Delete the portion.</returns>
-    private bool MutatePortion(Portion portion)
+    /// <returns>Tuple of:
+    /// Item1:
+    /// A boolean of whether the portion remains.
+    /// True => Leave the portion, False => Delete the portion.
+    /// Item2:
+    /// The new mass of the portion.</returns>
+    private Tuple<bool, int> MutatePortion(Portion portion)
     {
         // The sign of the mass change (1 => add, -1 => subtract)
         int sign = Random.Range(0, 2) == 1 ? 1 : -1;
+        int mass = portion.Mass;
         int massDiff = Random.Range(MutationMassChangeMin, MutationMassChangeMax);
 
         // If the new mass is zero or negative, the portion ceases to exist.
-        if (portion.Mass + sign * massDiff <= 0)
-            return false;
+        if (mass + sign * massDiff <= 0)
+            return new(false, mass);
 
         // Otherwise, add to the portion's mass.
-        portion.Mass += sign * massDiff;
-        return true;
+        mass += sign * massDiff;
+        return new(true, mass);
     }
 }

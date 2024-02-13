@@ -57,8 +57,13 @@ public class PopulationView : MonoBehaviour
         foreach (Day day in Algorithm.Instance.Population)
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
-            obj.transform.GetChild(0).GetComponent<TMP_Text>().text =
-                $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.GetDayRank(day)} Fitness: {day.GetFitness():F2}";
+
+            string label = $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.GetDayRank(day)}";
+            if (Preferences.Instance.comparisonType == ComparisonType.SummedFitness)
+                label += $" Fitness: { day.GetFitness():F2}";
+
+            obj.transform.GetChild(0).GetComponent<TMP_Text>().text = label;
+
             Button btn = obj.GetComponent<Button>();
             btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active

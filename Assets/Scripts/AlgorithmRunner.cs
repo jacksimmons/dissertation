@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class AlgorithmBehaviour : MonoBehaviour
+public class AlgorithmRunner : MonoBehaviour
 {
     public Algorithm Algorithm { get; private set; }
 
@@ -88,6 +89,7 @@ public class AlgorithmBehaviour : MonoBehaviour
     public void RunIterations(int numIters)
     {
         Stopwatch sw = Stopwatch.StartNew();
+
         for (int i = 0; i < numIters; i++)
         {
             Algorithm.NextIteration();

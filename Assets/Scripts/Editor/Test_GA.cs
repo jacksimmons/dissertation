@@ -23,7 +23,7 @@ public class Test_GA : GeneticAlgorithm
             for (int i = 0; i < day.Portions.Count; i++)
                 massSum += day.Portions[i].Mass;
 
-            Assert.AreEqual(massSum, CalculateMassTotal(day));
+            Assert.AreEqual(massSum, day.GetMass());
         }
     }
 }

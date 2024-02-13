@@ -19,10 +19,10 @@ public class Food
     public readonly string FoodGroup;
     public readonly string Reference;
 
-    public readonly Dictionary<Nutrient, float> Nutrients;
+    public readonly float[] Nutrients;
 
 
-    public Food(string name, string desc, string group, string reference, Dictionary<Nutrient, float> nutrients)
+    public Food(string name, string desc, string group, string reference, float[] nutrients)
     {
         Name = name;
         Description = desc;
@@ -65,9 +65,9 @@ public class Food
 
 
 /// <summary>
-/// A class with a type of food (100g), multiplied by a quantity.
+/// A struct with a type of food (100g), multiplied by a quantity.
 /// </summary>
-public class Portion
+public struct Portion
 {
     public readonly Food Food;
 
@@ -87,7 +87,13 @@ public class Portion
     public Portion(Food food, int mass)
     {
         Food = food;
-        Mass = mass;
+        Multiplier = (float)mass/100;
+    }
+
+
+    public float GetNutrientAmount(Nutrient nutrient)
+    {
+        return Food.Nutrients[(int)nutrient] * Multiplier;
     }
 
 
@@ -101,7 +107,7 @@ public class Portion
         for (int i = 0; i < Nutrients.Count; i++)
         {
             Nutrient nutrient = (Nutrient)i;
-            float nutrientAmount = Food.Nutrients[nutrient];
+            float nutrientAmount = Food.Nutrients[i];
             asString += $"{nutrient}: {nutrientAmount * Multiplier}{Nutrients.GetUnit(nutrient)}\n";
         }
         return asString + $"Mass: {Mass}g";
@@ -124,8 +130,28 @@ public enum ParetoComparison
 /// </summary>
 public class Day
 {
-    public ReadOnlyCollection<Portion> Portions;
+    public readonly ReadOnlyCollection<Portion> Portions;
     private readonly List<Portion> _portions;
+
+    private bool _isFitnessUpdated;
+    private float _fitness;
+
+    // Attempts to return cached fitness for performance, but if the Day is not up to date
+    // it will calculate the fitness manually.
+    public float Fitness
+    {
+        get
+        {
+            if (_isFitnessUpdated) return _fitness;
+
+            _fitness = GetFitness();
+            _isFitnessUpdated = true;
+            return _fitness;
+        }
+    }
+
+
+    private readonly float[] _nutrientAmounts = new float[Nutrients.Count];
 
 
     public Day()
@@ -137,13 +163,20 @@ public class Day
 
     public Day(Day day)
     {
-        _portions = new(day.Portions);
+        foreach (Portion portion in day.Portions)
+        {
+            AddPortion(portion);
+        }
+
         Portions = new(_portions);
     }
 
 
     public void AddPortion(Portion portion)
     {
+        _isFitnessUpdated = false;
+
+        AddPortionAmounts(portion);
         _portions.Add(portion);
     }
 
@@ -153,14 +186,51 @@ public class Day
     /// it will not be removed.
     /// </summary>
     /// <param name="portion">The portion to remove if it is not the only one left.</param>
-    public void RemovePortion(Portion portion)
+    public void RemovePortion(int index)
     {
         if (_portions.Count <= 1)
         {
             Debug.LogWarning("No portion was removed. A Day must have at least one portion.");
             return;
         }
-        _portions.Remove(portion);
+
+        _isFitnessUpdated = false;
+
+        SubtractPortionAmounts(Portions[index]);
+        _portions.RemoveAt(index);
+    }
+
+
+    public void ModifyPortion(int index, int mass)
+    {
+        _isFitnessUpdated = false;
+
+        SubtractPortionAmounts(_portions[index]);
+
+        // Modify the portion
+        Portion p = _portions[index];
+        p.Mass = mass;
+        _portions[index] = p;
+
+        AddPortionAmounts(_portions[index]);
+    }
+
+
+    private void AddPortionAmounts(Portion portion)
+    {
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            _nutrientAmounts[i] += portion.GetNutrientAmount((Nutrient)i);
+        }
+    }
+
+
+    private void SubtractPortionAmounts(Portion portion)
+    {
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            _nutrientAmounts[i] -= portion.GetNutrientAmount((Nutrient)i);
+        }
     }
 
 
@@ -173,22 +243,20 @@ public class Day
         // Store how many constraints this is better/worse than `day` on.
         int betterCount = 0;
         int worseCount = 0;
-        int numNonNullConstraints = 0;
+        int numConstraints = Algorithm.Instance.GetNumConstraints();
 
         // This loop exits if this has better or equal fitness on every constraint.
-        foreach (Nutrient nutrient in Algorithm.Instance.Constraints.Keys)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
             // Quick exit for null constraints
-            if (Algorithm.Instance.Constraints[nutrient].GetType() == typeof(NullConstraint))
+            if (Algorithm.Instance.Constraints[i].GetType() == typeof(NullConstraint))
                 continue;
 
-            numNonNullConstraints++;
+            float amountA = a.GetNutrientAmount((Nutrient)i);
+            float fitnessA = Algorithm.Instance.Constraints[i]._GetFitness(amountA);
 
-            float amountA = a.GetNutrientAmount(nutrient);
-            float fitnessA = Algorithm.Instance.Constraints[nutrient]._GetFitness(amountA);
-
-            float amountB = b.GetNutrientAmount(nutrient);
-            float fitnessB = Algorithm.Instance.Constraints[nutrient]._GetFitness(amountB);
+            float amountB = b.GetNutrientAmount((Nutrient)i);
+            float fitnessB = Algorithm.Instance.Constraints[i]._GetFitness(amountB);
 
             if (fitnessA < fitnessB)
                 betterCount++;
@@ -205,7 +273,7 @@ public class Day
                 return ParetoComparison.MutuallyNonDominating;
 
             // Worse on all => Strictly Dominated
-            if (worseCount == numNonNullConstraints)
+            if (worseCount == numConstraints)
                 return ParetoComparison.StrictlyDominated;
 
             // Worse on 1+, and not better on any => Dominated
@@ -214,7 +282,7 @@ public class Day
         else
         {
             // Better on all => Strictly Dominates
-            if (betterCount == numNonNullConstraints)
+            if (betterCount == numConstraints)
                 return ParetoComparison.StrictlyDominates;
 
             // Not worse on any, and better on 1+ => Dominates
@@ -271,25 +339,28 @@ public class Day
         {
             Nutrient nutrient = (Nutrient)i;
             float amount = GetNutrientAmount(nutrient);
-            fitness += Algorithm.Instance.Constraints[nutrient]._GetFitness(amount);
+            fitness += Algorithm.Instance.Constraints[i]._GetFitness(amount);
+
+            // Quick exit for infinity fitness
+            if (fitness == float.PositiveInfinity) return fitness;
         }
 
         return fitness;
     }
 
 
+    /// <summary>
+    /// Returns a sum over the quantity of the provided nutrient each portion contains.
+    /// </summary>
+    /// <param name="nutrient">The nutrient to get the amount for.</param>
+    /// <returns>The quantity of the nutrient in the whole day.</returns>
     public float GetNutrientAmount(Nutrient nutrient)
     {
-        float quantity = 0;
-        foreach (Portion portion in Portions)
-        {
-            quantity += portion.Food.Nutrients[nutrient] * portion.Multiplier;
-        }
-        return quantity;
+        return _nutrientAmounts[(int)nutrient];
     }
 
 
-    public float GetMass()
+    public int GetMass()
     {
         return Portions.Sum(portion => portion.Mass);
     }

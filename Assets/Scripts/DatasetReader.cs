@@ -29,19 +29,18 @@ public struct FoodData
     public string Description;
     public string Group;
     public string Reference;
-    public Dictionary<Nutrient, float> Nutrients;
+    public float[] Nutrients;
 
 
     public FoodData MergeWith(FoodData other)
     {
         if (other.CompositeKey == CompositeKey)
         {
-            foreach (var kvp in other.Nutrients)
+            for (int i = 0; i < Nutrients.Length; i++)
             {
-                if (Nutrients.ContainsKey(kvp.Key)) continue;
-                Nutrients[kvp.Key] = kvp.Value;
+                // If not initialised in this Nutrients, take it from the other Nutrients.
+                if (Mathf.Approximately(Nutrients[i], 0)) Nutrients[i] = other.Nutrients[i];
             }
-
             return this;
         }
 
@@ -135,14 +134,9 @@ public class DatasetReader
 
             // Check the current food isn't missing essential data (due to N, Tr or "")
             // This missing data is given the value -1, as seen in the delimiter ',' case.
-            foreach (Nutrient nutrient in Nutrients.Values)
+            for (int i = 0; i < data.Nutrients.Length; i++)
             {
-                if (nutrient == Nutrient.Calcium && !data.Nutrients.ContainsKey(nutrient))
-                {
-                    Debug.Log(data);
-                }
-
-                if (data.Nutrients[nutrient] < 0)
+                if (data.Nutrients[i] < 0)
                     goto NextFood;
             }
 
@@ -162,7 +156,7 @@ public class DatasetReader
         const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
 
         FoodData currentFood = new();
-        currentFood.Nutrients = new();
+        currentFood.Nutrients = new float[Nutrients.Count];
 
         string currentWord = "";
 
@@ -221,7 +215,7 @@ public class DatasetReader
 
                             // Reset
                             currentFood = new();
-                            currentFood.Nutrients = new();
+                            currentFood.Nutrients = new float[Nutrients.Count];
                         }
                     }
 
@@ -281,7 +275,6 @@ public class DatasetReader
     {
         Nutrient[] columns;
 
-
         switch (file)
         {
             case DatasetFile.Proximates:
@@ -302,7 +295,7 @@ public class DatasetReader
         }
 
         if (Nutrients.Values.Contains(columns[wordIndex]))
-            currentFood.Nutrients[columns[wordIndex]] = floatVal;
+            currentFood.Nutrients[(int)columns[wordIndex]] = floatVal;
 
         return currentFood;
     }

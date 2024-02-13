@@ -39,9 +39,9 @@ public class Test_Food : GeneticAlgorithm
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
 
-            foreach (Nutrient proximate in Constraints.Keys)
+            for (int i = 0; i < Nutrients.Count; i++)
             {
-                float proxFitness = Constraints[proximate]._GetFitness(day.GetNutrientAmount(proximate));
+                float proxFitness = Constraints[i]._GetFitness(day.GetNutrientAmount((Nutrient)i));
                 // Fitness for each proximate can only be positive or 0.
                 Assert.IsTrue(proxFitness >= 0);
             }
@@ -57,19 +57,19 @@ public class Test_Food : GeneticAlgorithm
     {
         // Create a best Day (this will dominate any Day object)
         Day bestDay = new();
-        Dictionary<Nutrient, float> bestNutrients = new();
+        float[] bestNutrients = new float[Nutrients.Count];
         bestDay.AddPortion(new(new("", "", "", "", bestNutrients), 100));
 
         // Create the worst Day (will be dominated by any Day object which doesn't
         // have a fitness of PositiveInfinity).
         Day worstDay = new();
-        Dictionary<Nutrient, float> worstNutrients = new();
+        float[] worstNutrients = new float[Nutrients.Count];
         worstDay.AddPortion(new(new("", "", "", "", worstNutrients), 100));
 
-        foreach (var kvp in Constraints)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
-            bestNutrients[kvp.Key] = Constraints[kvp.Key].BestValue;
-            worstNutrients[kvp.Key] = Constraints[kvp.Key].WorstValue;
+            bestNutrients[i] = Constraints[i].BestValue;
+            worstNutrients[i] = Constraints[i].WorstValue;
         }
 
         foreach (Day day in Population)

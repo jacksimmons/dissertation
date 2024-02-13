@@ -44,7 +44,7 @@ public enum Nutrient
 
 public static class Nutrients
 {
-    public static int Count = Enum.GetValues(typeof(Nutrient)).Length - 1;
+    public static int Count = Enum.GetValues(typeof(Nutrient)).Length;
     public static Nutrient[] Values = (Nutrient[])Enum.GetValues(typeof(Nutrient));
 
 

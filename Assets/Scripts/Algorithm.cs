@@ -22,7 +22,7 @@ public abstract class Algorithm
 
             // NOTE: In editor tests, this will throw an error as the GameObject tree is inactive.
             // Assign the Instance variable ASAP in test classes.
-            return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmBehaviour>().Algorithm;
+            return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmRunner>().Algorithm;
         }
 
         protected set { m_instance = value; }
@@ -32,7 +32,7 @@ public abstract class Algorithm
     // The constraints for each nutrient in a day.
     protected List<Food> m_foods;
 
-    public readonly ReadOnlyDictionary<Nutrient, Constraint> Constraints;
+    public readonly ReadOnlyCollection<Constraint> Constraints;
     public readonly List<Day> Population;
 
     // The index of the list a day is in represents the non-dominated set it is in.
@@ -68,22 +68,22 @@ public abstract class Algorithm
         m_foods = dr.ReadFoods();
 
         // Load constraints from disk.
-        Dictionary<Nutrient, Constraint> constraints = new();
-        foreach (Nutrient nutrient in Nutrients.Values)
+        Constraint[] constraints = new Constraint[Nutrients.Count];
+        for (int i = 0; i < Nutrients.Count; i++)
         {
             // If the constraintTypes arraylength is insufficient, the nutrient has no constraintType setting.
-            if (Preferences.Instance.constraintTypes.Length <= (int)nutrient)
+            if (Preferences.Instance.constraintTypes.Length <= i)
             {
-                constraints.Add(nutrient, new NullConstraint());
+                constraints[i] = new NullConstraint();
                 continue;
             }
 
             // Otherwise create the required constraint
             Constraint constraint;
-            float goal = Preferences.Instance.goals[(int)nutrient];
-            float tolerance = Preferences.Instance.tolerances[(int)nutrient];
-            float steepness = Preferences.Instance.steepnesses[(int)nutrient];
-            switch (Preferences.Instance.constraintTypes[(int)nutrient])
+            float goal = Preferences.Instance.goals[i];
+            float tolerance = Preferences.Instance.tolerances[i];
+            float steepness = Preferences.Instance.steepnesses[i];
+            switch (Preferences.Instance.constraintTypes[i])
             {
                 case ConstraintType.Minimise:
                     constraint = new MinimiseConstraint(goal);
@@ -96,7 +96,7 @@ public abstract class Algorithm
                     break;
             }
 
-            constraints.Add(nutrient, constraint);
+            constraints[i] = constraint;
         }
 
         Constraints = new(constraints);
@@ -176,7 +176,7 @@ public abstract class Algorithm
     public void NextIteration()
     {
         RunIteration();
-        AssignDominanceHierarchy();
+        //AssignDominanceHierarchy();
     }
 
 
@@ -190,12 +190,9 @@ public abstract class Algorithm
     public int GetNumConstraints()
     {
         int cnt = 0;
-        foreach (Constraint c in Constraints.Values)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
-            if (c.GetType() != typeof(NullConstraint))
-            {
-                cnt++;
-            }
+            if (Constraints[i].GetType() != typeof(NullConstraint)) cnt++;
         }
         return cnt;
     }
