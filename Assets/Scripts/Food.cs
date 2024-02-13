@@ -173,10 +173,17 @@ public class Day
         // Store how many constraints this is better/worse than `day` on.
         int betterCount = 0;
         int worseCount = 0;
+        int numNonNullConstraints = 0;
 
         // This loop exits if this has better or equal fitness on every constraint.
         foreach (Nutrient nutrient in Algorithm.Instance.Constraints.Keys)
         {
+            // Quick exit for null constraints
+            if (Algorithm.Instance.Constraints[nutrient].GetType() == typeof(NullConstraint))
+                continue;
+
+            numNonNullConstraints++;
+
             float amountA = a.GetNutrientAmount(nutrient);
             float fitnessA = Algorithm.Instance.Constraints[nutrient]._GetFitness(amountA);
 
@@ -198,7 +205,7 @@ public class Day
                 return ParetoComparison.MutuallyNonDominating;
 
             // Worse on all => Strictly Dominated
-            if (worseCount == Algorithm.Instance.GetNumConstraints())
+            if (worseCount == numNonNullConstraints)
                 return ParetoComparison.StrictlyDominated;
 
             // Worse on 1+, and not better on any => Dominated
@@ -207,7 +214,7 @@ public class Day
         else
         {
             // Better on all => Strictly Dominates
-            if (betterCount == Algorithm.Instance.GetNumConstraints())
+            if (betterCount == numNonNullConstraints)
                 return ParetoComparison.StrictlyDominates;
 
             // Not worse on any, and better on 1+ => Dominates

@@ -16,7 +16,7 @@ public class GeneticAlgorithm : Algorithm
     
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // Also leads to days with more portions.
-    private const float ChanceToAddOrRemovePortion = 0f;
+    private const float ChanceToAddOrRemovePortion = 0.05f;
 
 
     protected override void RunIteration()
@@ -54,15 +54,28 @@ public class GeneticAlgorithm : Algorithm
         NumIterations++;
     }
 
+
+    protected Day Selection(List<Day> candidates, bool selectBest = true)
+    {
+        switch (Preferences.Instance.comparisonType)
+        {
+            case ComparisonType.ParetoDominance:
+                return ParetoSelection(candidates, selectBest);
+            case ComparisonType.SummedFitness:
+            default:
+                return FitnessSelection(candidates, selectBest);
+        }
+    }
+
     
     /// <summary>
-    /// Basic tournament selection.
+    /// Pareto-dominance tournament selection.
     /// </summary>
-    protected Day Selection(List<Day> candidates, bool selectBest = true)
+    protected Day ParetoSelection(List<Day> candidates, bool selectBest = true)
     {
         int indexA = Random.Range(0, candidates.Count);
         // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-        int indexB = (indexA + Random.Range(0, candidates.Count - 1)) % candidates.Count;
+        int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
 
         // If one dominates the other, the selection is simple.
         // Don't make use of PopHierarchy, because this method is sometimes called before PopHierarchy
@@ -77,6 +90,26 @@ public class GeneticAlgorithm : Algorithm
 
         // Otherwise, tiebreak by comparison set
         return SelectionTiebreak(candidates[indexA], candidates[indexB]);
+    }
+
+
+    protected Day FitnessSelection(List<Day> candidates, bool selectBest = true)
+    {
+        int indexA = Random.Range(0, candidates.Count);
+        // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
+        int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
+
+        float fitA = candidates[indexA].GetFitness();
+        float fitB = candidates[indexB].GetFitness();
+
+        bool pickedA;
+
+        if (fitA < fitB) pickedA = selectBest;
+        else if (fitB < fitA) pickedA = !selectBest;
+        else pickedA = Random.Range(0, 2) == 1;
+
+        if (pickedA) return candidates[indexA];
+        return candidates[indexB];
     }
 
 

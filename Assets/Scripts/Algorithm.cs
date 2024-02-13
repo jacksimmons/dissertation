@@ -54,7 +54,7 @@ public abstract class Algorithm
 
     public int NumIterations { get; protected set; } = 1;
 
-    public const int NumStartingDaysInPop = 20;
+    public const int NumStartingDaysInPop = 10;
     public const int NumStartingPortionsInDay = 1;
     public const int StartingPortionMassMin = 50;
     public const int StartingPortionMassMax = 150;

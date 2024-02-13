@@ -25,6 +25,13 @@ public enum ConstraintType
 }
 
 
+public enum ComparisonType
+{
+    ParetoDominance,
+    SummedFitness
+}
+
+
 /// <summary>
 /// A class which saves the user's preferences when serialized into a file.
 /// </summary>
@@ -58,12 +65,18 @@ public class Preferences : ICached
     public float heightInCM;
     public AssignedSex assignedSex;
 
+    //
+    // Parameters for algorithm
+    //
 
-    // Parameters for each constraint (indices matching enum values)
+    // Params for each constraint (indices matching enum values)
     public float[] goals;
     public float[] tolerances;
     public float[] steepnesses;
     public ConstraintType[] constraintTypes;
+
+    // The type of comparison to use in the algorithm
+    public ComparisonType comparisonType;
 
 
     // By default, the user's settings should permit every food type - this

@@ -12,6 +12,9 @@ public class AlgorithmSetup : MonoBehaviour
     private GameObject[] m_nutrientFields;
 
     [SerializeField]
+    private TMP_Text m_algComparisonText;
+
+    [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
     private int m_currentPanelIndex = 0;
 
@@ -138,6 +141,15 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
+    public void OnCycleAlgComparison()
+    {
+        Preferences.Instance.comparisonType = (ComparisonType)
+            Static.NextCircularArrayIndex((int)Preferences.Instance.comparisonType, Enum.GetValues(typeof(ComparisonType)).Length, true);
+        Static.SavePreferences();
+        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.comparisonType}";
+    }
+
+
     private void UpdateUI()
     {
         Preferences p = Preferences.Instance;
@@ -161,6 +173,8 @@ public class AlgorithmSetup : MonoBehaviour
 
             go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = $"Goal:\n{p.constraintTypes[(int)nutrient]}";
         }
+
+        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.comparisonType}";
     }
 
 
