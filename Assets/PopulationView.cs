@@ -48,32 +48,49 @@ public class PopulationView : MonoBehaviour
 
     public void UpdatePopView()
     {
-        foreach (Transform transform in m_popContent.transform)
+        for (int i = 1; i < m_popContent.transform.childCount; i++)
         {
-            Destroy(transform.gameObject);
+            Destroy(m_popContent.transform.GetChild(i).gameObject);
         }
 
-        int index = 0;
+
+        // Display the best day
+        Day bestDay = Algorithm.Instance.GetBestDay();
+        if (bestDay != null)
+        {
+            Transform bestDayBtn = m_popContent.transform.GetChild(0);
+
+            bestDayBtn.GetComponent<Button>().onClick.RemoveAllListeners();
+            bestDayBtn.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(bestDay));
+
+            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {bestDay.Fitness})";
+        }
+
+
         foreach (Day day in Algorithm.Instance.Population)
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
 
-            string label = $"Portions: {day.Portions.Count} Rank: {Algorithm.Instance.GetDayRank(day)}";
-            if (Preferences.Instance.comparisonType == ComparisonType.SummedFitness)
-                label += $" Fitness: { day.GetFitness():F2}";
+            string label = $"Portions: {day.Portions.Count}";
+            if (Preferences.Instance.algType == AlgorithmType.ParetoDominanceGA)
+            {
+                ParetoDominanceGA pdga = (ParetoDominanceGA)Algorithm.Instance;
+                label += $" Rank: {pdga.Sorting.TryGetDayRank(day)}";
+            }
+            if (Preferences.Instance.algType == AlgorithmType.SummedFitnessGA)
+                label += $" Fitness: {day.Fitness:F2}";
 
             obj.transform.GetChild(0).GetComponent<TMP_Text>().text = label;
 
             Button btn = obj.GetComponent<Button>();
             btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
-
-            index++;
         }
+
 
         if (m_currentlyDisplayedDay != null)
         {
-            if (Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
+            if (Algorithm.Instance.GetBestDay().IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
             {
                 UpdatePortionUI(m_currentlyDisplayedDay, 0);
                 UpdateDayUI(m_currentlyDisplayedDay);

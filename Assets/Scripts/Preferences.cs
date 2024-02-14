@@ -25,10 +25,10 @@ public enum ConstraintType
 }
 
 
-public enum ComparisonType
+public enum AlgorithmType
 {
-    ParetoDominance,
-    SummedFitness
+    ParetoDominanceGA,
+    SummedFitnessGA
 }
 
 
@@ -76,7 +76,7 @@ public class Preferences : ICached
     public ConstraintType[] constraintTypes;
 
     // The type of comparison to use in the algorithm
-    public ComparisonType comparisonType;
+    public AlgorithmType algType;
 
 
     // By default, the user's settings should permit every food type - this
@@ -103,6 +103,7 @@ public class Preferences : ICached
         }
         
         constraintTypes = new ConstraintType[Nutrients.Count];
+        algType = AlgorithmType.SummedFitnessGA;
     }
 
 
@@ -134,8 +135,10 @@ public class Preferences : ICached
     /// </summary>
     /// <param name="foodGroup">The food group code to check if allowed.</param>
     /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
-    public bool IsFoodGroupAllowed(string foodGroup)
+    public bool IsFoodGroupAllowed(Food food)
     {
+        string foodGroup = food.FoodGroup;
+
         // In case of no food group, say it is not allowed.
         // Safest approach - removes all foods without a proper food group label.
         if (foodGroup.Length == 0) return false;
@@ -163,7 +166,8 @@ public class Preferences : ICached
                 return false;
         }
 
-        // Unique cases
+
+        // Unique groups
         switch (foodGroup)
         {
             case "OB": // Animal fats
@@ -171,6 +175,18 @@ public class Preferences : ICached
                     return false;
                 break;
         }
+
+
+        // Unique keywords to catch hybrid items (e.g. Tuna sandwich)
+        string name = food.Name.ToLower();
+
+        if (name.Contains("salmon") && !eatsSeafood) return false;
+        if (name.Contains("cod") && !eatsSeafood) return false;
+        if (name.Contains("tuna") && !eatsSeafood) return false;
+
+        if (name.Contains("gelatine") && !eatsLandMeat) return false;
+        if (name.Contains("beef") && !eatsLandMeat) return false;
+        if (name.Contains("pork") && !eatsLandMeat) return false;
 
         return true;
     }

@@ -4,41 +4,14 @@ using System.Collections.ObjectModel;
 
 public static class Pareto
 {
-    public static List<List<Day>> GetSortedNonDominatedSets(ReadOnlyCollection<Day> population)
+    public static ParetoComparison SimplifyComparison(ParetoComparison p)
     {
-        if (population.Count < 1) throw new IndexOutOfRangeException("Population was empty.");
-
-        List<Day> days = new(population);
-        List<List<Day>> popHierarchy = new();
-
-        int sortedCount = 0;
-
-
-        // Init:   Set `days` equal to `population`.
-        // Repeat: Find every element in `days` that is not dominated by the elements in `days`.
-        //         Once iteration completes, remove these from `days` and continue. Take a note of the
-        //         set number.
-
-        while (sortedCount < population.Count)
+        return p switch
         {
-            List<Day> nonDominatedSet = new();
-            foreach (Day day in days)
-            {
-                if (IsNonDominated(day, days))
-                {
-                    nonDominatedSet.Add(day);
-                    sortedCount++;
-                }
-            }
-
-            popHierarchy.Add(nonDominatedSet);
-            foreach (Day day in nonDominatedSet)
-            {
-                days.Remove(day);
-            }
-        }
-
-        return popHierarchy;
+            ParetoComparison.StrictlyDominates or ParetoComparison.Dominates => ParetoComparison.Dominates,
+            ParetoComparison.StrictlyDominated or ParetoComparison.Dominated => ParetoComparison.Dominated,
+            _ => ParetoComparison.MutuallyNonDominating,
+        };
     }
 
 
@@ -57,5 +30,141 @@ public static class Pareto
         }
 
         return true;
+    }
+}
+
+
+public class NonDominatedSorting
+{
+    public const int NUM_SORTING_SETS = 10;
+
+    private List<ComparisonSet> _sets;
+    public ReadOnlyCollection<ComparisonSet> Sets;
+
+
+    public NonDominatedSorting()
+    {
+        _sets = new()
+        {
+            new()
+        };
+
+        Sets = new(_sets);
+    }
+
+
+    /// <summary>
+    /// Adds a day (if possible) to one of the comparison sets.
+    /// If the day gets dominated by all other comparison set members, it will not get added to any.
+    /// </summary>
+    public void TryAddDayToSort(Day day)
+    {
+        for (int i = 0; i < Sets.Count; i++)
+        {
+            ComparisonSet set = Sets[i];
+            switch (Pareto.SimplifyComparison(set.Compare(day)))
+            {
+                // If the first set it beats, it dominates it, then we need a new set for this Day.
+                case ParetoComparison.Dominates:
+                    ComparisonSet newSet = new();
+                    newSet.Add(day);
+                    _sets.Insert(i, newSet);
+                    return;
+
+                // MND => This day belongs in this set.
+                case ParetoComparison.MutuallyNonDominating:
+                    _sets[i].Add(day);
+                    return;
+
+                // Continue until we find a set matching the above criteria
+                case ParetoComparison.Dominated:
+                default:
+                    continue;
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// If the day is in a comparison set, returns the set's rank (set number).
+    /// Otherwise, returns -1.
+    /// </summary>
+    public int TryGetDayRank(Day day)
+    {
+        for (int i = 0; i < Sets.Count; i++)
+        {
+            ComparisonSet set = Sets[i];
+            if (set.Days.Contains(day))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    /// <summary>
+    /// Will remove a day from the sort, if it is in a comparison set.
+    /// </summary>
+    public void TryRemoveDayFromSort(Day day)
+    {
+        for (int i = 0; i < Sets.Count; i++)
+        {
+            ComparisonSet set = Sets[i];
+            if (set.Days.Contains(day))
+            {
+                set.Remove(day);
+                // Remove resulting empty set
+                if (set.Days.Count == 0)
+                    _sets.Remove(set);
+            }
+        }
+    }
+}
+
+
+public class ComparisonSet
+{
+    private List<Day> _days;
+    public ReadOnlyCollection<Day> Days;
+
+
+    public ComparisonSet()
+    {
+        _days = new();
+        Days = new(_days);
+    }
+
+
+    /// <summary>
+    /// Compares the given day to the rest of the set. Returns the worst comparison for
+    /// the provided day that occurs in the set.
+    /// </summary>
+    public ParetoComparison Compare(Day day)
+    {
+        ParetoComparison comparison = ParetoComparison.StrictlyDominates;
+        foreach (Day other in Days)
+        {
+            if (other == null) continue;
+
+            ParetoComparison otherComp = Day.Compare(day, other);
+            if ((int)otherComp > (int)comparison)
+            {
+                comparison = otherComp;
+            }
+        }
+        return comparison;
+    }
+
+
+    public void Add(Day day)
+    {
+        _days.Add(day);
+    }
+
+
+    public void Remove(Day day)
+    {
+        _days.Remove(day);
     }
 }

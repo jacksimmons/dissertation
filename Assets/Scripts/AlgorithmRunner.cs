@@ -6,12 +6,15 @@ using System.Linq;
 using System.Threading;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 
 public class AlgorithmRunner : MonoBehaviour
 {
     public Algorithm Algorithm { get; private set; }
 
+    [SerializeField]
+    private MenuStackHandler m_menu;
     [SerializeField]
     private TMP_Text m_iterTimeTakenText;
     [SerializeField]
@@ -25,8 +28,28 @@ public class AlgorithmRunner : MonoBehaviour
     public void Init()
     {
         m_champions = new();
-        Algorithm = new GeneticAlgorithm();
-        Algorithm.AssignDominanceHierarchy();
+
+        Algorithm.EndAlgorithm();
+
+        switch (Preferences.Instance.algType)
+        {
+            case AlgorithmType.ParetoDominanceGA:
+                Algorithm = new ParetoDominanceGA();
+                break;
+            case AlgorithmType.SummedFitnessGA:
+            default:
+                Algorithm = new SummedFitnessGA();
+                break;
+        }
+
+        if (Algorithm.DatasetError != "")
+        {
+            m_menu.ShowPopup("Error", Algorithm.DatasetError, Color.red);
+            return;
+        }
+
+        Algorithm.PostConstructorSetup();
+
         UpdateAlgorithmUI(0, 0);
     }
 
@@ -40,43 +63,44 @@ public class AlgorithmRunner : MonoBehaviour
         // than the existing champions. If so, add them once and remove any champions
         // that they beat.
         //
-        foreach (Day challenger in challengers)
-        {
-            List<Day> oldChamps = new(m_champions);
-            bool added = false;
+        //foreach (Day challenger in challengers)
+        //{
+        //    List<Day> oldChamps = new(m_champions);
+        //    bool added = false;
 
-            if (oldChamps.Count == 0)
-            {
-                m_champions.Add(challenger);
-                continue;
-            }
+        //    if (oldChamps.Count == 0)
+        //    {
+        //        m_champions.Add(challenger);
+        //        continue;
+        //    }
 
-            foreach (Day champion in oldChamps)
-            {
-                switch (Day.Compare(challenger, champion))
-                {
-                    case ParetoComparison.StrictlyDominates:
-                    case ParetoComparison.Dominates:
-                        m_champions.Remove(champion);
-                        if (!added)
-                        {
-                            m_champions.Add(challenger);
-                            added = true;
-                        }
-                        break;
-                    case ParetoComparison.MutuallyNonDominating:
-                        if (!added)
-                        {
-                            m_champions.Add(challenger);
-                            added = true;
-                        }
-                        break;
-                }
-            }
-        }
+        //    foreach (Day champion in oldChamps)
+        //    {
+        //        switch (Day.Compare(challenger, champion))
+        //        {
+        //            case ParetoComparison.StrictlyDominates:
+        //            case ParetoComparison.Dominates:
+        //                m_champions.Remove(champion);
+        //                if (!added)
+        //                {
+        //                    m_champions.Add(challenger);
+        //                    added = true;
+        //                }
+        //                break;
+        //            case ParetoComparison.MutuallyNonDominating:
+        //                if (!added)
+        //                {
+        //                    m_champions.Add(challenger);
+        //                    added = true;
+        //                }
+        //                break;
+        //        }
+        //    }
+        //}
 
-        float domFitness = m_champions.Count > 0 ? m_champions[0].GetFitness() : 0;
+        //float domFitness = m_champions.Count > 0 ? m_champions[0].GetFitness() : 0;
         //m_domFitnessText.text = $"Dominant Fitness ({m_champions.Count}): {domFitness}";
+        
         m_populationView.UpdatePopView();
         m_iterNumText.text = $"Iteration: {Algorithm.NumIterations}";
         m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";

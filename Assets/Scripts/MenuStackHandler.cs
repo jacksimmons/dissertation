@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 
@@ -13,6 +14,9 @@ public partial class MenuStackHandler : MonoBehaviour
 
     [SerializeField]
     private GameObject m_backButton;
+
+    [SerializeField]
+    private GameObject m_popupPanel;
 
     // Allows access of the previous menus, used for making previous menus invisible
     // and for backtracking (up and to the main menu). Due to tree-like menu structure,
@@ -63,5 +67,22 @@ public partial class MenuStackHandler : MonoBehaviour
         {
             m_backButton.SetActive(false);
         }
+    }
+
+
+    public void ShowPopup(string title, string message, Color messageColour)
+    {
+        m_popupPanel.SetActive(true);
+        m_popupPanel.transform.GetChild(0).GetComponent<TMP_Text>().text = title;
+        
+        TMP_Text messageText = m_popupPanel.transform.GetChild(1).GetComponent<TMP_Text>();
+        messageText.text = message;
+        messageText.color = messageColour;
+    }
+
+
+    public void HidePopup()
+    {
+        m_popupPanel.SetActive(false);
     }
 }

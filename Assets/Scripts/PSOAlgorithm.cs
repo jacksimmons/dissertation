@@ -1,4 +1,4 @@
-public class PSOAlgorithm : Algorithm
+public abstract class PSOAlgorithm : Algorithm
 {
     protected override void RunIteration()
     {

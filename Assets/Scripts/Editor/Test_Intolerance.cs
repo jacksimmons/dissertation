@@ -18,12 +18,12 @@ public class Test_Intolerance
     /// </summary>
     private void AssertAllFoodsValid(Preferences prefs)
     {
-        List<Food> foods = new DatasetReader(prefs).ReadFoods();
+        List<Food> foods = new DatasetReader(prefs).ProcessFoods();
         Debug.Log($"Number of foods permitted: {foods.Count}");
 
         foreach (Food food in foods)
         {
-            Assert.IsTrue(prefs.IsFoodGroupAllowed(food.FoodGroup));
+            Assert.IsTrue(prefs.IsFoodGroupAllowed(food));
         }
     }
 

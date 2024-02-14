@@ -70,13 +70,28 @@ public class DatasetReader
     private readonly Nutrient[] m_inorganicsColumns = new Nutrient[19];
     private readonly Nutrient[] m_vitaminsColumns = new Nutrient[24];
 
+    public readonly string SetupError = "";
+
 
     public DatasetReader(Preferences prefs, string proximatesFile = "Proximates.csv", string inorganicsFile = "Inorganics.csv", string vitaminsFile
         = "Vitamins.csv")
     {
-        string proximatesData = File.ReadAllText(Application.dataPath + "/" + proximatesFile);
-        string inorganicsData = File.ReadAllText(Application.dataPath + "/" + inorganicsFile);
-        string vitaminsData = File.ReadAllText(Application.dataPath + "/" + vitaminsFile);
+        string proximatesData;
+        string inorganicsData;
+        string vitaminsData;
+
+        try
+        {
+            proximatesData = File.ReadAllText(Application.dataPath + "/" + proximatesFile);
+            inorganicsData = File.ReadAllText(Application.dataPath + "/" + inorganicsFile);
+            vitaminsData = File.ReadAllText(Application.dataPath + "/" + vitaminsFile);
+        }
+        // Catch any sharing violation errors, permission errors, etc.
+        catch (Exception e)
+        {
+            SetupError = $"Message:\n{e.Message}\nStack Trace:\n{e.StackTrace}";
+            return;
+        }
 
         m_files = new(new Dictionary<DatasetFile, string>
         {
@@ -113,23 +128,21 @@ public class DatasetReader
     }
 
 
-
     /// <summary>
     /// This method converts the dataset into a list of Food objects.
     /// </summary>
-    public List<Food> ReadFoods()
+    public List<Food> ProcessFoods()
     {
         foreach (DatasetFile file in m_files.Keys)
         {
-            ReadFile(file);
+            ProcessFile(file);
         }
-
 
         List<Food> foods = new();
         foreach (FoodData data in m_dataset.Values)
         {
             // Check the food is allowed.
-            if (!m_prefs.IsFoodGroupAllowed(data.Group))
+            if (!m_prefs.IsFoodGroupAllowed(new(data)))
                 continue;
 
             // Check the current food isn't missing essential data (due to N, Tr or "")
@@ -146,12 +159,11 @@ public class DatasetReader
             NextFood: continue;
         }
 
-
         return foods;
     }
 
 
-    private void ReadFile(DatasetFile file)
+    private void ProcessFile(DatasetFile file)
     {
         const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
 
@@ -294,7 +306,7 @@ public class DatasetReader
             return currentFood;
         }
 
-        if (Nutrients.Values.Contains(columns[wordIndex]))
+        if (columns[wordIndex] != (Nutrient)(-1))
             currentFood.Nutrients[(int)columns[wordIndex]] = floatVal;
 
         return currentFood;

@@ -23,7 +23,7 @@ public class Test_Dataset
             { DatasetFile.Inorganics, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestInorganics.csv") }
         };
         List<Food> foods = new DatasetReader(Preferences.Instance, "Scripts/Editor/TestProximates.csv", "/Scripts/Editor/TestInorganics.csv",
-            "/Scripts/Editor/TestVitamins.csv").ReadFoods();
+            "/Scripts/Editor/TestVitamins.csv").ProcessFoods();
         return foods;
     }
 
@@ -95,7 +95,7 @@ public class Test_Dataset
     [Test]
     public void ReadDatasetThrowsNoError()
     {
-        List<Food> foods = new DatasetReader(Preferences.Instance).ReadFoods();
+        List<Food> foods = new DatasetReader(Preferences.Instance).ProcessFoods();
         Assert.IsTrue(foods.Count > 0);
     }
 }

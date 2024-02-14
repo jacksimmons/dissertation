@@ -42,6 +42,23 @@ public class Food
     }
 
 
+    public bool IsEqualTo(Food other)
+    {
+        // Check all simple attribs are the same
+        bool attribs = Name == other.Name && Description == other.Description && FoodGroup == other.FoodGroup && Reference == other.Reference;
+
+        if (!attribs) return false;
+
+        // Check all nutrients are the same
+        for (int i = 0; i < Nutrients.Length; i++)
+        {
+            if (Nutrients[i] != other.Nutrients[i])
+                return false;
+        }
+        return true;
+    }
+
+
     //public override string ToString()
     //{
     //    return $"Name: {Name}\nDescription: {Description}\nFood Group: {FoodGroup}"
@@ -94,6 +111,12 @@ public struct Portion
     public float GetNutrientAmount(Nutrient nutrient)
     {
         return Food.Nutrients[(int)nutrient] * Multiplier;
+    }
+
+
+    public bool IsEqualTo(Portion other)
+    {
+        return Food.IsEqualTo(other.Food) && Multiplier == other.Multiplier;
     }
 
 
@@ -163,12 +186,15 @@ public class Day
 
     public Day(Day day)
     {
+        _portions = new();
+        Portions = new(_portions);
+
         foreach (Portion portion in day.Portions)
         {
             AddPortion(portion);
         }
 
-        Portions = new(_portions);
+        _fitness = day.Fitness;
     }
 
 
@@ -177,7 +203,24 @@ public class Day
         _isFitnessUpdated = false;
 
         AddPortionAmounts(portion);
-        _portions.Add(portion);
+
+        bool merged = false;
+
+        // Merge new portion with an existing one if it has the same name.
+        for (int i = 0; i < Portions.Count; i++)
+        {
+            Portion existing = Portions[i];
+            if (existing.Food.Name == portion.Food.Name)
+            {
+                existing.Mass += portion.Mass;
+                merged = true;
+                _portions[i] = existing;
+            }
+        }
+
+        // Otherwise, add the portion (it has a unique food)
+        if (!merged)
+            _portions.Add(portion);
     }
 
 
@@ -201,18 +244,27 @@ public class Day
     }
 
 
-    public void ModifyPortion(int index, int mass)
+    public void AddToPortionMass(int index, int dm)
     {
         _isFitnessUpdated = false;
 
-        SubtractPortionAmounts(_portions[index]);
-
-        // Modify the portion
+        // Add mass to the portion
         Portion p = _portions[index];
-        p.Mass = mass;
+        p.Mass += dm;
         _portions[index] = p;
 
-        AddPortionAmounts(_portions[index]);
+        // Create dummy portion with difference in mass
+        Portion dummy = new(p.Food, dm);
+        AddPortionAmounts(dummy);
+    }
+
+
+    public void SetPortionMass(int index, int mass)
+    {
+        _isFitnessUpdated = false;
+
+        int dm = mass - _portions[index].Mass;
+        AddToPortionMass(index, dm);
     }
 
 
@@ -314,12 +366,34 @@ public class Day
     /// </summary>
     public static ParetoComparison SimpleCompare(Day a, Day b)
     {
-        return Compare(a, b) switch
+        return Pareto.SimplifyComparison(Compare(a, b));
+    }
+
+
+    /// <summary>
+    /// Checks if two foods are equal (they have exactly the same portions, in any order).
+    /// Need to check if foods have identical portions but with different Portions list order too.
+    /// </summary>
+    /// <param name="other">The day to compare this against.</param>
+    public bool IsEqualTo(Day other)
+    {
+        // For all portions, check there is an identical portion in the other day.
+        foreach (Portion portion in Portions)
         {
-            ParetoComparison.StrictlyDominates or ParetoComparison.Dominates => ParetoComparison.Dominates,
-            ParetoComparison.StrictlyDominated or ParetoComparison.Dominated => ParetoComparison.Dominated,
-            _ => ParetoComparison.MutuallyNonDominating,
-        };
+            bool equivalentPortionFound = false;
+            foreach (Portion otherPortion in other.Portions)
+            {
+                if (portion.IsEqualTo(otherPortion))
+                {
+                    equivalentPortionFound = true;
+                    break;
+                }
+            }
+
+            if (!equivalentPortionFound) return false;
+        }
+
+        return true;
     }
 
 

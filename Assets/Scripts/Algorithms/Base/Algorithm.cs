@@ -33,24 +33,11 @@ public abstract class Algorithm
     protected List<Food> m_foods;
 
     public readonly ReadOnlyCollection<Constraint> Constraints;
-    public readonly List<Day> Population;
 
-    // The index of the list a day is in represents the non-dominated set it is in.
-    // The higher the index, the more dominated the set is.
-    // Set 0 - Mutually non-dominated by all
-    // Set 1 - Mutually non-dominated by all once set 0 is removed
-    // etc...
-    // Up to Set N - The maximum sorting set
-    public ReadOnlyCollection<ReadOnlyCollection<Day>> PopHierarchy;
-    
-    // [PopHierarchy.Length, inf)
-    protected const int NUM_SORTING_SETS = 10;
+    private List<Day> m_population;
+    public ReadOnlyCollection<Day> Population;
 
-    // The index of sorting set the algorithm goes up to during a tiebreak.
-    // The higher it is, the more likely to resolve a tiebreak.
-    //
-    // [0, PopHierarchy.Length)
-    protected const int SELECTION_PRESSURE = 5;
+    private Day m_bestDay;
 
     public int NumIterations { get; protected set; } = 1;
 
@@ -59,13 +46,18 @@ public abstract class Algorithm
     public const int StartingPortionMassMin = 50;
     public const int StartingPortionMassMax = 150;
 
+    public readonly string DatasetError = "";
+
 
     public Algorithm()
     {
         Preferences prefs = Preferences.Instance;
 
         DatasetReader dr = new(prefs);
-        m_foods = dr.ReadFoods();
+        DatasetError = dr.SetupError;
+
+        if (DatasetError != "") return;
+        m_foods = dr.ProcessFoods();
 
         // Load constraints from disk.
         Constraint[] constraints = new Constraint[Nutrients.Count];
@@ -100,7 +92,19 @@ public abstract class Algorithm
         }
 
         Constraints = new(constraints);
-        Population = GetStartingPopulation();
+
+        m_population = new();
+        GetStartingPopulation();
+        Population = new(m_population);
+    }
+
+
+    /// <summary>
+    /// Resets the static instance.
+    /// </summary>
+    public static void EndAlgorithm()
+    {
+        Instance = null;
     }
 
 
@@ -108,10 +112,8 @@ public abstract class Algorithm
     /// Populates the Population data structure with randomly generated Days.
     /// </summary>
     /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
-    protected List<Day> GetStartingPopulation()
+    protected void GetStartingPopulation()
     {
-        // Generate random starting population of Days
-        List<Day> days = new();
         for (int i = 0; i < NumStartingDaysInPop; i++)
         {
             // Add a number of days to the population (each has random foods)
@@ -122,10 +124,8 @@ public abstract class Algorithm
                 day.AddPortion(GenerateRandomPortion());
             }
 
-            days.Add(day);
+            m_population.Add(day);
         }
-
-        return days;
     }
 
 
@@ -141,29 +141,7 @@ public abstract class Algorithm
     }
 
 
-    public void AssignDominanceHierarchy()
-    {
-        // Populate the population hierarchy
-        List<List<Day>> sortedRanks = Pareto.GetSortedNonDominatedSets(new(Population));
-
-        List<ReadOnlyCollection<Day>> readOnlySortedRanks = new();
-        for (int i = 0; i < sortedRanks.Count; i++)
-        {
-            readOnlySortedRanks.Add(new(sortedRanks[i]));
-        }
-
-        PopHierarchy = new(readOnlySortedRanks);
-    }
-
-
-    public int GetDayRank(Day day)
-    {
-        for (int i = 0; i < PopHierarchy.Count; i++)
-        {
-            if (PopHierarchy[i].Contains(day)) return i;
-        }
-        return -1;
-    }
+    public abstract void PostConstructorSetup();
 
 
     /// <summary>
@@ -176,11 +154,46 @@ public abstract class Algorithm
     public void NextIteration()
     {
         RunIteration();
-        //AssignDominanceHierarchy();
+
+        for (int i = 0; i < Population.Count; i++)
+        {
+            if (m_bestDay == null)
+            {
+                m_bestDay = Population[i];
+                continue;
+            }
+
+            if (Population[i].Fitness < m_bestDay.Fitness)
+            {
+                m_bestDay = Population[i];
+            }
+        }
     }
 
 
     protected abstract void RunIteration();
+
+
+    protected virtual void AddToPopulation(Day day)
+    {
+        m_population.Add(day);
+    }
+
+
+    protected virtual void RemoveFromPopulation(Day day)
+    {
+        m_population.Remove(day);
+    }
+
+
+    /// <summary>
+    /// Copies the best day into a new object, and returns it, if the best day is non-null.
+    /// Otherwise, returns null.
+    /// </summary>
+    public Day GetBestDay()
+    {
+        return m_bestDay == null ? null : new(m_bestDay);
+    }
 
 
     /// <summary>

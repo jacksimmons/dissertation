@@ -39,7 +39,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 
-public class ACOAlgorithm : Algorithm
+public abstract class ACO : Algorithm
 {
     private int m_numPortions;
     private List<Portion> m_portions;

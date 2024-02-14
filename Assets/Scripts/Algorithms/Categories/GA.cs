@@ -7,16 +7,18 @@ using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 
-public class GeneticAlgorithm : Algorithm
+public abstract class GA : Algorithm
 {
     private const int MutationMassChangeMin = 0;
     private const int MutationMassChangeMax = 10;
 
+    // Chance for any portion to be mutated in an algorithm pass.
+    // Is divided by the number of portions in the calculation.
     private const float ChanceToMutatePortion = 0.5f;
     
     // Impacts determinism. Low value => High determinism, High value => Random chaos
-    // Also leads to days with more portions.
-    private const float ChanceToAddOrRemovePortion = 0.0f;
+    // 0 or 1 -> No convergence
+    private const float ChanceToAddOrRemovePortion = 0.01f;
 
 
     protected override void RunIteration()
@@ -38,8 +40,8 @@ public class GeneticAlgorithm : Algorithm
 
         // Next generation - The only fitness changes occur here
         // Add children
-        Population.Add(children.Item1);
-        Population.Add(children.Item2);
+        AddToPopulation(children.Item1);
+        AddToPopulation(children.Item2);
         candidates.Add(children.Item1);
         candidates.Add(children.Item2);
 
@@ -48,105 +50,17 @@ public class GeneticAlgorithm : Algorithm
         Day worstDayB = Selection(candidates, false);
 
         // Slight elitism - children can be killed off as soon as they are added if they are bad
-        Population.Remove(worstDayA);
-        Population.Remove(worstDayB);
+        RemoveFromPopulation(worstDayA);
+        RemoveFromPopulation(worstDayB);
 
         NumIterations++;
     }
 
 
-    protected Day Selection(List<Day> candidates, bool selectBest = true)
-    {
-        switch (Preferences.Instance.comparisonType)
-        {
-            case ComparisonType.ParetoDominance:
-                return ParetoSelection(candidates, selectBest);
-            case ComparisonType.SummedFitness:
-            default:
-                return FitnessSelection(candidates, selectBest);
-        }
-    }
-
-    
-    /// <summary>
-    /// Pareto-dominance tournament selection.
-    /// </summary>
-    protected Day ParetoSelection(List<Day> candidates, bool selectBest = true)
-    {
-        int indexA = Random.Range(0, candidates.Count);
-        // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-        int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
-
-        // If one dominates the other, the selection is simple.
-        // Don't make use of PopHierarchy, because this method is sometimes called before PopHierarchy
-        // is updated with the new population.
-        switch (Day.Compare(candidates[indexA], candidates[indexB]))
-        {
-            case ParetoComparison.Dominates:
-                return selectBest ? candidates[indexA] : candidates[indexB];
-            case ParetoComparison.Dominated:
-                return selectBest ? candidates[indexB] : candidates[indexA];
-        }
-
-        // Otherwise, tiebreak by comparison set
-        return SelectionTiebreak(candidates[indexA], candidates[indexB]);
-    }
+    protected abstract Day Selection(List<Day> candidates, bool selectBest = true);
 
 
-    protected Day FitnessSelection(List<Day> candidates, bool selectBest = true)
-    {
-        int indexA = Random.Range(0, candidates.Count);
-        // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-        int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
-
-        float fitA = candidates[indexA].Fitness;
-        float fitB = candidates[indexB].Fitness;
-
-        Day selected;
-
-        if (fitA < fitB)
-        {
-            if (selectBest) selected = candidates[indexA];
-            else selected = candidates[indexB];
-        }
-        else if (fitB < fitA)
-        {
-            if (selectBest) selected = candidates[indexB];
-            else selected = candidates[indexA];
-        }
-        else
-        {
-            if (Random.Range(0, 2) == 1) selected = candidates[indexA];
-            else selected = candidates[indexB];
-        }
-
-        return selected;
-    }
-
-
-    // Reference: ECM3412 Lecture 14 2023/2024
-    protected Day SelectionTiebreak(Day a, Day b)
-    {
-        List<Day> comparisonSet = new(Population);
-        for (int i = 0; i < PopHierarchy.Count && i <= SELECTION_PRESSURE; i++)
-        {
-            comparisonSet.AddRange(PopHierarchy[i]);
-        }
-        comparisonSet.Remove(a);
-        comparisonSet.Remove(b);
-
-        int dominanceA = GetDominanceOverComparisonSet(a, comparisonSet);
-        int dominanceB = GetDominanceOverComparisonSet(b, comparisonSet);
-
-        if (dominanceA > dominanceB)
-            return a;
-        if (dominanceB > dominanceA)
-            return b;
-
-        if (Random.Range(0, 2) == 1)
-            return a;
-        return b;
-    }
+    protected abstract Day SelectionTiebreak(Day a, Day b);
 
 
     /// <summary>
@@ -339,14 +253,14 @@ public class GeneticAlgorithm : Algorithm
         for (int i = 0; i < day.Portions.Count; i++)
         {
             // Exit early if the portion is not to be mutated
-            if (Random.Range(0f, 1f) > ChanceToMutatePortion)
+            if (Random.Range(0f, 1f) > ChanceToMutatePortion / day.Portions.Count)
                 continue;
 
             Tuple<bool, int> result = MutatePortion(day.Portions[i]);
             if (!result.Item1)
                 day.RemovePortion(i);
             else
-                day.ModifyPortion(i, result.Item2);
+                day.SetPortionMass(i, result.Item2);
         }
 
         // Add or remove portions entirely (rarely)

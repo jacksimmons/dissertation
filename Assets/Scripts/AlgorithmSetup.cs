@@ -143,10 +143,10 @@ public class AlgorithmSetup : MonoBehaviour
 
     public void OnCycleAlgComparison()
     {
-        Preferences.Instance.comparisonType = (ComparisonType)
-            Static.NextCircularArrayIndex((int)Preferences.Instance.comparisonType, Enum.GetValues(typeof(ComparisonType)).Length, true);
+        Preferences.Instance.algType = (AlgorithmType)
+            Static.NextCircularArrayIndex((int)Preferences.Instance.algType, Enum.GetValues(typeof(AlgorithmType)).Length, true);
         Static.SavePreferences();
-        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.comparisonType}";
+        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.algType}";
     }
 
 
@@ -174,7 +174,7 @@ public class AlgorithmSetup : MonoBehaviour
             go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = $"Goal:\n{p.constraintTypes[(int)nutrient]}";
         }
 
-        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.comparisonType}";
+        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.algType}";
     }
 
 

@@ -7,7 +7,7 @@ using UnityEngine;
 /// <summary>
 /// Test suite for Food, Portion and Day classes.
 /// </summary>
-public class Test_Food : GeneticAlgorithm
+public class Test_Food : SummedFitnessGA
 {
     public Test_Food() : base()
     {

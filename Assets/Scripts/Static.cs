@@ -56,4 +56,27 @@ public static class Static
     {
         Saving.SaveToFile(Preferences.Instance, "Preferences.json");
     }
+
+
+    /// <summary>
+    /// A greedy insert which moves all elements after, one place closer to the end.
+    /// Deletes the final element entirely.
+    /// </summary>
+    public static void ArrayInsert<T>(T[] array, T toAdd, int index)
+    {
+        // Insert the element
+        T next = array[index];
+        array[index] = toAdd;
+
+        // Move all elements (up to the second last) toward the end, by one place
+        for (int i = index + 1; i < array.Length - 1; i++)
+        {
+            T was = array[i];
+            array[i] = next;
+            next = was;
+        }
+
+        // Overwrite the last element with the second last element
+        array[^1] = next;
+    }
 }
