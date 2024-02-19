@@ -55,7 +55,7 @@ public class PopulationView : MonoBehaviour
 
 
         // Display the best day
-        Day bestDay = Algorithm.Instance.GetBestDay();
+        Day bestDay = Algorithm.Instance.BestDay;
         if (bestDay != null)
         {
             Transform bestDayBtn = m_popContent.transform.GetChild(0);
@@ -90,7 +90,7 @@ public class PopulationView : MonoBehaviour
 
         if (m_currentlyDisplayedDay != null)
         {
-            if (Algorithm.Instance.GetBestDay().IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
+            if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
             {
                 UpdatePortionUI(m_currentlyDisplayedDay, 0);
                 UpdateDayUI(m_currentlyDisplayedDay);

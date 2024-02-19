@@ -32,7 +32,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 
-public abstract class ACO : Algorithm
+public class ACO : Algorithm
 {
     private List<Portion> m_portions;
     private float[] m_fitnesses;

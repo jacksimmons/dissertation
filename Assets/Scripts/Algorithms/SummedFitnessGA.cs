@@ -4,11 +4,6 @@ using Random = UnityEngine.Random;
 
 public class SummedFitnessGA : GA
 {
-    public override void PostConstructorSetup()
-    {
-    }
-
-
     protected override Day Selection(List<Day> candidates, bool selectBest = true)
     {
         int indexA = Random.Range(0, candidates.Count);

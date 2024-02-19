@@ -29,18 +29,35 @@ public abstract class Algorithm
     }
 
 
-    // The constraints for each nutrient in a day.
-    protected List<Food> m_foods;
+    // All of the foods that were extracted from the dataset.
+    protected ReadOnlyCollection<Food> m_foods;
 
-    public readonly ReadOnlyCollection<Constraint> Constraints;
+    // User-defined Constraints; one for each Nutrient.
+    public ReadOnlyCollection<Constraint> Constraints;
 
-    private List<Day> m_population;
-    public ReadOnlyCollection<Day> Population;
+    /// <summary>
+    /// Visible on the GUI.
+    /// </summary>
 
-    private Day m_bestDay;
+    // The population of Days currently being processed (there may be more hidden, such as with ACO, but these are the
+    // ones displayed to the user in the GUI.)
+    private List<Day> m_population;             // Underlying
+    public ReadOnlyCollection<Day> Population;  // Visible
 
+    // The current best day. Encapsulated as a new Day to prevent frontend side effects.
+    private Day m_bestDay;                      // Underlying
+    public Day BestDay
+    {
+        get
+        {
+            return m_bestDay == null ? null : new(m_bestDay);
+        }
+    }
+
+    // The number of iterations that have passed.
     public int NumIterations { get; protected set; } = 1;
 
+    // Stores any errors which occur during the dataset stage, to display to the user instead of running.
     public readonly string DatasetError = "";
 
 
@@ -52,7 +69,7 @@ public abstract class Algorithm
         DatasetError = dr.SetupError;
 
         if (DatasetError != "") return;
-        m_foods = dr.ProcessFoods();
+        m_foods = new(dr.ProcessFoods());
 
         // Load constraints from disk.
         Constraint[] constraints = new Constraint[Nutrients.Count];
@@ -95,15 +112,6 @@ public abstract class Algorithm
 
 
     /// <summary>
-    /// Resets the static instance.
-    /// </summary>
-    public static void EndAlgorithm()
-    {
-        Instance = null;
-    }
-
-
-    /// <summary>
     /// Populates the Population data structure with randomly generated Days.
     /// </summary>
     /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
@@ -136,7 +144,7 @@ public abstract class Algorithm
     }
 
 
-    public abstract void PostConstructorSetup();
+    public virtual void PostConstructorSetup() { }
 
 
     /// <summary>
@@ -182,16 +190,6 @@ public abstract class Algorithm
 
 
     /// <summary>
-    /// Copies the best day into a new object, and returns it, if the best day is non-null.
-    /// Otherwise, returns null.
-    /// </summary>
-    public Day GetBestDay()
-    {
-        return m_bestDay == null ? null : new(m_bestDay);
-    }
-
-
-    /// <summary>
     /// Use this to get the number of non-null constraints defined in the Constraints
     /// dictionary.
     /// </summary>
@@ -203,5 +201,14 @@ public abstract class Algorithm
             if (Constraints[i].GetType() != typeof(NullConstraint)) cnt++;
         }
         return cnt;
+    }
+
+
+    /// <summary>
+    /// Resets the static instance.
+    /// </summary>
+    public static void EndAlgorithm()
+    {
+        Instance = null;
     }
 }

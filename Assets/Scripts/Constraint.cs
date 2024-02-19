@@ -1,13 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 
 /// <summary>
-///Legend:
+/// A constraint nudges the algorithm towards a more desirable value for a parameter.
+/// In this project they represent 2D curves of a nutrient (x) against its optimality (y = f(x)).
+/// 
+/// The lower the value outputted by the curve function, the more optimal the value (x)
+/// is for this nutrient.
+/// 
+/// The curve functions are not specified by the user - the user picks from a selection of pre-
+/// designed curves which should fit every optimisation "type" they could want.
+/// 
+/// Abbreviations:
 /// - OF = Objective Function
 /// - x = Value of parameter [value]
 /// - S = Steepness
