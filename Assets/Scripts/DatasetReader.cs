@@ -16,36 +16,40 @@ public enum DatasetFile
 }
 
 
+/// <summary>
+/// All of the data associated with a food in the dataset.
+/// All nutrients are measured for a 100g portion.
+/// </summary>
 public struct FoodData
 {
-    public string Code;
-    public string Name;
+    public string code;
+    public string name;
 
     public string CompositeKey
     {
-        get { return Code + Group; }
+        get { return code + foodGroup; }
     }
 
-    public string Description;
-    public string Group;
-    public string Reference;
-    public float[] Nutrients;
+    public string description;
+    public string foodGroup;
+    public string reference;
+    public float[] nutrients;
 
 
     public FoodData MergeWith(FoodData other)
     {
         if (other.CompositeKey == CompositeKey)
         {
-            for (int i = 0; i < Nutrients.Length; i++)
+            for (int i = 0; i < Nutrients.Count; i++)
             {
-                // If not initialised in this Nutrients, take it from the other Nutrients.
-                if (Mathf.Approximately(Nutrients[i], 0)) Nutrients[i] = other.Nutrients[i];
+                // If not initialised in this nutrients, take it from the other nutrients.
+                if (Mathf.Approximately(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
             }
             return this;
         }
 
         Debug.Log(other);
-        throw new InvalidOperationException($"Could not merge {this.Code} and {other.Code} - they are not compatible!");
+        throw new InvalidOperationException($"Could not merge {this.code} and {other.code} - they are not compatible!");
     }
 }
 
@@ -82,9 +86,10 @@ public class DatasetReader
 
         try
         {
-            proximatesData = File.ReadAllText(Application.dataPath + "/" + proximatesFile);
-            inorganicsData = File.ReadAllText(Application.dataPath + "/" + inorganicsFile);
-            vitaminsData = File.ReadAllText(Application.dataPath + "/" + vitaminsFile);
+            // Load data files through Unity (this function only works with no file extension)
+            proximatesData = Resources.Load<TextAsset>("Proximates").text;
+            inorganicsData = Resources.Load<TextAsset>("Inorganics").text;
+            vitaminsData = Resources.Load<TextAsset>("Vitamins").text;
         }
         // Catch any sharing violation errors, permission errors, etc.
         catch (Exception e)
@@ -147,9 +152,9 @@ public class DatasetReader
 
             // Check the current food isn't missing essential data (due to N, Tr or "")
             // This missing data is given the value -1, as seen in the delimiter ',' case.
-            for (int i = 0; i < data.Nutrients.Length; i++)
+            for (int i = 0; i < Nutrients.Count; i++)
             {
-                if (data.Nutrients[i] < 0)
+                if (data.nutrients[i] < 0)
                     goto NextFood;
             }
 
@@ -168,7 +173,7 @@ public class DatasetReader
         const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
 
         FoodData currentFood = new();
-        currentFood.Nutrients = new float[Nutrients.Count];
+        currentFood.nutrients = new float[Nutrients.Count];
 
         string currentWord = "";
 
@@ -227,7 +232,7 @@ public class DatasetReader
 
                             // Reset
                             currentFood = new();
-                            currentFood.Nutrients = new float[Nutrients.Count];
+                            currentFood.nutrients = new float[Nutrients.Count];
                         }
                     }
 
@@ -262,19 +267,19 @@ public class DatasetReader
         switch (wordIndex)
         {
             case 0:
-                currentFood.Code = currentWord;
+                currentFood.code = currentWord;
                 return currentFood;
             case 1:
-                currentFood.Name = currentWord;
+                currentFood.name = currentWord;
                 return currentFood;
             case 2:
-                currentFood.Description = currentWord;
+                currentFood.description = currentWord;
                 return currentFood;
             case 3:
-                currentFood.Group = currentWord;
+                currentFood.foodGroup = currentWord;
                 return currentFood;
             case 5:
-                currentFood.Reference = currentWord;
+                currentFood.reference = currentWord;
                 return currentFood;
         }
 
@@ -307,7 +312,7 @@ public class DatasetReader
         }
 
         if (columns[wordIndex] != (Nutrient)(-1))
-            currentFood.Nutrients[(int)columns[wordIndex]] = floatVal;
+            currentFood.nutrients[(int)columns[wordIndex]] = floatVal;
 
         return currentFood;
     }

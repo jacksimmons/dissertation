@@ -14,70 +14,49 @@ using UnityEngine.UIElements;
 /// </summary>
 public class Food
 {
-    public readonly string Name;
-    public readonly string Description;
-    public readonly string FoodGroup;
-    public readonly string Reference;
+    public readonly string name;
+    public readonly string description;
+    public readonly string foodGroup;
+    public readonly string reference;
 
-    public readonly float[] Nutrients;
+    public readonly float[] nutrients;
 
 
-    public Food(string name, string desc, string group, string reference, float[] nutrients)
+    public Food(string name, string desc, string foodGroup, string reference, float[] nutrients)
     {
-        Name = name;
-        Description = desc;
-        FoodGroup = group;
-        Reference = reference;
-        Nutrients = nutrients;
+        this.name = name;
+        this.description = desc;
+        this.foodGroup = foodGroup;
+        this.reference = reference;
+        this.nutrients = nutrients;
     }
 
 
     public Food(FoodData data)
     {
-        Name = data.Name;
-        Description = data.Description;
-        FoodGroup = data.Group;
-        Reference = data.Reference;
-        Nutrients = data.Nutrients;
+        name = data.name;
+        description = data.description;
+        foodGroup = data.foodGroup;
+        reference = data.reference;
+        nutrients = data.nutrients;
     }
 
 
     public bool IsEqualTo(Food other)
     {
         // Check all simple attribs are the same
-        bool attribs = Name == other.Name && Description == other.Description && FoodGroup == other.FoodGroup && Reference == other.Reference;
+        bool attribs = name == other.name && description == other.description && foodGroup == other.foodGroup && reference == other.reference;
 
         if (!attribs) return false;
 
         // Check all nutrients are the same
-        for (int i = 0; i < Nutrients.Length; i++)
+        for (int i = 0; i < Nutrients.Count; i++)
         {
-            if (Nutrients[i] != other.Nutrients[i])
+            if (nutrients[i] != other.nutrients[i])
                 return false;
         }
         return true;
     }
-
-
-    //public override string ToString()
-    //{
-    //    return $"Name: {Name}\nDescription: {Description}\nFood Group: {FoodGroup}"
-    //         + $"\nReference: {Reference}\n{NutrientsToString()}";
-    //}
-
-
-    //public string NutrientsToString()
-    //{
-    //    string nutrientsString = "";
-    //    for (int i = 0; i < Nutrients.Count; i++)
-    //    {
-    //        // Add newline before second and further lines
-    //        if (i > 0)
-    //            nutrientsString += "\n";
-    //        nutrientsString += $"{(Nutrient)i}: {Nutrients[(Nutrient)i]}{GetNutrientUnit((Nutrient)i)}";
-    //    }
-    //    return nutrientsString;
-    //}
 }
 
 
@@ -110,7 +89,7 @@ public struct Portion
 
     public float GetNutrientAmount(Nutrient nutrient)
     {
-        return Food.Nutrients[(int)nutrient] * Multiplier;
+        return Food.nutrients[(int)nutrient] * Multiplier;
     }
 
 
@@ -126,11 +105,11 @@ public struct Portion
     /// <returns>The string data.</returns>
     public string Verbose()
     {
-        string asString = $"Name: {Food.Name}\n";
+        string asString = $"name: {Food.name}\n";
         for (int i = 0; i < Nutrients.Count; i++)
         {
             Nutrient nutrient = (Nutrient)i;
-            float nutrientAmount = Food.Nutrients[i];
+            float nutrientAmount = Food.nutrients[i];
             asString += $"{nutrient}: {nutrientAmount * Multiplier}{Nutrients.GetUnit(nutrient)}\n";
         }
         return asString + $"Mass: {Mass}g";
@@ -210,7 +189,7 @@ public class Day
         for (int i = 0; i < Portions.Count; i++)
         {
             Portion existing = Portions[i];
-            if (existing.Food.Name == portion.Food.Name)
+            if (existing.Food.name == portion.Food.name)
             {
                 existing.Mass += portion.Mass;
                 merged = true;

@@ -21,19 +21,12 @@
 // The shorter paths are given more pheromone, as they are more optimal.
 // The ants hopefully converge on a global minimum through further iterations.
 
-// This problem:
-// Each node is a random Portion. The ants move around the Portion space, trying
-// to find the optimal Meal (collection of Portions). The fittest Meals are given
+// This problem (each iteration):
+// Each node is a random Food. The ants move around the Food space, trying
+// to find the optimal Day (collection of Portions). The fittest Days are given
 // more pheromone, as they are more optimal.
 
-// End of phase [EOP]:
-// The fittest Meals are then collected into a Day.
-// The number of Meals in the Day is pre-determined, and has already been factored
-// into the optimal requirements of each Meal (r_meal = r_day / mealsInDay)
-// (Maybe) Add some Quantity to the portions in the fittest Meal instead of pheromone
-
-// Continuing:
-// The ACO algorithm is just run again until the next EOP.
+// The Top n days are then added to the population for display in the GUI.
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -41,23 +34,30 @@ using Random = UnityEngine.Random;
 
 public abstract class ACO : Algorithm
 {
-    private int m_numPortions;
     private List<Portion> m_portions;
     private float[] m_fitnesses;
     private float[] m_pheromone;
 
+    const int NUM_ANTS = 100;
+
+
+    public ACO() : base()
+    {
+        // Pheromone and fitness initialisation
+        m_fitnesses = new float[m_foods.Count];
+        m_pheromone = new float[m_foods.Count];
+
+        for (int i = 0; i < m_foods.Count; i++)
+        {
+            m_pheromone[i] = Random.Range(0f, 1f);
+        }
+    }
+
 
     protected override void RunIteration()
     {
-        // Random portions (Copy from EA)
-
-        // Pheromone and fitness initialisation
-        m_fitnesses = new float[m_numPortions];
-        m_pheromone = new float[m_numPortions];
-
-        for (int i = 0; i < m_numPortions; i++)
+        for (int i = 0; i < NUM_ANTS; i++)
         {
-            m_pheromone[i] = Random.Range(0f, 1f);
         }
     }
 }

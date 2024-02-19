@@ -40,16 +40,16 @@ public class Test_Dataset
         List<Food> foods = GetTestFoods();
         Food food = foods[0];
 
-        Assert.AreEqual(food.Name, "Test1", $"Test name was incorrect.");
-        Assert.AreEqual(food.Description, "Desc1", $"Desc name was incorrect.");
-        Assert.AreEqual(food.FoodGroup, "Group1", $"Group name was incorrect.");
-        Assert.AreEqual(food.Reference, "Ref1", $"Ref name was incorrect.");
+        Assert.AreEqual(food.name, "Test1", $"Test name was incorrect.");
+        Assert.AreEqual(food.description, "Desc1", $"Desc name was incorrect.");
+        Assert.AreEqual(food.foodGroup, "Group1", $"Group name was incorrect.");
+        Assert.AreEqual(food.reference, "Ref1", $"Ref name was incorrect.");
 
 
         float[] nutrientAmounts = new float[] { 10, 20, 30, 340, 25, 9, 1, 100, 30, 20 };
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            Assert.AreEqual(nutrientAmounts[i], food.Nutrients[i], $"{Nutrients.Values[i]} was incorrect.");
+            Assert.AreEqual(nutrientAmounts[i], food.nutrients[i], $"{Nutrients.Values[i]} was incorrect.");
         }
     }
 
@@ -61,7 +61,7 @@ public class Test_Dataset
     {
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            Assert.AreEqual(value, food.Nutrients[i], $"{i} was incorrect.");
+            Assert.AreEqual(value, food.nutrients[i], $"{i} was incorrect.");
         }
     }
 

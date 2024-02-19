@@ -74,6 +74,10 @@ public class Preferences : ICached
     public float[] tolerances;
     public float[] steepnesses;
     public ConstraintType[] constraintTypes;
+    public int populationSize;
+    public int numStartingPortionsPerDay;
+    public int portionMinStartMass;
+    public int portionMaxStartMass;
 
     // The type of comparison to use in the algorithm
     public AlgorithmType algType;
@@ -104,6 +108,11 @@ public class Preferences : ICached
         
         constraintTypes = new ConstraintType[Nutrients.Count];
         algType = AlgorithmType.SummedFitnessGA;
+
+        populationSize = 10;
+        numStartingPortionsPerDay = 1;
+        portionMinStartMass = 50;
+        portionMaxStartMass = 150;
     }
 
 
@@ -137,7 +146,7 @@ public class Preferences : ICached
     /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
     public bool IsFoodGroupAllowed(Food food)
     {
-        string foodGroup = food.FoodGroup;
+        string foodGroup = food.foodGroup;
 
         // In case of no food group, say it is not allowed.
         // Safest approach - removes all foods without a proper food group label.
@@ -178,7 +187,7 @@ public class Preferences : ICached
 
 
         // Unique keywords to catch hybrid items (e.g. Tuna sandwich)
-        string name = food.Name.ToLower();
+        string name = food.name.ToLower();
 
         if (name.Contains("salmon") && !eatsSeafood) return false;
         if (name.Contains("cod") && !eatsSeafood) return false;

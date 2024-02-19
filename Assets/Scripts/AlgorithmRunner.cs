@@ -22,13 +22,9 @@ public class AlgorithmRunner : MonoBehaviour
     [SerializeField]
     private PopulationView m_populationView;
 
-    private List<Day> m_champions;
-
 
     public void Init()
     {
-        m_champions = new();
-
         Algorithm.EndAlgorithm();
 
         switch (Preferences.Instance.algType)

@@ -19,16 +19,16 @@ public class Test_Algorithm : SummedFitnessGA
     public void TestPopulationGeneration()
     {
         // Assert number of random days and portions
-        Assert.IsTrue(Population.Count == NumStartingDaysInPop);
+        Assert.IsTrue(Population.Count == Preferences.Instance.populationSize);
         foreach (Day day in Population)
         {
-            Assert.IsTrue(day.Portions.Count == NumStartingPortionsInDay);
+            Assert.IsTrue(day.Portions.Count == Preferences.Instance.numStartingPortionsPerDay);
 
             // Assert that the random ranges are satisfied for every portion
             for (int j = 0; j < day.Portions.Count; j++)
             {
                 float mass = day.Portions[j].Mass;
-                Assert.IsTrue(mass >= StartingPortionMassMin && mass <= StartingPortionMassMax);
+                Assert.IsTrue(mass >= Preferences.Instance.portionMinStartMass && mass <= Preferences.Instance.portionMaxStartMass);
             }
         }
     }

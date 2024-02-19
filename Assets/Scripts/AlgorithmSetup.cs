@@ -12,7 +12,16 @@ public class AlgorithmSetup : MonoBehaviour
     private GameObject[] m_nutrientFields;
 
     [SerializeField]
+    private TMP_InputField m_popSizeInput;
+    [SerializeField]
+    private TMP_InputField m_numStartingPortionsPerDayInput;
+    [SerializeField]
+    private TMP_InputField m_minStartMassInput;
+    [SerializeField]
+    private TMP_InputField m_maxStartMassInput;
+    [SerializeField]
     private TMP_Text m_algComparisonText;
+
 
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
@@ -53,6 +62,12 @@ public class AlgorithmSetup : MonoBehaviour
             constraintTypeBtn.onClick.AddListener(() => OnConstraintTypeChanged(nutrient, constraintTypeBtn));
         }
 
+        m_popSizeInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.populationSize, value));
+        m_numStartingPortionsPerDayInput.onEndEdit.AddListener(
+            (string value) => OnIntInputChanged(ref Preferences.Instance.numStartingPortionsPerDay, value));
+        m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMinStartMass, value));
+        m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMaxStartMass, value));
+
         UpdateUI();
     }
 
@@ -68,6 +83,13 @@ public class AlgorithmSetup : MonoBehaviour
     private void OnFloatInputChanged(ref float pref, string value)
     {
         pref = float.Parse(value);
+        Static.SavePreferences();
+    }
+
+
+    private void OnIntInputChanged(ref int pref, string value)
+    {
+        pref = int.Parse(value);
         Static.SavePreferences();
     }
 
@@ -174,6 +196,10 @@ public class AlgorithmSetup : MonoBehaviour
             go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = $"Goal:\n{p.constraintTypes[(int)nutrient]}";
         }
 
+        m_popSizeInput.text = p.populationSize.ToString();
+        m_numStartingPortionsPerDayInput.text = p.numStartingPortionsPerDay.ToString();
+        m_minStartMassInput.text = p.portionMinStartMass.ToString();
+        m_maxStartMassInput.text = p.portionMaxStartMass.ToString();
         m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.algType}";
     }
 

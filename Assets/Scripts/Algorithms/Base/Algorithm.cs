@@ -41,11 +41,6 @@ public abstract class Algorithm
 
     public int NumIterations { get; protected set; } = 1;
 
-    public const int NumStartingDaysInPop = 10;
-    public const int NumStartingPortionsInDay = 1;
-    public const int StartingPortionMassMin = 50;
-    public const int StartingPortionMassMax = 150;
-
     public readonly string DatasetError = "";
 
 
@@ -114,11 +109,11 @@ public abstract class Algorithm
     /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
     protected void GetStartingPopulation()
     {
-        for (int i = 0; i < NumStartingDaysInPop; i++)
+        for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
             // Add a number of days to the population (each has random foods)
             Day day = new();
-            for (int j = 0; j < NumStartingPortionsInDay; j++)
+            for (int j = 0; j < Preferences.Instance.numStartingPortionsPerDay; j++)
             {
                 // Add random foods to the day
                 day.AddPortion(GenerateRandomPortion());
@@ -137,7 +132,7 @@ public abstract class Algorithm
     protected Portion GenerateRandomPortion()
     {
         Food food = m_foods[Random.Range(0, m_foods.Count)];
-        return new(food, Random.Range(StartingPortionMassMin, StartingPortionMassMax));
+        return new(food, Random.Range(Preferences.Instance.portionMinStartMass, Preferences.Instance.portionMaxStartMass));
     }
 
 

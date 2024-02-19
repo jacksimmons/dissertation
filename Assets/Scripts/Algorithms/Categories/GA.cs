@@ -31,6 +31,7 @@ public abstract class GA : Algorithm
         Day selectedDayB = Selection(candidates);
         candidates.Remove(selectedDayB);
 
+
         // Crossover
         Tuple<Day, Day> children = Crossover(new(selectedDayA, selectedDayB));
 
@@ -61,33 +62,6 @@ public abstract class GA : Algorithm
 
 
     protected abstract Day SelectionTiebreak(Day a, Day b);
-
-
-    /// <summary>
-    /// Calculates how dominant a day is over a comparison set.
-    /// </summary>
-    /// <param name="day"></param>
-    /// <param name="comparisonSet"></param>
-    /// <returns>An integer, which starts at 0 and increments every time the day dominates,
-    /// and decrements every time it is dominated.</returns>
-    protected int GetDominanceOverComparisonSet(Day day, List<Day> comparisonSet)
-    {
-        int dominance = 0;
-        for (int i = 0; i < comparisonSet.Count; i++)
-        {
-            switch (Day.SimpleCompare(day, comparisonSet[i]))
-            {
-                case ParetoComparison.Dominates:
-                    dominance++;
-                    break;
-                case ParetoComparison.Dominated:
-                    dominance--;
-                    break;
-            }
-        }
-
-        return dominance;
-    }
 
 
     /// <summary>
