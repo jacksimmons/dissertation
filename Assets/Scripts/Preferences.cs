@@ -59,37 +59,61 @@ public class Preferences : ICached
     public void Cache() { m_instance = this; }
 
 
+    // PREFS MENU------------------
+
+
+    //
     // Food Groups
+    //
     public bool eatsLandMeat; // Carnivore, Lactose-Intolerant
     public bool eatsSeafood; // Carnivore, Pescatarian, LI
     public bool eatsAnimalProduce; // Vegetarian, LI
     public bool eatsLactose; // Vegetarian, i.e. no Milk
 
-
+    //
     // Body
+    //
     public WeightGoal weightGoal;
     public float weightInKG;
     public float heightInCM;
     public AssignedSex assignedSex;
 
     //
-    // Parameters for algorithm
-    //
-
     // Params for each constraint (indices matching enum values)
+    //
     public float[] goals;
     public float[] tolerances;
     public float[] steepnesses;
     public ConstraintType[] constraintTypes;
+
+
+    // ALG SETUP MENU--------------
+
+
+    //
+    // Algorithm settings
+    //
     public int populationSize;
     public int numStartingPortionsPerDay;
     public int portionMinStartMass;
     public int portionMaxStartMass;
     public bool addFitnessForMass;
-
-    // The type of algorithm to use (and subtypes)
     public AlgorithmType algType;
+
+    //
+    // GA-specific settings
+    //
     public GAType gaType;
+
+    //
+    // ACO-specific settings
+    //
+    public int numAnts;
+    public float pheroImportance;
+    public float pheroEvapRate;
+    // Probability calculation variables
+    public float acoAlpha;      // Pheromone exponent
+    public float acoBeta;       // Desirability exponent
 
 
     // By default, the user's settings should permit every food type - this
@@ -125,6 +149,11 @@ public class Preferences : ICached
 
         gaType = GAType.SummedFitness;
 
+        numAnts = 100;
+        pheroImportance = 0.5f;
+        pheroEvapRate = 0.1f;
+        acoAlpha = 1;
+        acoBeta = 1;
     }
 
 

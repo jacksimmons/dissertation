@@ -29,6 +29,18 @@ public class AlgorithmSetup : MonoBehaviour
     [SerializeField]
     private TMP_Text m_gaTypeText;
 
+    // ACO Settings
+    [SerializeField]
+    private TMP_InputField m_numAntsInput;
+    [SerializeField]
+    private TMP_InputField m_pheroImportanceInput;
+    [SerializeField]
+    private TMP_InputField m_pheroEvapRateInput;
+    [SerializeField]
+    private TMP_InputField m_alphaInput;
+    [SerializeField]
+    private TMP_InputField m_betaInput;
+
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
     private int m_currentPanelIndex = 0;
@@ -73,6 +85,12 @@ public class AlgorithmSetup : MonoBehaviour
             (string value) => OnIntInputChanged(ref Preferences.Instance.numStartingPortionsPerDay, value));
         m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMinStartMass, value));
         m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMaxStartMass, value));
+
+        m_numAntsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.numAnts, value));
+        m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroImportance, value));
+        m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroEvapRate, value));
+        m_alphaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.acoAlpha, value));
+        m_betaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.acoBeta, value));
 
         UpdateUI();
     }
@@ -226,6 +244,12 @@ public class AlgorithmSetup : MonoBehaviour
         m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algType}";
 
         m_gaTypeText.text = $"GA Type:\n{Preferences.Instance.gaType}";
+
+        m_numAntsInput.text = p.numAnts.ToString();
+        m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
+        m_pheroImportanceInput.text = p.pheroImportance.ToString();
+        m_alphaInput.text = p.acoAlpha.ToString();
+        m_betaInput.text = p.acoBeta.ToString();
     }
 
 

@@ -38,8 +38,6 @@ public class ACO : Algorithm
     private float[] m_fitnesses;
     private float[] m_pheromone;
 
-    const int NUM_ANTS = 100;
-
 
     public ACO() : base()
     {
@@ -56,7 +54,7 @@ public class ACO : Algorithm
 
     protected override void RunIteration()
     {
-        for (int i = 0; i < NUM_ANTS; i++)
+        for (int i = 0; i < Preferences.Instance.numAnts; i++)
         {
         }
     }
