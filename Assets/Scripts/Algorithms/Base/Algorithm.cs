@@ -54,9 +54,6 @@ public abstract class Algorithm
         }
     }
 
-    // The number of iterations that have passed.
-    public int NumIterations { get; protected set; } = 1;
-
     // Stores any errors which occur during the dataset stage, to display to the user instead of running.
     public readonly string DatasetError = "";
 

@@ -11,6 +11,7 @@ public class AlgorithmSetup : MonoBehaviour
     [SerializeField]
     private GameObject[] m_nutrientFields;
 
+    // Alg Settings
     [SerializeField]
     private TMP_InputField m_popSizeInput;
     [SerializeField]
@@ -20,8 +21,13 @@ public class AlgorithmSetup : MonoBehaviour
     [SerializeField]
     private TMP_InputField m_maxStartMassInput;
     [SerializeField]
-    private TMP_Text m_algComparisonText;
+    private TMP_Text m_addFitnessForMassBtnTxt;
+    [SerializeField]
+    private TMP_Text m_algTypeText;
 
+    // GA Settings
+    [SerializeField]
+    private TMP_Text m_gaTypeText;
 
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
@@ -163,12 +169,28 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    public void OnCycleAlgComparison()
+    public void OnToggleAddFitnessForMass()
+    {
+        Preferences.Instance.addFitnessForMass = !Preferences.Instance.addFitnessForMass;
+        m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
+    }
+
+
+    public void OnCycleAlgorithm()
     {
         Preferences.Instance.algType = (AlgorithmType)
             Static.NextCircularArrayIndex((int)Preferences.Instance.algType, Enum.GetValues(typeof(AlgorithmType)).Length, true);
         Static.SavePreferences();
-        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.algType}";
+        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algType}";
+    }
+
+
+    public void OnCycleGAType()
+    {
+        Preferences.Instance.gaType = (GAType)
+            Static.NextCircularArrayIndex((int)Preferences.Instance.gaType, Enum.GetValues(typeof(GAType)).Length, true);
+        Static.SavePreferences();
+        m_gaTypeText.text = $"GA Type:\n{Preferences.Instance.gaType}";
     }
 
 
@@ -200,7 +222,10 @@ public class AlgorithmSetup : MonoBehaviour
         m_numStartingPortionsPerDayInput.text = p.numStartingPortionsPerDay.ToString();
         m_minStartMassInput.text = p.portionMinStartMass.ToString();
         m_maxStartMassInput.text = p.portionMaxStartMass.ToString();
-        m_algComparisonText.text = $"Comparison:\n{Preferences.Instance.algType}";
+        m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
+        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algType}";
+
+        m_gaTypeText.text = $"GA Type:\n{Preferences.Instance.gaType}";
     }
 
 

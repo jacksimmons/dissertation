@@ -17,13 +17,8 @@ public class Test_Dataset
     /// <returns>A list of Food objects, which are the testing data.</returns>
     private List<Food> GetTestFoods()
     {
-        Dictionary<DatasetFile, string> files = new()
-        {
-            { DatasetFile.Proximates, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestProximates.csv") },
-            { DatasetFile.Inorganics, File.ReadAllText(Application.dataPath + "/Scripts/Editor/TestInorganics.csv") }
-        };
-        List<Food> foods = new DatasetReader(Preferences.Instance, "Scripts/Editor/TestProximates.csv", "/Scripts/Editor/TestInorganics.csv",
-            "/Scripts/Editor/TestVitamins.csv").ProcessFoods();
+        List<Food> foods = new DatasetReader(Preferences.Instance, "Editor/TestProximates", "Editor/TestInorganics",
+            "Editor/TestVitamins").ProcessFoods();
         return foods;
     }
 
@@ -45,11 +40,11 @@ public class Test_Dataset
         Assert.AreEqual(food.foodGroup, "Group1", $"Group name was incorrect.");
         Assert.AreEqual(food.reference, "Ref1", $"Ref name was incorrect.");
 
+        float[] nutrients = new float[] { 10, 20, 30, 340, 25, 9, 1, 100, 30, 20 };
 
-        float[] nutrientAmounts = new float[] { 10, 20, 30, 340, 25, 9, 1, 100, 30, 20 };
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            Assert.AreEqual(nutrientAmounts[i], food.nutrients[i], $"{Nutrients.Values[i]} was incorrect.");
+            Assert.AreEqual(nutrients[i], food.nutrients[i], $"{Nutrients.Values[i]} was incorrect.");
         }
     }
 
@@ -61,7 +56,7 @@ public class Test_Dataset
     {
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            Assert.AreEqual(value, food.nutrients[i], $"{i} was incorrect.");
+            Assert.AreEqual(value, food.nutrients[i], $"{Nutrients.Values[i]} was incorrect.");
         }
     }
 

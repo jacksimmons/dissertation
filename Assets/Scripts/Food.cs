@@ -211,10 +211,7 @@ public class Day
     public void RemovePortion(int index)
     {
         if (_portions.Count <= 1)
-        {
-            Debug.LogWarning("No portion was removed. A Day must have at least one portion.");
             return;
-        }
 
         _isFitnessUpdated = false;
 
@@ -271,23 +268,25 @@ public class Day
     /// </summary>
     public static ParetoComparison Compare(Day a, Day b)
     {
+        return Compare(a, b, Algorithm.Instance.Constraints, Algorithm.Instance.GetNumConstraints());
+    }
+
+
+    public static ParetoComparison Compare(Day a, Day b, ReadOnlyCollection<Constraint> constraints, int numConstraints)
+    {
         // Store how many constraints this is better/worse than `day` on.
         int betterCount = 0;
         int worseCount = 0;
-        int numConstraints = Algorithm.Instance.GetNumConstraints();
 
         // This loop exits if this has better or equal fitness on every constraint.
         for (int i = 0; i < Nutrients.Count; i++)
         {
             // Quick exit for null constraints
-            if (Algorithm.Instance.Constraints[i].GetType() == typeof(NullConstraint))
+            if (constraints[i].GetType() == typeof(NullConstraint))
                 continue;
 
-            float amountA = a.GetNutrientAmount((Nutrient)i);
-            float fitnessA = Algorithm.Instance.Constraints[i]._GetFitness(amountA);
-
-            float amountB = b.GetNutrientAmount((Nutrient)i);
-            float fitnessB = Algorithm.Instance.Constraints[i]._GetFitness(amountB);
+            float fitnessA = a.GetFitness();
+            float fitnessB = b.GetFitness();
 
             if (fitnessA < fitnessB)
                 betterCount++;
@@ -323,29 +322,6 @@ public class Day
             // Not worse on any, and not better on any => MND (They are equal)
             return ParetoComparison.MutuallyNonDominating;
         }
-    }
-
-
-    /// <summary>
-    /// A simpler form of Compare, which merges strict domination and regular domination, to simplify
-    /// usage of the ParetoComparison enum.
-    /// Allows conversion of:
-    /// 
-    /// switch (Compare(a, b)) {
-    ///     case ParetoComparison.StrictlyDominates:
-    ///     case ParetoComparison.Dominates:
-    ///         ...
-    /// }
-    /// 
-    /// Into:
-    /// switch (SimpleCompare(a,b)) {
-    ///     case ParetoComparison.Dominates:
-    ///         ...
-    /// }
-    /// </summary>
-    public static ParetoComparison SimpleCompare(Day a, Day b)
-    {
-        return Pareto.SimplifyComparison(Compare(a, b));
     }
 
 
@@ -396,6 +372,12 @@ public class Day
 
             // Quick exit for infinity fitness
             if (fitness == float.PositiveInfinity) return fitness;
+        }
+
+        if (Preferences.Instance.addFitnessForMass)
+        {
+            // Penalise Days with lots of mass
+            fitness += GetMass();
         }
 
         return fitness;

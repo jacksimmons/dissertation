@@ -22,19 +22,29 @@ public class AlgorithmRunner : MonoBehaviour
     [SerializeField]
     private PopulationView m_populationView;
 
+    private int m_iterNum;
+
 
     public void Init()
     {
         Algorithm.EndAlgorithm();
+        m_iterNum = 1;
 
         switch (Preferences.Instance.algType)
         {
-            case AlgorithmType.ParetoDominanceGA:
-                Algorithm = new ParetoDominanceGA();
+            case AlgorithmType.GA:
+                switch (Preferences.Instance.gaType)
+                {
+                    case GAType.SummedFitness:
+                        Algorithm = new SummedFitnessGA();
+                        break;
+                    case GAType.ParetoDominance:
+                        Algorithm = new ParetoDominanceGA();
+                        break;
+                }
                 break;
-            case AlgorithmType.SummedFitnessGA:
-            default:
-                Algorithm = new SummedFitnessGA();
+            case AlgorithmType.ACO:
+                Algorithm = new ACO();
                 break;
         }
 
@@ -98,7 +108,7 @@ public class AlgorithmRunner : MonoBehaviour
         //m_domFitnessText.text = $"Dominant Fitness ({m_champions.Count}): {domFitness}";
         
         m_populationView.UpdatePopView();
-        m_iterNumText.text = $"Iteration: {Algorithm.NumIterations}";
+        m_iterNumText.text = $"Iteration: {m_iterNum}";
         m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";
     }
 
@@ -109,11 +119,13 @@ public class AlgorithmRunner : MonoBehaviour
     public void RunIterations(int numIters)
     {
         Stopwatch sw = Stopwatch.StartNew();
+        m_iterNum += numIters;
 
         for (int i = 0; i < numIters; i++)
         {
             Algorithm.NextIteration();
         }
+
         sw.Stop();
         float ms = sw.ElapsedMilliseconds;
         UpdateAlgorithmUI(ms, numIters);

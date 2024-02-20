@@ -4,7 +4,10 @@ using System.Collections.ObjectModel;
 
 public static class Pareto
 {
-    public static ParetoComparison SimplifyComparison(ParetoComparison p)
+    /// <summary>
+    /// Converts a regular pareto comparison to one which doesn't include strict domination.
+    /// </summary>
+    public static ParetoComparison UnstrictComparison(ParetoComparison p)
     {
         return p switch
         {
@@ -15,13 +18,33 @@ public static class Pareto
     }
 
 
+    public static bool DominatesOrMND(ParetoComparison p)
+    {
+        return p switch
+        {
+            ParetoComparison.StrictlyDominates or ParetoComparison.Dominates or ParetoComparison.MutuallyNonDominating => true,
+            _ => false
+        };
+    }
+
+
+    public static bool DominatedOrMND(ParetoComparison p)
+    {
+        return p switch
+        {
+            ParetoComparison.StrictlyDominated or ParetoComparison.Dominated or ParetoComparison.MutuallyNonDominating => true,
+            _ => false
+        };
+    }
+
+
     public static bool IsNonDominated(Day day, List<Day> population)
     {
         foreach (Day other in population)
         {
             if (day == other) continue;
 
-            switch (Day.SimpleCompare(day, other))
+            switch (UnstrictComparison(Day.Compare(day, other)))
             {
                 // Only case where this day is NOT non-dominated.
                 case ParetoComparison.Dominated:
@@ -62,7 +85,7 @@ public class NonDominatedSorting
         for (int i = 0; i < Sets.Count; i++)
         {
             ComparisonSet set = Sets[i];
-            switch (Pareto.SimplifyComparison(set.Compare(day)))
+            switch (Pareto.UnstrictComparison(set.Compare(day)))
             {
                 // If the first set it beats, it dominates it, then we need a new set for this Day.
                 case ParetoComparison.Dominates:

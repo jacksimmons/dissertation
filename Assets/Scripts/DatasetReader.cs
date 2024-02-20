@@ -77,8 +77,8 @@ public class DatasetReader
     public readonly string SetupError = "";
 
 
-    public DatasetReader(Preferences prefs, string proximatesFile = "Proximates.csv", string inorganicsFile = "Inorganics.csv", string vitaminsFile
-        = "Vitamins.csv")
+    public DatasetReader(Preferences prefs, string proximatesFile = "Proximates", string inorganicsFile = "Inorganics", string vitaminsFile
+        = "Vitamins")
     {
         string proximatesData;
         string inorganicsData;
@@ -87,9 +87,9 @@ public class DatasetReader
         try
         {
             // Load data files through Unity (this function only works with no file extension)
-            proximatesData = Resources.Load<TextAsset>("Proximates").text;
-            inorganicsData = Resources.Load<TextAsset>("Inorganics").text;
-            vitaminsData = Resources.Load<TextAsset>("Vitamins").text;
+            proximatesData = Resources.Load<TextAsset>(proximatesFile).text;
+            inorganicsData = Resources.Load<TextAsset>(inorganicsFile).text;
+            vitaminsData = Resources.Load<TextAsset>(vitaminsFile).text;
         }
         // Catch any sharing violation errors, permission errors, etc.
         catch (Exception e)

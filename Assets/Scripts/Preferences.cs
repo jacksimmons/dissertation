@@ -27,8 +27,15 @@ public enum ConstraintType
 
 public enum AlgorithmType
 {
-    ParetoDominanceGA,
-    SummedFitnessGA
+    GA,
+    ACO
+}
+
+
+public enum GAType
+{
+    SummedFitness,
+    ParetoDominance,
 }
 
 
@@ -78,9 +85,11 @@ public class Preferences : ICached
     public int numStartingPortionsPerDay;
     public int portionMinStartMass;
     public int portionMaxStartMass;
+    public bool addFitnessForMass;
 
-    // The type of comparison to use in the algorithm
+    // The type of algorithm to use (and subtypes)
     public AlgorithmType algType;
+    public GAType gaType;
 
 
     // By default, the user's settings should permit every food type - this
@@ -107,12 +116,15 @@ public class Preferences : ICached
         }
         
         constraintTypes = new ConstraintType[Nutrients.Count];
-        algType = AlgorithmType.SummedFitnessGA;
-
         populationSize = 10;
         numStartingPortionsPerDay = 1;
         portionMinStartMass = 50;
         portionMaxStartMass = 150;
+        addFitnessForMass = true;
+        algType = AlgorithmType.GA;
+
+        gaType = GAType.SummedFitness;
+
     }
 
 

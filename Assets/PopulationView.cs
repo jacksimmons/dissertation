@@ -72,12 +72,12 @@ public class PopulationView : MonoBehaviour
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
 
             string label = $"Portions: {day.Portions.Count}";
-            if (Preferences.Instance.algType == AlgorithmType.ParetoDominanceGA)
+            if (Preferences.Instance.gaType == GAType.ParetoDominance)
             {
                 ParetoDominanceGA pdga = (ParetoDominanceGA)Algorithm.Instance;
                 label += $" Rank: {pdga.Sorting.TryGetDayRank(day)}";
             }
-            if (Preferences.Instance.algType == AlgorithmType.SummedFitnessGA)
+            if (Preferences.Instance.gaType == GAType.SummedFitness)
                 label += $" Fitness: {day.Fitness:F2}";
 
             obj.transform.GetChild(0).GetComponent<TMP_Text>().text = label;
@@ -88,7 +88,7 @@ public class PopulationView : MonoBehaviour
         }
 
 
-        if (m_currentlyDisplayedDay != null)
+        if (m_currentlyDisplayedDay != null && Algorithm.Instance.BestDay != null)
         {
             if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
             {

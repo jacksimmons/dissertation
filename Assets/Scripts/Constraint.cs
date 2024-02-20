@@ -57,7 +57,7 @@ public abstract class Constraint
 
     /// <summary>
     /// Get the fitness of a quantity value for a Day of food.
-    /// Can be apnutrientd for individual portions, by multiplying by IdealNumPortionsPerDay.
+    /// Can be approximated for individual portions, by multiplying by IdealNumPortionsPerDay.
     /// </summary>
     /// <param name="value">The quantity value for the whole Day.</param>
     /// <returns>The fitness of the quantity value.</returns>

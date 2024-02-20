@@ -53,8 +53,6 @@ public abstract class GA : Algorithm
         // Slight elitism - children can be killed off as soon as they are added if they are bad
         RemoveFromPopulation(worstDayA);
         RemoveFromPopulation(worstDayB);
-
-        NumIterations++;
     }
 
 
