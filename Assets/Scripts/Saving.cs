@@ -6,16 +6,6 @@ using Unity.VisualScripting;
 using UnityEngine;
 
 
-public interface ICached
-{
-    /// <summary>
-    /// Saves the instance as the .Saved static member variable for its class.
-    /// This occurs during saving and loading to files.
-    /// </summary>
-    public void Cache();
-}
-
-
 /// <summary>
 /// A static class for saving generic serialisable types.
 /// It serialises/deserialises using a JSON formatter, and stores them at the

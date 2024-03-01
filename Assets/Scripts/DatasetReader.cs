@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
-using UnityEngine;
-using UnityEngine.UIElements;
 
 
 public enum DatasetFile
@@ -43,12 +42,12 @@ public struct FoodData
             for (int i = 0; i < Nutrients.Count; i++)
             {
                 // If not initialised in this nutrients, take it from the other nutrients.
-                if (Mathf.Approximately(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
+                if (Static.Approximately(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
             }
             return this;
         }
 
-        Debug.Log(other);
+        Static.Log(other.ToString()!, Severity.Log);
         throw new InvalidOperationException($"Could not merge {this.code} and {other.code} - they are not compatible!");
     }
 }
@@ -87,9 +86,15 @@ public class DatasetReader
         try
         {
             // Load data files through Unity (this function only works with no file extension)
+#if UNITY_64
             proximatesData = Resources.Load<TextAsset>(proximatesFile).text;
             inorganicsData = Resources.Load<TextAsset>(inorganicsFile).text;
             vitaminsData = Resources.Load<TextAsset>(vitaminsFile).text;
+#else
+            proximatesData = File.ReadAllText("Proximates.csv");
+            inorganicsData = File.ReadAllText("Inorganics.csv");
+            vitaminsData = File.ReadAllText("Vitamins.csv");
+#endif
         }
         // Catch any sharing violation errors, permission errors, etc.
         catch (Exception e)
@@ -307,7 +312,7 @@ public class DatasetReader
 
         if (wordIndex >= columns.Length)
         {
-            Debug.LogWarning("Word index >= number of columns.");
+            Static.Log("Word index >= number of columns.", Severity.Warning);
             return currentFood;
         }
 

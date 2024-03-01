@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.UIElements;
-using Random = UnityEngine.Random;
 
 
-public abstract class GA : Algorithm
+public abstract class AlgGA : Algorithm
 {
     private const int MutationMassChangeMin = 0;
     private const int MutationMassChangeMax = 10;
@@ -124,7 +121,7 @@ public abstract class GA : Algorithm
         {
             // If the cutoff index was never defined, then the cutoffMass was never reached
             // i.e. cutoffMass > total mass of both parents
-            Debug.LogError("No portion was set to be split.");
+            Static.Log("No portion was set to be split.", Severity.Log);
         }
 
         HandleCutoffPortion(children, cutoffMass - massSum, allPortions[splitPortionIndex]);
@@ -140,7 +137,7 @@ public abstract class GA : Algorithm
     protected int GetCutoffMass(Tuple<Day, Day> parents)
     {
         // A random split between the two parents
-        float crossoverPoint = Random.Range(0f, 1f);
+        float crossoverPoint = (float)m_rand.NextDouble();
 
         // Total mass stored in both days
         int massGrandTotal = parents.Item1.GetMass() + parents.Item2.GetMass();
@@ -200,7 +197,7 @@ public abstract class GA : Algorithm
 
         if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
         {
-            Debug.Log($"Mass: {portion.Mass}, cutoff pt: {cutoffMass}");
+            Static.Log($"Mass: {portion.Mass}, cutoff pt: {cutoffMass}", Severity.Warning);
         }
 
         return new(left, right);
@@ -217,7 +214,7 @@ public abstract class GA : Algorithm
         // Only mutate if day has more than 0 portions.
         if (day.Portions.Count == 0)
         { 
-            Debug.LogError("Day has no portions");
+            Static.Log("Day has no portions", Severity.Error);
             return; 
         } 
 
@@ -225,7 +222,7 @@ public abstract class GA : Algorithm
         for (int i = 0; i < day.Portions.Count; i++)
         {
             // Exit early if the portion is not to be mutated
-            if (Random.Range(0f, 1f) > ChanceToMutatePortion / day.Portions.Count)
+            if (m_rand.NextDouble() > ChanceToMutatePortion / day.Portions.Count)
                 continue;
 
             Tuple<bool, int> result = MutatePortion(day.Portions[i]);
@@ -236,14 +233,14 @@ public abstract class GA : Algorithm
         }
 
         // Add or remove portions entirely (rarely)
-        bool addPortion = Random.Range(0f, 1f) < ChanceToAddOrRemovePortion;
-        bool removePortion = Random.Range(0f, 1f) < ChanceToAddOrRemovePortion;
+        bool addPortion = m_rand.NextDouble() < ChanceToAddOrRemovePortion;
+        bool removePortion = m_rand.NextDouble() < ChanceToAddOrRemovePortion;
 
         if (addPortion)
             day.AddPortion(GenerateRandomPortion());
 
         if (removePortion)
-            day.RemovePortion(Random.Range(0, day.Portions.Count));
+            day.RemovePortion(m_rand.Next(day.Portions.Count));
     }
 
 
@@ -260,9 +257,9 @@ public abstract class GA : Algorithm
     private Tuple<bool, int> MutatePortion(Portion portion)
     {
         // The sign of the mass change (1 => add, -1 => subtract)
-        int sign = Random.Range(0, 2) == 1 ? 1 : -1;
+        int sign = m_rand.Next(2) == 1 ? 1 : -1;
         int mass = portion.Mass;
-        int massDiff = Random.Range(MutationMassChangeMin, MutationMassChangeMax);
+        int massDiff = m_rand.Next(MutationMassChangeMin, MutationMassChangeMax);
 
         // If the new mass is zero or negative, the portion ceases to exist.
         if (mass + sign * massDiff <= 0)

@@ -2,7 +2,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Test_Algorithm : SummedFitnessGA
+public class Test_Algorithm : AlgSFGA
 {
     public Test_Algorithm() : base()
     {

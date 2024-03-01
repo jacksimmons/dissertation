@@ -39,6 +39,16 @@ public enum GAType
 }
 
 
+public interface ICached
+{
+    /// <summary>
+    /// Saves the instance as the .Saved static member variable for its class.
+    /// This occurs during saving and loading to files.
+    /// </summary>
+    public void Cache();
+}
+
+
 /// <summary>
 /// A class which saves the user's preferences when serialized into a file.
 /// </summary>
@@ -52,9 +62,20 @@ public class Preferences : ICached
         {
             if (m_instance != null) return m_instance;
 
+#if UNITY_64
             // This will automatically Cache() the preferences, so no need to update m_instance.
             return Saving.LoadFromFile<Preferences>("Preferences.json");
+#else
+            throw new NullReferenceException("Preferences was not defined.");
+#endif
         }
+
+#if !UNITY_64
+        set
+        {
+            m_instance = value;
+        }
+#endif
     }
     public void Cache() { m_instance = this; }
 

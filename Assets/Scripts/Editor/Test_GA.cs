@@ -10,7 +10,7 @@ using UnityEngine.TestTools;
 /// <summary>
 /// Tests for Genetic Algorithm functions.
 /// </summary>
-public class Test_GA : SummedFitnessGA
+public class Test_GA : AlgSFGA
 {
     [Test]
     public void TestCrossoverOperator()

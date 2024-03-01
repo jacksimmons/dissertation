@@ -1,0 +1,15 @@
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.GeneratedMSBuildEditorConfig.editorconfig
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.AssemblyInfoInputs.cache
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.AssemblyInfo.cs
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.csproj.CoreCompileInputs.cache
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.sourcelink.json
+C:\Git\dissertation\NoGUI\bin\Debug\net8.0\NoGUI.exe
+C:\Git\dissertation\NoGUI\bin\Debug\net8.0\NoGUI.deps.json
+C:\Git\dissertation\NoGUI\bin\Debug\net8.0\NoGUI.runtimeconfig.json
+C:\Git\dissertation\NoGUI\bin\Debug\net8.0\NoGUI.dll
+C:\Git\dissertation\NoGUI\bin\Debug\net8.0\NoGUI.pdb
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.dll
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\refint\NoGUI.dll
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.pdb
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.genruntimeconfig.cache
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\ref\NoGUI.dll

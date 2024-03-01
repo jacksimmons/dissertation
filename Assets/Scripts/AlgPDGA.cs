@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Random = UnityEngine.Random;
+
+#if UNITY_64
+using Random = System.Random;
+#endif
 
 
-public class ParetoDominanceGA : GA
+public class AlgPDGA : AlgGA
 {
     // The index of the list a day is in represents the non-dominated set it is in.
     // The higher the index, the more dominated the set is.
@@ -17,8 +20,7 @@ public class ParetoDominanceGA : GA
     {
         get
         {
-            if (m_sorting == null)
-                m_sorting = new();
+            m_sorting ??= new();
             return m_sorting;
         }
     }
@@ -89,9 +91,9 @@ public class ParetoDominanceGA : GA
 
     protected override Day Selection(List<Day> candidates, bool selectBest = true)
     {
-        int indexA = Random.Range(0, candidates.Count);
+        int indexA = m_rand.Next(candidates.Count);
         // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-        int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
+        int indexB = (indexA + m_rand.Next(1, candidates.Count - 1)) % candidates.Count;
 
         int rankA = Sorting.TryGetDayRank(candidates[indexA]);
         int rankB = Sorting.TryGetDayRank(candidates[indexB]);
@@ -128,7 +130,7 @@ public class ParetoDominanceGA : GA
         if (dominanceB > dominanceA)
             return b;
 
-        if (Random.Range(0, 2) == 1)
+        if (m_rand.Next(2) == 1)
             return a;
         return b;
     }

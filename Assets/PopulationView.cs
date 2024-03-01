@@ -74,7 +74,7 @@ public class PopulationView : MonoBehaviour
             string label = $"Portions: {day.Portions.Count}";
             if (Preferences.Instance.gaType == GAType.ParetoDominance)
             {
-                ParetoDominanceGA pdga = (ParetoDominanceGA)Algorithm.Instance;
+                AlgPDGA pdga = (AlgPDGA)Algorithm.Instance;
                 label += $" Rank: {pdga.Sorting.TryGetDayRank(day)}";
             }
             if (Preferences.Instance.gaType == GAType.SummedFitness)

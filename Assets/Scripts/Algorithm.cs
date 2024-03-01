@@ -1,10 +1,13 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine;
-using Random = UnityEngine.Random;
 using System.IO;
 using System.Collections.ObjectModel;
+
+#if UNITY_64
+using UnityEngine;
+using Random = System.Random;
+#endif
 
 
 public abstract class Algorithm
@@ -22,11 +25,26 @@ public abstract class Algorithm
 
             // NOTE: In editor tests, this will throw an error as the GameObject tree is inactive.
             // Assign the Instance variable ASAP in test classes.
+#if UNITY_64
             return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmRunner>().Algorithm;
+#else
+            throw new InvalidOperationException("No Algorithm instance exists.");
+#endif
         }
 
-        protected set { m_instance = value; }
+#if UNITY_64
+        // This setter is used during unit tests. (Some inherit from this class and need to set this)
+        protected
+#endif
+        set
+        {
+            if (m_instance == null) m_instance = value;
+            else throw new InvalidOperationException("Algorithm instance was already set.");
+        }
     }
+
+
+    protected readonly Random m_rand = new();
 
 
     // All of the foods that were extracted from the dataset.
@@ -137,8 +155,8 @@ public abstract class Algorithm
     /// <returns></returns>
     protected Portion GenerateRandomPortion()
     {
-        Food food = m_foods[Random.Range(0, m_foods.Count)];
-        return new(food, Random.Range(Preferences.Instance.portionMinStartMass, Preferences.Instance.portionMaxStartMass));
+        Food food = m_foods[m_rand.Next(m_foods.Count)];
+        return new(food, m_rand.Next(Preferences.Instance.portionMinStartMass, Preferences.Instance.portionMaxStartMass));
     }
 
 

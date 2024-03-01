@@ -4,8 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.UIElements;
 
 
 /// <summary>
@@ -69,11 +67,11 @@ public struct Portion
 
     public int Mass
     {
-        get { return Mathf.RoundToInt(100 * Multiplier); }
+        get { return (int)MathF.Round(100 * Multiplier); }
         set
         {
             if (value <= 0)
-                Debug.LogError($"Mass was not positive: {value}");
+                Static.Log($"Mass was not positive: {value}", Severity.Error);
             Multiplier = (float)value / 100;
         }
     }
@@ -412,7 +410,7 @@ public class Day
     {
         // Square root of all differences squared = Pythagorean Distance
         Nutrient[] vals = (Nutrient[])Enum.GetValues(typeof(Nutrient));
-        return Mathf.Sqrt(vals.Sum(o => Mathf.Pow(GetNutrientAmount(o) - day.GetNutrientAmount(o), 2)));
+        return MathF.Sqrt(vals.Sum(o => MathF.Pow(GetNutrientAmount(o) - day.GetNutrientAmount(o), 2)));
     }
 
 

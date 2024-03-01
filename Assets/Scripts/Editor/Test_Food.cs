@@ -8,7 +8,7 @@ using UnityEngine;
 /// <summary>
 /// Test suite for Food, Portion and Day classes.
 /// </summary>
-public class Test_Food : SummedFitnessGA
+public class Test_Food : AlgSFGA
 {
     private Constraint[] m_minConstraints;
     private Constraint[] m_convConstraints;

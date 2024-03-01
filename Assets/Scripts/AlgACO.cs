@@ -31,26 +31,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using UnityEngine;
 using Random = System.Random;
 
 
 // Limitation: Can only have one 100g portion for each food type.
-public class ACO : Algorithm
+public class AlgACO : Algorithm
 {
     private const float EPSILON = 1e-7f;
     private const int RECURSE_LIMIT = 1;
 
-    private Random m_rand;
     private float[,] m_fitnesses;
     private float[,] m_pheromone;
     private Portion[] m_vertices;
 
 
-    public ACO() : base(false)
+    public AlgACO() : base(false)
     {
-        m_rand = new();
-
         // Pheromone and fitness initialisation
         m_fitnesses = new float[m_foods.Count, m_foods.Count];
         m_pheromone = new float[m_foods.Count, m_foods.Count];
@@ -251,7 +247,7 @@ public class ACO : Algorithm
         for (int j = 0; j < m_vertices.Length; j++)
         {
             // J[j] == 0 implies the edge is invalid (visited, a self-edge, or Infinity fitness)
-            if (Mathf.Approximately( J[j], 0 ))
+            if (Static.Approximately( J[j], 0 ))
             {
                 probs[j] = 0;
                 continue;

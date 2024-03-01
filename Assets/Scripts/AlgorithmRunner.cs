@@ -9,9 +9,16 @@ using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 
+
+/// <summary>
+/// Handles the iterations of an algorithm, as well as construction/destruction.
+/// </summary>
 public class AlgorithmRunner : MonoBehaviour
 {
-    public Algorithm Algorithm { get; private set; }
+    public Algorithm Algorithm
+    {
+        get { return m_core.Alg; }
+    }
 
     [SerializeField]
     private MenuStackHandler m_menu;
@@ -22,31 +29,12 @@ public class AlgorithmRunner : MonoBehaviour
     [SerializeField]
     private PopulationView m_populationView;
 
-    private int m_iterNum;
+    private AlgorithmRunnerCore m_core;
 
 
     public void Init()
     {
-        Algorithm.EndAlgorithm();
-        m_iterNum = 1;
-
-        switch (Preferences.Instance.algType)
-        {
-            case AlgorithmType.GA:
-                switch (Preferences.Instance.gaType)
-                {
-                    case GAType.SummedFitness:
-                        Algorithm = new SummedFitnessGA();
-                        break;
-                    case GAType.ParetoDominance:
-                        Algorithm = new ParetoDominanceGA();
-                        break;
-                }
-                break;
-            case AlgorithmType.ACO:
-                Algorithm = new ACO();
-                break;
-        }
+        m_core = new();
 
         if (Algorithm.DatasetError != "")
         {
@@ -54,7 +42,6 @@ public class AlgorithmRunner : MonoBehaviour
             return;
         }
 
-        Algorithm.PostConstructorSetup();
         UpdateAlgorithmUI(0, 0);
     }
 
@@ -107,7 +94,7 @@ public class AlgorithmRunner : MonoBehaviour
         //m_domFitnessText.text = $"Dominant Fitness ({m_champions.Count}): {domFitness}";
         
         m_populationView.UpdatePopView();
-        m_iterNumText.text = $"Iteration: {m_iterNum}";
+        m_iterNumText.text = $"Iteration: {m_core.IterNum}";
         m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";
     }
 
@@ -117,16 +104,7 @@ public class AlgorithmRunner : MonoBehaviour
     /// </summary>
     public void RunIterations(int numIters)
     {
-        Stopwatch sw = Stopwatch.StartNew();
-        m_iterNum += numIters;
-
-        for (int i = 0; i < numIters; i++)
-        {
-            Algorithm.NextIteration();
-        }
-
-        sw.Stop();
-        float ms = sw.ElapsedMilliseconds;
+        float ms = m_core.RunIterations(numIters);
         UpdateAlgorithmUI(ms, numIters);
     }
 }
