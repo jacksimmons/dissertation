@@ -31,10 +31,7 @@ public class AlgorithmRunnerCore
                 break;
         }
 
-        // If no GUI, then we must manually assign the singleton.
-#if !UNITY_64
         Algorithm.Instance = Alg;
-#endif
         Alg.PostConstructorSetup();
     }
 

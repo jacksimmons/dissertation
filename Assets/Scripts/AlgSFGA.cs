@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+
+
 public class AlgSFGA : AlgGA
 {
     protected override Day Selection(List<Day> candidates, bool selectBest = true)

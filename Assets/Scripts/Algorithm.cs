@@ -20,22 +20,13 @@ public abstract class Algorithm
         {
             if (m_instance != null) return m_instance;
 
-            // Assign to the private set variable, and return it.
-            // Gets the (one) AlgorithmGlobal script through Unity.
 
-            // NOTE: In editor tests, this will throw an error as the GameObject tree is inactive.
-            // Assign the Instance variable ASAP in test classes.
-#if UNITY_64
-            return m_instance = GameObject.FindWithTag("AlgorithmRunner").GetComponent<AlgorithmRunner>().Algorithm;
-#else
+            // Assign the Instance variable ASAP so this doesn't occur.
             throw new InvalidOperationException("No Algorithm instance exists.");
-#endif
         }
 
-#if UNITY_64
-        // This setter is used during unit tests. (Some inherit from this class and need to set this)
-        protected
-#endif
+
+        // AlgorithmRunner(Core) is the first / only to set this.
         set
         {
             if (m_instance == null) m_instance = value;

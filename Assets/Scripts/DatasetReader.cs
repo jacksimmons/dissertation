@@ -6,6 +6,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+#if UNITY_64
+using UnityEngine;
+#endif
+
 
 public enum DatasetFile
 {
