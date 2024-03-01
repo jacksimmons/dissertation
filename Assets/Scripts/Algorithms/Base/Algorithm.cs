@@ -58,7 +58,7 @@ public abstract class Algorithm
     public readonly string DatasetError = "";
 
 
-    public Algorithm()
+    public Algorithm(bool fillPopulation = true)
     {
         Preferences prefs = Preferences.Instance;
 
@@ -103,7 +103,8 @@ public abstract class Algorithm
         Constraints = new(constraints);
 
         m_population = new();
-        GetStartingPopulation();
+        if (fillPopulation)
+            GetStartingPopulation();
         Population = new(m_population);
     }
 

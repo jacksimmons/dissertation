@@ -31,8 +31,6 @@ public class AlgorithmSetup : MonoBehaviour
 
     // ACO Settings
     [SerializeField]
-    private TMP_InputField m_numAntsInput;
-    [SerializeField]
     private TMP_InputField m_pheroImportanceInput;
     [SerializeField]
     private TMP_InputField m_pheroEvapRateInput;
@@ -86,7 +84,6 @@ public class AlgorithmSetup : MonoBehaviour
         m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMinStartMass, value));
         m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMaxStartMass, value));
 
-        m_numAntsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.numAnts, value));
         m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroImportance, value));
         m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroEvapRate, value));
         m_alphaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.acoAlpha, value));
@@ -245,7 +242,6 @@ public class AlgorithmSetup : MonoBehaviour
 
         m_gaTypeText.text = $"GA Type:\n{Preferences.Instance.gaType}";
 
-        m_numAntsInput.text = p.numAnts.ToString();
         m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
         m_pheroImportanceInput.text = p.pheroImportance.ToString();
         m_alphaInput.text = p.acoAlpha.ToString();

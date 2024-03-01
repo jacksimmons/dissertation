@@ -80,6 +80,13 @@ public struct Portion
     public float Multiplier { get; private set; }
 
 
+    public Portion(Food food)
+    {
+        Food = food;
+        Multiplier = 1;
+    }
+
+
     public Portion(Food food, int mass)
     {
         Food = food;

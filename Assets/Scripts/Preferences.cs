@@ -108,7 +108,6 @@ public class Preferences : ICached
     //
     // ACO-specific settings
     //
-    public int numAnts;
     public float pheroImportance;
     public float pheroEvapRate;
     // Probability calculation variables
@@ -149,7 +148,6 @@ public class Preferences : ICached
 
         gaType = GAType.SummedFitness;
 
-        numAnts = 100;
         pheroImportance = 0.5f;
         pheroEvapRate = 0.1f;
         acoAlpha = 1;

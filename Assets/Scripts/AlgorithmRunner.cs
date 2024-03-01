@@ -55,7 +55,6 @@ public class AlgorithmRunner : MonoBehaviour
         }
 
         Algorithm.PostConstructorSetup();
-
         UpdateAlgorithmUI(0, 0);
     }
 
