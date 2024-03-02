@@ -110,7 +110,7 @@ public class PreferencesHandler : MonoBehaviour
 
     private void OnWeightGoalChanged(int value)
     {
-        Preferences.Instance.weightGoal = (WeightGoal)value;
+        Preferences.Instance.weightGoal = (EWeightGoal)value;
         OnBodyPreferenceChanged();
     }
 
@@ -131,7 +131,7 @@ public class PreferencesHandler : MonoBehaviour
 
     public void OnCycleAssignedSex()
     {
-        Preferences.Instance.assignedSex = (AssignedSex)(1 - (int)Preferences.Instance.assignedSex);
+        Preferences.Instance.assignedSex = (EAssignedSex)(1 - (int)Preferences.Instance.assignedSex);
         OnBodyPreferenceChanged();
     }
 

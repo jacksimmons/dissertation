@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 
 
-public enum WeightGoal
+public enum EWeightGoal
 {
     MaintainWeight,
     LoseWeight,
@@ -11,7 +11,7 @@ public enum WeightGoal
 }
 
 
-public enum AssignedSex
+public enum EAssignedSex
 {
     Male,
     Female
@@ -87,18 +87,18 @@ public class Preferences : ICached
     //
     // Food Groups
     //
-    public bool EatsLandMeat { get; set; } // Carnivore, Lactose-Intolerant
-    public bool EatsSeafood { get; set; } // Carnivore, Pescatarian, LI
-    public bool EatsAnimalProduce { get; set; } // Vegetarian, LI
-    public bool EatsLactose { get; set; } // Vegetarian, i.e. no Milk
+    public bool eatsLandMeat; // Carnivore, Lactose-Intolerant
+    public bool eatsSeafood; // Carnivore, Pescatarian, LI
+    public bool eatsAnimalProduce; // Vegetarian, LI
+    public bool eatsLactose; // Vegetarian, i.e. no Milk
 
     //
     // Body
     //
-    public WeightGoal WeightGoal { get; set; }
-    public float WeightInKG { get; set; }
-    public float HeightInCM { get; set; }
-    public AssignedSex AssignedSex { get; set; }
+    public EWeightGoal weightGoal;
+    public float weightInKG;
+    public float heightInCM;
+    public EAssignedSex assignedSex;
 
     //
     // Params for each constraint (indices matching enum values)
@@ -141,31 +141,45 @@ public class Preferences : ICached
     // best fits the average person.
     public Preferences()
     {
-        EatsLandMeat = true;
-        EatsSeafood = true;
-        EatsAnimalProduce = true;
-        EatsLactose = true;
-        WeightGoal = WeightGoal.MaintainWeight;
-        WeightInKG = 70;
-        HeightInCM = 170;
-        AssignedSex = AssignedSex.Male;
+        eatsLandMeat = true;
+        eatsSeafood = true;
+        eatsAnimalProduce = true;
+        eatsLactose = true;
+        weightGoal = EWeightGoal.MaintainWeight;
+        weightInKG = 70;
+        heightInCM = 170;
+        assignedSex = EAssignedSex.Male;
 
         goals = new float[Nutrients.Count];
         tolerances = new float[Nutrients.Count];
         steepnesses = new float[Nutrients.Count];
-
-        goals[(int)Nutrient.Protein] = 200;
-        goals[(int)Nutrient.Fat] = 100;
-        goals[(int)Nutrient.Carbs] = 150;
-        goals[(int)Nutrient.Kcal] = 3000;
+        constraintTypes = new ConstraintType[Nutrients.Count];
 
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            tolerances[i] = MathF.Max( goals[i], 1 );
+            tolerances[i] = 1;
             steepnesses[i] = 0.001f;
+            constraintTypes[i] = ConstraintType.Minimise;
         }
 
-        constraintTypes = new ConstraintType[Nutrients.Count];
+        // Default values (provides a good basis without customisation)
+        goals[(int)Nutrient.Protein] = 200;
+        goals[(int)Nutrient.Fat] = 100;
+        goals[(int)Nutrient.Carbs] = 375;
+        goals[(int)Nutrient.Kcal] = 3200;
+        goals[(int)Nutrient.Sugar] = 30;
+        goals[(int)Nutrient.SatFat] = 30;
+        goals[(int)Nutrient.TransFat] = 5;
+        goals[(int)Nutrient.Calcium] = 100;
+        goals[(int)Nutrient.Iron] = 100;
+        goals[(int)Nutrient.Iodine] = 100;
+
+        tolerances[(int)Nutrient.Protein] = 200;
+        tolerances[(int)Nutrient.Kcal] = 3000;
+
+        constraintTypes[(int)Nutrient.Kcal] = ConstraintType.Converge;
+        constraintTypes[(int)Nutrient.Protein] = ConstraintType.Converge;
+
         populationSize = 10;
         numStartingPortionsPerDay = 1;
         portionMinStartMass = 50;
@@ -184,22 +198,22 @@ public class Preferences : ICached
 
     public void MakeVegan()
     {
-        EatsLandMeat = false;
-        EatsSeafood = false;
-        EatsAnimalProduce = false;
+        eatsLandMeat = false;
+        eatsSeafood = false;
+        eatsAnimalProduce = false;
     }
 
 
     public void MakeVegetarian()
     {
-        EatsLandMeat = false;
-        EatsSeafood = false;
+        eatsLandMeat = false;
+        eatsSeafood = false;
     }
 
 
     public void MakePescatarian()
     {
-        EatsLandMeat = false;
+        eatsLandMeat = false;
     }
 
 
@@ -222,19 +236,19 @@ public class Preferences : ICached
         switch (foodGroup[0])
         {
             case 'M': // Meat
-                if (!EatsLandMeat)
+                if (!eatsLandMeat)
                     return false;
                 break;
             case 'J': // Fish
-                if (!EatsSeafood)
+                if (!eatsSeafood)
                     return false;
                 break;
             case 'C': // Eggs
-                if (!EatsAnimalProduce)
+                if (!eatsAnimalProduce)
                     return false;
                 break;
             case 'B': // Milk
-                if (!EatsAnimalProduce || !EatsLactose)
+                if (!eatsAnimalProduce || !eatsLactose)
                     return false;
                 break;
             case 'Q': // Alcohol - Excluded
@@ -246,7 +260,7 @@ public class Preferences : ICached
         switch (foodGroup)
         {
             case "OB": // Animal fats
-                if (!EatsLandMeat)
+                if (!eatsLandMeat)
                     return false;
                 break;
         }
@@ -255,13 +269,13 @@ public class Preferences : ICached
         // Unique keywords to catch hybrid items (e.g. Tuna sandwich)
         string name = food.name.ToLower();
 
-        if (name.Contains("salmon") && !EatsSeafood) return false;
-        if (name.Contains("cod") && !EatsSeafood) return false;
-        if (name.Contains("tuna") && !EatsSeafood) return false;
+        if (name.Contains("salmon") && !eatsSeafood) return false;
+        if (name.Contains("cod") && !eatsSeafood) return false;
+        if (name.Contains("tuna") && !eatsSeafood) return false;
 
-        if (name.Contains("gelatine") && !EatsLandMeat) return false;
-        if (name.Contains("beef") && !EatsLandMeat) return false;
-        if (name.Contains("pork") && !EatsLandMeat) return false;
+        if (name.Contains("gelatine") && !eatsLandMeat) return false;
+        if (name.Contains("beef") && !eatsLandMeat) return false;
+        if (name.Contains("pork") && !eatsLandMeat) return false;
 
         return true;
     }
@@ -271,8 +285,8 @@ public class Preferences : ICached
     {
         string str = "";
 
-        PropertyInfo[] props = GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
-        str += "Algorithm Properties:\n";
+        FieldInfo[] props = GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
+        str += "Algorithm Fields:\n";
         foreach (var prop in props)
         {
             str += $"{prop.Name}: {prop.GetValue(this)}\n";

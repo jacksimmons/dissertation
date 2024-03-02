@@ -1712,6 +1712,7 @@ MonoBehaviour:
   m_numStartingPortionsPerDayInput: {fileID: 671142358}
   m_minStartMassInput: {fileID: 579696353}
   m_maxStartMassInput: {fileID: 412443254}
+  m_addFitnessForMassBtn: {fileID: 321356296}
   m_addFitnessForMassBtnTxt: {fileID: 1335030718}
   m_algTypeText: {fileID: 674523490}
   m_gaTypeText: {fileID: 135823256}
@@ -1737,10 +1738,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e787b12ff27067542bd7caea19c4387b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_menu: {fileID: 0}
-  m_iterTimeTakenText: {fileID: 0}
-  m_iterNumText: {fileID: 0}
-  m_populationView: {fileID: 0}
+  m_menu: {fileID: 1560447284}
+  m_iterTimeTakenText: {fileID: 399146378}
+  m_iterNumText: {fileID: 1033546729}
+  m_populationView: {fileID: 375471627}
 --- !u!1 &171449029 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8790583861819369280, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
@@ -2058,6 +2059,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 320219899}
   m_CullTransparentMesh: 1
+--- !u!114 &321356296 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6471530203173328545, guid: 64a431e1ff90146408049c612046cb77, type: 3}
+  m_PrefabInstance: {fileID: 1534423458}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &325348511
 GameObject:
   m_ObjectHideFlags: 0

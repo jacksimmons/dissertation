@@ -19,30 +19,62 @@ namespace NoGUI
             prefs.MakeVegan();
             prefs.algType = AlgorithmType.GA;
             Console.Write(prefs.Verbose());
+
+
+            // Get some preferences input
+            Console.WriteLine("Enter your goals below:\n");
+            float[]? goals = GetNutrientInput();
+            if (goals != null) prefs.goals = goals;
+
             Preferences.Instance = prefs;
 
             // Algorithm setup
             AlgorithmRunnerCore core = new();
 
             // Input loop
-            int input = GetInput();
-            while (input != -1)
+            int numIters = GetIterInput();
+            while (numIters != -1)
             {
-                float ms = core.RunIterations(input);
+                float ms = core.RunIterations(numIters);
 
                 Console.WriteLine($"\nIterations: {core.IterNum - 1}");
                 Console.WriteLine("Average stats:");
                 Console.Write(AlgorithmOutput.GetAverageStatsLabel());
                 Console.WriteLine($"Execution took {ms}ms.\n", Severity.Log);
 
-                input = GetInput();
+                numIters = GetIterInput();
             }
         }
 
 
-        private static int GetInput()
+        private static float[]? GetNutrientInput()
         {
-            Console.Write("Enter the number of iterations to perform:\n> ");
+            float[] floats = new float[Nutrients.Count];
+            for (int i = 0; i < Nutrients.Count; i++)
+            {
+                Console.Write($"[float] Enter the value for {Nutrients.Values[i]}\n> ");
+                string? line = Console.ReadLine();
+
+                if (line != null && float.TryParse(line, out floats[i]))
+                {
+                    if (floats[i] < 0)
+                        return null;
+
+                    continue;
+                }
+
+                // Restart the iteration
+                Console.WriteLine("Invalid input. Please try again.");
+                i--;
+            }
+
+            return floats;
+        }
+
+
+        private static int GetIterInput()
+        {
+            Console.Write("[int] Enter the number of iterations to perform:\n> ");
             string? line = Console.ReadLine();
 
             if (line != null && int.TryParse(line, out int value))

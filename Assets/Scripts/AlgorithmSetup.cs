@@ -21,6 +21,8 @@ public class AlgorithmSetup : MonoBehaviour
     [SerializeField]
     private TMP_InputField m_maxStartMassInput;
     [SerializeField]
+    private Button m_addFitnessForMassBtn;
+    [SerializeField]
     private TMP_Text m_addFitnessForMassBtnTxt;
     [SerializeField]
     private TMP_Text m_algTypeText;
@@ -83,6 +85,7 @@ public class AlgorithmSetup : MonoBehaviour
             (string value) => OnIntInputChanged(ref Preferences.Instance.numStartingPortionsPerDay, value));
         m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMinStartMass, value));
         m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMaxStartMass, value));
+        m_addFitnessForMassBtn.onClick.AddListener(() => Preferences.Instance.addFitnessForMass = !Preferences.Instance.addFitnessForMass);
 
         m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroImportance, value));
         m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroEvapRate, value));

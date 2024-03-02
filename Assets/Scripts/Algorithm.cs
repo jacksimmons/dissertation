@@ -13,7 +13,7 @@ using Random = System.Random;
 public abstract class Algorithm
 {
     // Singleton pattern
-    private static Algorithm m_instance;
+    private static Algorithm? m_instance;
     public static Algorithm Instance
     {
         get
@@ -216,6 +216,6 @@ public abstract class Algorithm
     /// </summary>
     public static void EndAlgorithm()
     {
-        Instance = null;
+        m_instance = null;
     }
 }
