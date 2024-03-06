@@ -295,7 +295,8 @@ public class Preferences : ICached
         str += "\nAlgorithm Constraints:\n";
         foreach (Nutrient nutrient in Nutrients.Values)
         {
-            str += $"{nutrient} - Goal[{goals[(int)nutrient]}] Tolerance[{tolerances[(int)nutrient]}] Steepness[{steepnesses[(int)nutrient]}]\n";
+            str += $"{nutrient} - Goal[{goals[(int)nutrient]}] Tolerance[{tolerances[(int)nutrient]}] Steepness[{steepnesses[(int)nutrient]}]"
+                + $" Constraint[{constraintTypes[(int)nutrient]}]\n";
         }
 
         str += "\n";

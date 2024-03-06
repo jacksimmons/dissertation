@@ -94,7 +94,7 @@ public class AlgorithmRunner : MonoBehaviour
         //m_domFitnessText.text = $"Dominant Fitness ({m_champions.Count}): {domFitness}";
         
         m_populationView.UpdatePopView();
-        m_iterNumText.text = $"Iteration: {m_core.IterNum}";
+        m_iterNumText.text = $"Iteration: {Algorithm.IterNum}";
         m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";
     }
 

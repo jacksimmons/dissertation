@@ -5,13 +5,11 @@ using System.Diagnostics;
 public class AlgorithmRunnerCore
 {
     public Algorithm Alg { get; private set; }
-    public int IterNum { get; private set; }
 
 
     public AlgorithmRunnerCore()
     {
         Algorithm.EndAlgorithm();
-        IterNum++;
 
         switch (Preferences.Instance.algType)
         {
@@ -40,7 +38,6 @@ public class AlgorithmRunnerCore
     public float RunIterations(int numIters)
     {
         Stopwatch sw = Stopwatch.StartNew();
-        IterNum += numIters;
 
         for (int i = 0; i < numIters; i++)
         {

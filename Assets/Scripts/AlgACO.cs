@@ -72,7 +72,7 @@ public class AlgACO : Algorithm
             for (int j = 0; j < m_foods.Count; j++)
             {
                 m_fitnesses[i, j] = CalculateEdgeFitness(i, j);
-                m_pheromone[i, j] = (float)m_rand.NextDouble();
+                m_pheromone[i, j] = (float)Rand.NextDouble();
             }
 
             m_vertices[i] = new(m_foods[i]);
@@ -120,7 +120,7 @@ public class AlgACO : Algorithm
     private void InitialiseTour(Day day)
     {
         // Random start index for each ant
-        day.AddPortion(new(m_foods[m_rand.Next(0, m_foods.Count)]));
+        day.AddPortion(new(m_foods[Rand.Next(0, m_foods.Count)]));
     }
 
 
@@ -169,7 +169,7 @@ public class AlgACO : Algorithm
         float[] probabilities = GetAllVertexProbabilities(lastVertex, ant);
 
         // Clamp the probability to the range [EPSILON, 1 - EPSILON]
-        float probability = MathF.Max(MathF.Min((float)m_rand.NextDouble(), 1 - EPSILON), EPSILON);
+        float probability = MathF.Max(MathF.Min((float)Rand.NextDouble(), 1 - EPSILON), EPSILON);
 
         // Calculate which vertex was selected, through
         // a sum-of-probabilities check.

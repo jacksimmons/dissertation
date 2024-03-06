@@ -21,8 +21,6 @@ public class AlgorithmSetup : MonoBehaviour
     [SerializeField]
     private TMP_InputField m_maxStartMassInput;
     [SerializeField]
-    private Button m_addFitnessForMassBtn;
-    [SerializeField]
     private TMP_Text m_addFitnessForMassBtnTxt;
     [SerializeField]
     private TMP_Text m_algTypeText;
@@ -85,7 +83,6 @@ public class AlgorithmSetup : MonoBehaviour
             (string value) => OnIntInputChanged(ref Preferences.Instance.numStartingPortionsPerDay, value));
         m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMinStartMass, value));
         m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMaxStartMass, value));
-        m_addFitnessForMassBtn.onClick.AddListener(() => Preferences.Instance.addFitnessForMass = !Preferences.Instance.addFitnessForMass);
 
         m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroImportance, value));
         m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroEvapRate, value));
@@ -104,6 +101,12 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Parses user input, then stores it in the given preference reference.
+    /// </summary>
+    /// <param name="pref">Reference to the relevant preference (to update).</param>
+    /// <param name="value">The unparsed value. Guaranteed to contain a valid float, due to
+    /// Unity's input field sanitation. Hence no need for TryParse.</param>
     private void OnFloatInputChanged(ref float pref, string value)
     {
         pref = float.Parse(value);
@@ -111,6 +114,9 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// OnFloatInputChanged, but for an integer preference and input field value.
+    /// </summary>
     private void OnIntInputChanged(ref int pref, string value)
     {
         pref = int.Parse(value);
@@ -190,6 +196,7 @@ public class AlgorithmSetup : MonoBehaviour
     public void OnToggleAddFitnessForMass()
     {
         Preferences.Instance.addFitnessForMass = !Preferences.Instance.addFitnessForMass;
+        Static.SavePreferences();
         m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
     }
 

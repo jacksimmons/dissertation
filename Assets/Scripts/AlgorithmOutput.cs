@@ -11,7 +11,7 @@ public static class AlgorithmOutput
         if (Preferences.Instance.gaType == GAType.ParetoDominance)
         {
             AlgPDGA pdga = (AlgPDGA)Algorithm.Instance;
-            label += $" Rank: {pdga.Sorting.TryGetDayRank(day)}";
+            label += $" {pdga.Selector.EvaluateDay(day)}";
         }
         if (Preferences.Instance.gaType == GAType.SummedFitness)
             label += $" Fitness: {day.Fitness:F2}";

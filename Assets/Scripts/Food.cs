@@ -290,8 +290,8 @@ public class Day
             if (constraints[i].GetType() == typeof(NullConstraint))
                 continue;
 
-            float fitnessA = a.GetFitness();
-            float fitnessB = b.GetFitness();
+            float fitnessA = a.Fitness;
+            float fitnessB = b.Fitness;
 
             if (fitnessA < fitnessB)
                 betterCount++;

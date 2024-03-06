@@ -56,9 +56,6 @@ public abstract class AlgGA : Algorithm
     protected abstract Day Selection(List<Day> candidates, bool selectBest = true);
 
 
-    protected abstract Day SelectionTiebreak(Day a, Day b);
-
-
     /// <summary>
     /// Applies genetic crossover from parents to children.
     /// This crossover works by turning each Day into fine data, by using the
@@ -137,7 +134,7 @@ public abstract class AlgGA : Algorithm
     protected int GetCutoffMass(Tuple<Day, Day> parents)
     {
         // A random split between the two parents
-        float crossoverPoint = (float)m_rand.NextDouble();
+        float crossoverPoint = (float)Rand.NextDouble();
 
         // Total mass stored in both days
         int massGrandTotal = parents.Item1.GetMass() + parents.Item2.GetMass();
@@ -222,7 +219,7 @@ public abstract class AlgGA : Algorithm
         for (int i = 0; i < day.Portions.Count; i++)
         {
             // Exit early if the portion is not to be mutated
-            if (m_rand.NextDouble() > ChanceToMutatePortion / day.Portions.Count)
+            if (Rand.NextDouble() > ChanceToMutatePortion / day.Portions.Count)
                 continue;
 
             Tuple<bool, int> result = MutatePortion(day.Portions[i]);
@@ -233,14 +230,14 @@ public abstract class AlgGA : Algorithm
         }
 
         // Add or remove portions entirely (rarely)
-        bool addPortion = m_rand.NextDouble() < ChanceToAddOrRemovePortion;
-        bool removePortion = m_rand.NextDouble() < ChanceToAddOrRemovePortion;
+        bool addPortion = Rand.NextDouble() < ChanceToAddOrRemovePortion;
+        bool removePortion = Rand.NextDouble() < ChanceToAddOrRemovePortion;
 
         if (addPortion)
             day.AddPortion(GenerateRandomPortion());
 
         if (removePortion)
-            day.RemovePortion(m_rand.Next(day.Portions.Count));
+            day.RemovePortion(Rand.Next(day.Portions.Count));
     }
 
 
@@ -257,9 +254,9 @@ public abstract class AlgGA : Algorithm
     private Tuple<bool, int> MutatePortion(Portion portion)
     {
         // The sign of the mass change (1 => add, -1 => subtract)
-        int sign = m_rand.Next(2) == 1 ? 1 : -1;
+        int sign = Rand.Next(2) == 1 ? 1 : -1;
         int mass = portion.Mass;
-        int massDiff = m_rand.Next(MutationMassChangeMin, MutationMassChangeMax);
+        int massDiff = Rand.Next(MutationMassChangeMin, MutationMassChangeMax);
 
         // If the new mass is zero or negative, the portion ceases to exist.
         if (mass + sign * massDiff <= 0)

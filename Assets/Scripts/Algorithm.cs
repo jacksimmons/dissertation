@@ -13,7 +13,7 @@ using Random = System.Random;
 public abstract class Algorithm
 {
     // Singleton pattern
-    private static Algorithm? m_instance;
+    private static Algorithm m_instance;
     public static Algorithm Instance
     {
         get
@@ -35,7 +35,11 @@ public abstract class Algorithm
     }
 
 
-    protected readonly Random m_rand = new();
+    private readonly Random m_rand = new();
+    public Random Rand
+    {
+        get { return m_rand; }
+    }
 
 
     // All of the foods that were extracted from the dataset.
@@ -53,6 +57,8 @@ public abstract class Algorithm
     private List<Day> m_population;             // Underlying
     public ReadOnlyCollection<Day> Population;  // Visible
 
+    public int IterNum { get; private set; } = 0;
+
     // The current best day. Encapsulated as a new Day to prevent frontend side effects.
     private Day m_bestDay;                      // Underlying
     public Day BestDay
@@ -62,6 +68,8 @@ public abstract class Algorithm
             return m_bestDay == null ? null : new(m_bestDay);
         }
     }
+
+    public int BestIteration { get; private set; } = 0;
 
     // Stores any errors which occur during the dataset stage, to display to the user instead of running.
     public readonly string DatasetError = "";
@@ -91,15 +99,13 @@ public abstract class Algorithm
             // Otherwise create the required constraint
             Constraint constraint;
             float goal = Preferences.Instance.goals[i];
-            float tolerance = Preferences.Instance.tolerances[i];
-            float steepness = Preferences.Instance.steepnesses[i];
             switch (Preferences.Instance.constraintTypes[i])
             {
                 case ConstraintType.Minimise:
                     constraint = new MinimiseConstraint(goal);
                     break;
                 case ConstraintType.Converge:
-                    constraint = new ConvergeConstraint(goal, steepness, tolerance);
+                    constraint = new ConvergeConstraint(goal, Preferences.Instance.steepnesses[i], Preferences.Instance.tolerances[i]);
                     break;
                 default:
                     constraint = new NullConstraint();
@@ -163,6 +169,7 @@ public abstract class Algorithm
     /// </summary>
     public void NextIteration()
     {
+        IterNum++;
         RunIteration();
 
         for (int i = 0; i < Population.Count; i++)
@@ -176,6 +183,7 @@ public abstract class Algorithm
             if (Population[i].Fitness < m_bestDay.Fitness)
             {
                 m_bestDay = Population[i];
+                BestIteration = IterNum;
             }
         }
     }

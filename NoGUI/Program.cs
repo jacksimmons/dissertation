@@ -18,13 +18,14 @@ namespace NoGUI
             Preferences prefs = new();
             prefs.MakeVegan();
             prefs.algType = AlgorithmType.GA;
+            prefs.gaType = GAType.ParetoDominance;
             Console.Write(prefs.Verbose());
 
 
             // Get some preferences input
             Console.WriteLine("Enter your goals below:\n");
-            float[]? goals = GetNutrientInput();
-            if (goals != null) prefs.goals = goals;
+            //float[]? goals = GetNutrientInput();
+            //if (goals != null) prefs.goals = goals;
 
             Preferences.Instance = prefs;
 
@@ -37,9 +38,20 @@ namespace NoGUI
             {
                 float ms = core.RunIterations(numIters);
 
-                Console.WriteLine($"\nIterations: {core.IterNum - 1}");
+                Console.WriteLine($"\nIteration Num: {core.Alg.IterNum}");
+
+                // Print the average stats of the population
                 Console.WriteLine("Average stats:");
-                Console.Write(AlgorithmOutput.GetAverageStatsLabel());
+                Console.Write(AlgorithmOutput.GetAverageStatsLabel() + "\n");
+
+                // Print the best ever stats
+                if (core.Alg.BestDay != null)
+                {
+                    string fitness = float.IsPositiveInfinity(core.Alg.BestDay.Fitness) ? "inf" : core.Alg.BestDay.Fitness.ToString();
+                    Console.WriteLine($"Best stats: (From Iteration {core.Alg.BestIteration}) [Fitness: {fitness}]");
+                    Console.Write(core.Alg.BestDay.Verbose() + "\n");
+                }
+
                 Console.WriteLine($"Execution took {ms}ms.\n", Severity.Log);
 
                 numIters = GetIterInput();
