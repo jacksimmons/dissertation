@@ -63,7 +63,7 @@ public class Food
 /// </summary>
 public struct Portion
 {
-    public readonly Food Food;
+    public readonly Food food;
 
     public int Mass
     {
@@ -71,7 +71,7 @@ public struct Portion
         set
         {
             if (value <= 0)
-                Static.Log($"Mass was not positive: {value}", Severity.Error);
+                Logger.Log($"Mass was not positive: {value}", Severity.Error);
             Multiplier = (float)value / 100;
         }
     }
@@ -80,27 +80,27 @@ public struct Portion
 
     public Portion(Food food)
     {
-        Food = food;
+        this.food = food;
         Multiplier = 1;
     }
 
 
     public Portion(Food food, int mass)
     {
-        Food = food;
+        this.food = food;
         Multiplier = (float)mass/100;
     }
 
 
     public float GetNutrientAmount(Nutrient nutrient)
     {
-        return Food.nutrients[(int)nutrient] * Multiplier;
+        return food.nutrients[(int)nutrient] * Multiplier;
     }
 
 
     public bool IsEqualTo(Portion other)
     {
-        return Food.IsEqualTo(other.Food) && Multiplier == other.Multiplier;
+        return food.IsEqualTo(other.food) && Multiplier == other.Multiplier;
     }
 
 
@@ -110,25 +110,15 @@ public struct Portion
     /// <returns>The string data.</returns>
     public string Verbose()
     {
-        string asString = $"name: {Food.name}\n";
+        string asString = $"name: {food.name}\n";
         for (int i = 0; i < Nutrients.Count; i++)
         {
             Nutrient nutrient = (Nutrient)i;
-            float nutrientAmount = Food.nutrients[i];
+            float nutrientAmount = food.nutrients[i];
             asString += $"{nutrient}: {nutrientAmount * Multiplier}{Nutrients.GetUnit(nutrient)}\n";
         }
         return asString + $"Mass: {Mass}g";
     }
-}
-
-
-public enum ParetoComparison
-{
-    StrictlyDominates,
-    Dominates,
-    MutuallyNonDominating,
-    Dominated,
-    StrictlyDominated
 }
 
 
@@ -137,133 +127,27 @@ public enum ParetoComparison
 /// </summary>
 public class Day
 {
-    public readonly ReadOnlyCollection<Portion> Portions;
     private readonly List<Portion> _portions;
+    public readonly ReadOnlyCollection<Portion> portions;
 
-    private bool _isFitnessUpdated;
-    private float _fitness;
+    private readonly float[] m_nutrientAmounts = new float[Nutrients.Count];
 
-    // Attempts to return cached fitness for performance, but if the Day is not up to date
-    // it will calculate the fitness manually.
-    public float Fitness
-    {
-        get
-        {
-            if (_isFitnessUpdated) return _fitness;
-
-            _fitness = GetFitness();
-            _isFitnessUpdated = true;
-            return _fitness;
-        }
-    }
-
-
-    private readonly float[] _nutrientAmounts = new float[Nutrients.Count];
+    public int Mass { get; private set; } = 0;
 
 
     public Day()
     {
         _portions = new();
-        Portions = new(_portions);
+        portions = new(_portions);
     }
 
 
     public Day(Day day)
     {
-        _portions = new();
-        Portions = new(_portions);
-
-        foreach (Portion portion in day.Portions)
-        {
-            AddPortion(portion);
-        }
-
-        _fitness = day.Fitness;
-    }
-
-
-    public void AddPortion(Portion portion)
-    {
-        _isFitnessUpdated = false;
-
-        AddPortionAmounts(portion);
-
-        bool merged = false;
-
-        // Merge new portion with an existing one if it has the same name.
-        for (int i = 0; i < Portions.Count; i++)
-        {
-            Portion existing = Portions[i];
-            if (existing.Food.name == portion.Food.name)
-            {
-                existing.Mass += portion.Mass;
-                merged = true;
-                _portions[i] = existing;
-            }
-        }
-
-        // Otherwise, add the portion (it has a unique food)
-        if (!merged)
-            _portions.Add(portion);
-    }
-
-
-    /// <summary>
-    /// Tries to remove the portion from the list. If it is the last remaining portion,
-    /// it will not be removed.
-    /// </summary>
-    /// <param name="portion">The portion to remove if it is not the only one left.</param>
-    public void RemovePortion(int index)
-    {
-        if (_portions.Count <= 1)
-            return;
-
-        _isFitnessUpdated = false;
-
-        SubtractPortionAmounts(Portions[index]);
-        _portions.RemoveAt(index);
-    }
-
-
-    public void AddToPortionMass(int index, int dm)
-    {
-        _isFitnessUpdated = false;
-
-        // Add mass to the portion
-        Portion p = _portions[index];
-        p.Mass += dm;
-        _portions[index] = p;
-
-        // Create dummy portion with difference in mass
-        Portion dummy = new(p.Food, dm);
-        AddPortionAmounts(dummy);
-    }
-
-
-    public void SetPortionMass(int index, int mass)
-    {
-        _isFitnessUpdated = false;
-
-        int dm = mass - _portions[index].Mass;
-        AddToPortionMass(index, dm);
-    }
-
-
-    private void AddPortionAmounts(Portion portion)
-    {
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            _nutrientAmounts[i] += portion.GetNutrientAmount((Nutrient)i);
-        }
-    }
-
-
-    private void SubtractPortionAmounts(Portion portion)
-    {
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            _nutrientAmounts[i] -= portion.GetNutrientAmount((Nutrient)i);
-        }
+        _portions = new(day.portions);
+        portions = new(_portions);
+        Mass = day.Mass;
+        m_nutrientAmounts = day.m_nutrientAmounts;
     }
 
 
@@ -290,8 +174,10 @@ public class Day
             if (constraints[i].GetType() == typeof(NullConstraint))
                 continue;
 
-            float fitnessA = a.Fitness;
-            float fitnessB = b.Fitness;
+            Nutrient n = Nutrients.Values[i];
+
+            float fitnessA = constraints[i]._GetFitness(a.GetNutrientAmount(n));
+            float fitnessB = constraints[i]._GetFitness(b.GetNutrientAmount(n));
 
             if (fitnessA < fitnessB)
                 betterCount++;
@@ -330,18 +216,108 @@ public class Day
     }
 
 
+    public void AddPortion(Portion portion)
+    {
+        AddPortionProperties(portion);
+
+        bool merged = false;
+
+        // Merge new portion with an existing one if it has the same name.
+        for (int i = 0; i < portions.Count; i++)
+        {
+            Portion existing = portions[i];
+            if (existing.food.name == portion.food.name)
+            {
+                existing.Mass += portion.Mass;
+                merged = true;
+                _portions[i] = existing;
+            }
+        }
+
+        // Otherwise, add the portion (it has a unique food)
+        if (!merged)
+            _portions.Add(portion);
+
+
+        Algorithm.Instance.Day_OnPortionAdded(this, portion);
+    }
+
+
+    /// <summary>
+    /// Tries to remove the portion from the list. If it is the last remaining portion,
+    /// it will not be removed.
+    /// </summary>
+    /// <param name="portion">The portion to remove if it is not the only one left.</param>
+    public void RemovePortion(int index)
+    {
+        if (_portions.Count <= 1)
+            return;
+
+        SubtractPortionProperties(portions[index]);
+
+
+        Algorithm.Instance.Day_OnPortionRemoved(this, _portions[index]);
+        
+
+        _portions.RemoveAt(index);
+    }
+
+
+    public void AddToPortionMass(int index, int dmass)
+    {
+        // Add mass to the portion
+        Portion p = _portions[index];
+        p.Mass += dmass;
+        _portions[index] = p;
+
+        // Create dummy portion with mass = dmass
+        Portion dummy = new(p.food, dmass);
+        AddPortionProperties(dummy);
+
+
+        Algorithm.Instance.Day_OnPortionMassModified(this, _portions[index], dmass);
+    }
+
+
+    public void SetPortionMass(int index, int mass)
+    {
+        int dmass = mass - _portions[index].Mass;
+        AddToPortionMass(index, dmass);
+    }
+
+
+    private void AddPortionProperties(Portion portion)
+    {
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            m_nutrientAmounts[i] += portion.GetNutrientAmount((Nutrient)i);
+        }
+        Mass += portion.Mass;
+    }
+
+
+    private void SubtractPortionProperties(Portion portion)
+    {
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            m_nutrientAmounts[i] -= portion.GetNutrientAmount((Nutrient)i);
+        }
+        Mass -= portion.Mass;
+    }
+
+
     /// <summary>
     /// Checks if two foods are equal (they have exactly the same portions, in any order).
-    /// Need to check if foods have identical portions but with different Portions list order too.
+    /// Need to check if foods have identical portions but with different portions list order too.
     /// </summary>
     /// <param name="other">The day to compare this against.</param>
     public bool IsEqualTo(Day other)
     {
         // For all portions, check there is an identical portion in the other day.
-        foreach (Portion portion in Portions)
+        foreach (Portion portion in portions)
         {
             bool equivalentPortionFound = false;
-            foreach (Portion otherPortion in other.Portions)
+            foreach (Portion otherPortion in other.portions)
             {
                 if (portion.IsEqualTo(otherPortion))
                 {
@@ -371,8 +347,7 @@ public class Day
 
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            Nutrient nutrient = (Nutrient)i;
-            float amount = GetNutrientAmount(nutrient);
+            float amount = m_nutrientAmounts[i];
             fitness += Algorithm.Instance.Constraints[i]._GetFitness(amount);
 
             // Quick exit for infinity fitness
@@ -382,7 +357,7 @@ public class Day
         if (Preferences.Instance.addFitnessForMass)
         {
             // Penalise Days with lots of mass
-            fitness += GetMass();
+            fitness += Mass;
         }
 
         return fitness;
@@ -396,13 +371,7 @@ public class Day
     /// <returns>The quantity of the nutrient in the whole day.</returns>
     public float GetNutrientAmount(Nutrient nutrient)
     {
-        return _nutrientAmounts[(int)nutrient];
-    }
-
-
-    public int GetMass()
-    {
-        return Portions.Sum(portion => portion.Mass);
+        return m_nutrientAmounts[(int)nutrient];
     }
 
 
@@ -427,7 +396,7 @@ public class Day
             float nutrientAmount = GetNutrientAmount(nutrient);
             asString += $"{nutrient}: {nutrientAmount}{Nutrients.GetUnit(nutrient)}\n";
         }
-        return asString + $"Mass: {GetMass()}g";
+        return asString + $"Mass: {Mass}g";
     }
 }
 
@@ -446,13 +415,13 @@ public class Day
 //    public float TotalFitness(List<Constraint> constraints, int numMeals)
 //    {
 //        float mealFitness = 0f;
-//        foreach (Portion p in Portions)
+//        foreach (Portion p in portions)
 //        {
-//            mealFitness += p.Fitness(constraints, numMeals, Portions.Count);
+//            mealFitness += p.Fitness(constraints, numMeals, portions.Count);
 //        }
 
 //        // Inconvenience penalty based on number of portions
-//        mealFitness -= MathF.Pow(Portions.Count, 2);
+//        mealFitness -= MathF.Pow(portions.Count, 2);
 
 //        LastFitness = mealFitness;
 //        return mealFitness;
@@ -461,7 +430,7 @@ public class Day
 
 //    public void Print()
 //    {
-//        foreach (Portion portion in Portions)
+//        foreach (Portion portion in portions)
 //        {
 //            portion.Print();
 //        }

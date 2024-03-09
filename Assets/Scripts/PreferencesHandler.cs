@@ -62,7 +62,7 @@ public class PreferencesHandler : MonoBehaviour
     {
         pref = !pref;
         UpdateDietPreferenceButtons();
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -104,7 +104,7 @@ public class PreferencesHandler : MonoBehaviour
     private void OnBodyPreferenceChanged()
     {
         UpdateBodyPreferenceButtons();
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -118,14 +118,14 @@ public class PreferencesHandler : MonoBehaviour
     private void OnWeightInputChanged(string value)
     {
         Preferences.Instance.weightInKG = float.Parse(value);
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
     private void OnHeightInputChanged(string value)
     {
         Preferences.Instance.heightInCM = float.Parse(value);
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -138,6 +138,6 @@ public class PreferencesHandler : MonoBehaviour
 
     public void OnPreferencesNavBtnPressed(bool right)
     {
-        Static.OnNavBtnPressed(right, m_preferenceCategoryPanels, ref m_currentPanelIndex);
+        UITools.OnNavBtnPressed(right, m_preferenceCategoryPanels, ref m_currentPanelIndex);
     }
 }

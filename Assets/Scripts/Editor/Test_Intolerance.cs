@@ -19,7 +19,7 @@ public class Test_Intolerance
     private void AssertAllFoodsValid(Preferences prefs)
     {
         List<Food> foods = new DatasetReader(prefs).ProcessFoods();
-        Debug.Log($"Number of foods permitted: {foods.Count}");
+        Logger.Log($"Number of foods permitted: {foods.Count}");
 
         foreach (Food food in foods)
         {

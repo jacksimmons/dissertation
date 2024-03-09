@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "ToBEj0CLYqEAsQoValRrYgQMKl1aTxA6x1UkFutgVmb0E9izdo5Ct0nCBcynb86WO76+s7NUhlk2sST0u7s4iQ==",
+  "dgSpecHash": "6Zwct/cB+Grh4NBfrBk/OVepBl5P9P2gwxUntxGMMyNvsiXXLqs1syhw4uIITFcvY/UNTb2PLbmFQZLUWrE/8w==",
   "success": true,
   "projectFilePath": "C:\\Git\\dissertation\\NoGUI\\NoGUI.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\user\\.nuget\\packages\\scottplot\\5.0.21\\scottplot.5.0.21.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\skiasharp\\2.88.7\\skiasharp.2.88.7.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\skiasharp.nativeassets.macos\\2.88.7\\skiasharp.nativeassets.macos.2.88.7.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\skiasharp.nativeassets.win32\\2.88.7\\skiasharp.nativeassets.win32.2.88.7.nupkg.sha512"
+  ],
   "logs": []
 }

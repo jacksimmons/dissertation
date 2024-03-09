@@ -20,10 +20,10 @@ public class Test_GA : AlgSFGA
         {
             // Test two different methods of summing
             int massSum = 0;
-            for (int i = 0; i < day.Portions.Count; i++)
-                massSum += day.Portions[i].Mass;
+            for (int i = 0; i < day.portions.Count; i++)
+                massSum += day.portions[i].Mass;
 
-            Assert.AreEqual(massSum, day.GetMass());
+            Assert.AreEqual(massSum, day.Mass);
         }
     }
 }

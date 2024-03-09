@@ -10,48 +10,24 @@ using Random = System.Random;
 
 public class AlgPDGA : AlgGA
 {
-    public IPDGASelector Selector
-    {
-        get; private set;
-    }
-
-
     // The index of sorting set the algorithm goes up to during a tiebreak.
     // The higher it is, the more likely to resolve a tiebreak.
     //
     // [0, PopHierarchy.Length)
     protected const int SELECTION_PRESSURE = 5;
+    public const int NUM_SORTING_SETS = 10;
+
+    private List<MNDSet> m_sets;
+    public ReadOnlyCollection<MNDSet> Sets;
 
 
-    public override void PostConstructorSetup()
+    public override void Init()
     {
-        Selector = new MNDSortingSelector();
-        foreach (Day day in Population)
-        {
-            Selector.AddDay(day);
-        }
-    }
+        base.Init();
 
 
-    protected override void RunIteration()
-    {
-        base.RunIteration();
-    }
-
-
-    protected override void AddToPopulation(Day day)
-    {
-        base.AddToPopulation(day);
-
-        Selector.AddDay(day);
-    }
-
-
-    protected override void RemoveFromPopulation(Day day)
-    {
-        base.RemoveFromPopulation(day);
-
-        Selector.RemoveDay(day);
+        m_sets = new();
+        Sets = new(m_sets);
     }
 
 
@@ -80,54 +56,14 @@ public class AlgPDGA : AlgGA
     //}
 
 
-    protected override Day Selection(List<Day> candidates, bool selectBest = true)
-    {
-        return Selector.Select(candidates, selectBest);
-    }
-}
-
-
-public interface IPDGASelector
-{
-    public void AddDay(Day day);
-    public void RemoveDay(Day day);
-    public string EvaluateDay(Day day);
-    public Day Select(List<Day> pop, bool best);
-}
-
-
-public class MNDSortingSelector : IPDGASelector
-{
-    public const int NUM_SORTING_SETS = 10;
-
-    private AlgPDGA Creator
-    {
-        get
-        {
-            return (AlgPDGA)Algorithm.Instance;
-        }
-    }
-    private List<MNDSet> m_sets;
-    public ReadOnlyCollection<MNDSet> Sets;
-
-
-    public MNDSortingSelector()
-    {
-        m_sets = new()
-        {
-            new()
-        };
-
-        Sets = new(m_sets);
-    }
-
-
     /// <summary>
     /// Adds a day (if possible) to one of the comparison sets.
     /// If the day gets dominated by all other comparison set members, it will not get added to any.
     /// </summary>
-    public void AddDay(Day day)
+    protected override void AddToPopulation(Day day, float fitness)
     {
+        base.AddToPopulation(day, fitness);
+
         for (int i = 0; i < Sets.Count; i++)
         {
             MNDSet set = Sets[i];
@@ -157,8 +93,10 @@ public class MNDSortingSelector : IPDGASelector
     /// <summary>
     /// Will remove a day from the sort, if it is in a comparison set.
     /// </summary>
-    public void RemoveDay(Day day)
+    protected override void RemoveFromPopulation(Day day)
     {
+        base.RemoveFromPopulation(day);
+
         for (int i = 0; i < Sets.Count; i++)
         {
             MNDSet set = Sets[i];
@@ -173,34 +111,29 @@ public class MNDSortingSelector : IPDGASelector
     }
 
 
-    public Day Select(List<Day> candidates, bool selectBest)
+    protected override Day Selection(List<Day> excluded, bool selectBest)
     {
-        int indexA = Creator.Rand.Next(candidates.Count);
-        // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-        int indexB = (indexA + Creator.Rand.Next(1, candidates.Count - 1)) % candidates.Count;
+        Tuple<Day, Day> days = SelectDays(excluded);
+        Day a = days.Item1;
+        Day b = days.Item2;
 
-        int rankA = TryGetDayRank(candidates[indexA]);
-        int rankB = TryGetDayRank(candidates[indexB]);
+
+        int rankA = TryGetDayRank(a);
+        int rankB = TryGetDayRank(b);
 
         if (selectBest)
         {
-            if (rankA < rankB) return candidates[indexA];
-            if (rankB < rankA) return candidates[indexB];
+            if (rankA < rankB) return a;
+            if (rankB < rankA) return b;
         }
         else
         {
-            if (rankA > rankB) return candidates[indexA];
-            if (rankB > rankA) return candidates[indexB];
+            if (rankA > rankB) return a;
+            if (rankB > rankA) return b;
         }
 
         // Otherwise, tiebreak by comparison set
-        return Tiebreak(candidates[indexA], candidates[indexB], selectBest);
-    }
-
-
-    public string EvaluateDay(Day day)
-    {
-        return $"Rank: {TryGetDayRank(day)}";
+        return Tiebreak(a, b, selectBest);
     }
 
 
@@ -230,9 +163,9 @@ public class MNDSortingSelector : IPDGASelector
     /// 
     /// If it still hasn't, select randomly.
     /// </summary>
-    public Day Tiebreak(Day a, Day b, bool selectBest)
+    private Day Tiebreak(Day a, Day b, bool selectBest)
     {
-        List<Day> comparisonSet = new(Creator.Population);
+        List<Day> comparisonSet = new(Population.Keys);
         for (int i = 0; i < Sets.Count; i++)
         {
             comparisonSet.AddRange(Sets[i].Days);
@@ -247,18 +180,18 @@ public class MNDSortingSelector : IPDGASelector
         {
             if (dominanceA > dominanceB) return a;
             if (dominanceB > dominanceA) return b;
-            if (a.Fitness < b.Fitness) return a;
-            if (b.Fitness < a.Fitness) return b;
+            if (Population[a] < Population[b]) return a;
+            if (Population[b] < Population[a]) return b;
         }
         else
         {
             if (dominanceA < dominanceB) return a;
             if (dominanceB < dominanceA) return b;
-            if (a.Fitness > b.Fitness) return a;
-            if (b.Fitness > a.Fitness) return b;
+            if (Population[a] > Population[b]) return a;
+            if (Population[b] > Population[a]) return b;
         }
 
-        if (Creator.Rand.Next(2) == 1)
+        if (Rand.Next(2) == 1)
             return a;
         return b;
     }

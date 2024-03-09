@@ -43,30 +43,20 @@ public enum Nutrient
 
 public static class Nutrients
 {
+    // Property-like static variables for Nutrient enum length, and Nutrient enum values.
     public static int Count = Enum.GetValues(typeof(Nutrient)).Length;
     public static Nutrient[] Values = (Nutrient[])Enum.GetValues(typeof(Nutrient));
 
 
     public static string GetUnit(Nutrient nutrient)
     {
-        switch (nutrient)
+        return nutrient switch
         {
-            case Nutrient.Protein:
-            case Nutrient.Fat:
-            case Nutrient.Carbs:
-            case Nutrient.Sugar:
-            case Nutrient.SatFat:
-            case Nutrient.TransFat:
-                return "g";
-            case Nutrient.Calcium:
-            case Nutrient.Iron:
-                return "mg";
-            case Nutrient.Iodine:
-                return "µg";
-            case Nutrient.Kcal:
-                return "kcal";
-            default:
-                throw new ArgumentOutOfRangeException(nameof(nutrient));
-        }
+            Nutrient.Protein or Nutrient.Fat or Nutrient.Carbs or Nutrient.Sugar or Nutrient.SatFat or Nutrient.TransFat => "g",
+            Nutrient.Calcium or Nutrient.Iron => "mg",
+            Nutrient.Iodine => "µg",
+            Nutrient.Kcal => "kcal",
+            _ => throw new ArgumentOutOfRangeException(nameof(nutrient)),
+        };
     }
 }

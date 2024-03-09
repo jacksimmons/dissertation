@@ -46,13 +46,13 @@ public struct FoodData
             for (int i = 0; i < Nutrients.Count; i++)
             {
                 // If not initialised in this nutrients, take it from the other nutrients.
-                if (Static.Approximately(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
+                if (MathfTools.Approx(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
             }
             return this;
         }
 
-        Static.Log(other.ToString()!, Severity.Log);
-        throw new InvalidOperationException($"Could not merge {this.code} and {other.code} - they are not compatible!");
+        Logger.Log(other);
+        throw new InvalidOperationException($"Could not merge {code} and {other.code} - they are not compatible!");
     }
 }
 
@@ -95,9 +95,9 @@ public class DatasetReader
             inorganicsData = Resources.Load<TextAsset>(inorganicsFile).text;
             vitaminsData = Resources.Load<TextAsset>(vitaminsFile).text;
 #else
-            proximatesData = File.ReadAllText("Proximates.csv");
-            inorganicsData = File.ReadAllText("Inorganics.csv");
-            vitaminsData = File.ReadAllText("Vitamins.csv");
+            proximatesData = File.ReadAllText(FileTools.GetProjectDirectory() + "Proximates.csv");
+            inorganicsData = File.ReadAllText(FileTools.GetProjectDirectory() + "Inorganics.csv");
+            vitaminsData = File.ReadAllText(FileTools.GetProjectDirectory() + "Vitamins.csv");
 #endif
         }
         // Catch any sharing violation errors, permission errors, etc.
@@ -316,7 +316,7 @@ public class DatasetReader
 
         if (wordIndex >= columns.Length)
         {
-            Static.Log("Word index >= number of columns.", Severity.Warning);
+            Logger.Log("Word index >= number of columns.", Severity.Warning);
             return currentFood;
         }
 

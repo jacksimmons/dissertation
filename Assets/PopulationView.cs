@@ -62,38 +62,43 @@ public class PopulationView : MonoBehaviour
             bestDayBtn.GetComponent<Button>().onClick.RemoveAllListeners();
             bestDayBtn.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(bestDay));
 
-            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {bestDay.Fitness})";
+            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {Algorithm.Instance.BestFitness})";
         }
 
 
-        foreach (Day day in Algorithm.Instance.Population)
+        // Display days in the population (if GA)
+        if (Type.GetType( Preferences.Instance.algorithmType ).IsSubclassOf( typeof(AlgGA) ))
         {
-            GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
-
-            obj.transform.GetChild(0).GetComponent<TMP_Text>().text = AlgorithmOutput.GetDayLabel(day);
-
-            Button btn = obj.GetComponent<Button>();
-            btn.onClick.AddListener(() => OnPopButtonPressed(day));
-            obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
-        }
-
-
-        if (m_currentlyDisplayedDay != null && Algorithm.Instance.BestDay != null)
-        {
-            if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.Contains(m_currentlyDisplayedDay))
+            foreach (Day day in ((AlgGA)Algorithm.Instance).Population)
             {
-                UpdatePortionUI(m_currentlyDisplayedDay, 0);
-                UpdateDayUI(m_currentlyDisplayedDay);
+                GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
+
+                obj.transform.GetChild(0).GetComponent<TMP_Text>().text = AlgorithmOutput.GetDayLabel(day);
+
+                Button btn = obj.GetComponent<Button>();
+                btn.onClick.AddListener(() => OnPopButtonPressed(day));
+                obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
             }
-            else
+
+
+            // Refresh the current day UI if still in the population, or is the best day
+            if (m_currentlyDisplayedDay != null && Algorithm.Instance.BestDay != null)
             {
-                ClearPortionUI();
-                ClearDayUI();
+                if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || ((AlgGA)Algorithm.Instance).Population.Contains(m_currentlyDisplayedDay))
+                {
+                    UpdatePortionUI(m_currentlyDisplayedDay, 0);
+                    UpdateDayUI(m_currentlyDisplayedDay);
+                }
+                else
+                {
+                    ClearPortionUI();
+                    ClearDayUI();
+                }
             }
         }
 
         // Set the average stats text
-        m_avgDayText.text = AlgorithmOutput.GetAverageStatsLabel();
+        m_avgDayText.text = Algorithm.Instance.GetAverageStatsLabel();
     }
 
 
@@ -102,7 +107,7 @@ public class PopulationView : MonoBehaviour
         m_currentlyDisplayedDay = day;
         UpdateDayUI(day);
 
-        if (day.Portions.Count > 0)
+        if (day.portions.Count > 0)
         {
             m_currentPortionIndex = 0;
             UpdatePortionUI(day, 0);
@@ -138,14 +143,14 @@ public class PopulationView : MonoBehaviour
     /// <param name="portionIndex">The provided portion index.</param>
     private void UpdatePortionUI(Day day, int portionIndex)
     {
-        if (portionIndex > day.Portions.Count)
+        if (portionIndex > day.portions.Count)
         {
-            Debug.LogWarning("Day has no portions (it was unexpectedly modified).");
+            Logger.Log("Day has no portions (it was unexpectedly modified).", Severity.Warning);
             return;
         }
 
-        m_portionNumText.text = $"Portion {portionIndex+1}/{day.Portions.Count}";
-        m_portionText.text = day.Portions[portionIndex].Verbose();
+        m_portionNumText.text = $"Portion {portionIndex+1}/{day.portions.Count}";
+        m_portionText.text = day.portions[portionIndex].Verbose();
     }
 
 
@@ -155,7 +160,7 @@ public class PopulationView : MonoBehaviour
         if (right)
         {
             nextIndex = ++m_currentPortionIndex;
-            if (nextIndex >= day.Portions.Count)
+            if (nextIndex >= day.portions.Count)
                 nextIndex = m_currentPortionIndex = 0;
             UpdatePortionUI(day, nextIndex);
             return;
@@ -163,7 +168,7 @@ public class PopulationView : MonoBehaviour
 
         nextIndex = --m_currentPortionIndex;
         if (nextIndex < 0)
-            nextIndex = m_currentPortionIndex = day.Portions.Count - 1;
+            nextIndex = m_currentPortionIndex = day.portions.Count - 1;
         UpdatePortionUI(day, nextIndex);
     }
 

@@ -12,8 +12,8 @@ public class Test_Algorithm : AlgSFGA
 
     /// <summary>
     /// Tests a few key properties of population generation:
-    /// - Number of random Days, and Portions
-    /// - Randomness of Portions (Quantity and Food type)
+    /// - Number of random Days, and portions
+    /// - Randomness of portions (Quantity and Food type)
     /// </summary>
     [Test]
     public void TestPopulationGeneration()
@@ -22,17 +22,17 @@ public class Test_Algorithm : AlgSFGA
         Assert.IsTrue(Population.Count == Preferences.Instance.populationSize);
         foreach (Day day in Population)
         {
-            Assert.IsTrue(day.Portions.Count == Preferences.Instance.numStartingPortionsPerDay);
+            Assert.IsTrue(day.portions.Count == Preferences.Instance.numStartingPortionsPerDay);
 
             // Assert that the random ranges are satisfied for every portion
-            for (int j = 0; j < day.Portions.Count; j++)
+            for (int j = 0; j < day.portions.Count; j++)
             {
-                float mass = day.Portions[j].Mass;
+                float mass = day.portions[j].Mass;
                 Assert.IsTrue(mass >= Preferences.Instance.portionMinStartMass && mass <= Preferences.Instance.portionMaxStartMass);
             }
         }
     }
 
 
-    protected override void RunIteration() { }
+    protected override void NextIteration() { }
 }

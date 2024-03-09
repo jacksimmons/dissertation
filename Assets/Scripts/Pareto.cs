@@ -2,6 +2,17 @@ using System.Collections.Generic;
 using System;
 using System.Collections.ObjectModel;
 
+
+public enum ParetoComparison
+{
+    StrictlyDominates,
+    Dominates,
+    MutuallyNonDominating,
+    Dominated,
+    StrictlyDominated
+}
+
+
 public static class Pareto
 {
     /// <summary>

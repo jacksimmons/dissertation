@@ -25,9 +25,13 @@ public class AlgorithmSetup : MonoBehaviour
     [SerializeField]
     private TMP_Text m_algTypeText;
 
-    // GA Settings
-    [SerializeField]
-    private TMP_Text m_gaTypeText;
+    public static readonly string[] ALG_TYPES =
+    { 
+        typeof(AlgSFGA).FullName!,
+        typeof(AlgPDGA).FullName!,
+        typeof(AlgACO).FullName!,
+    };
+
 
     // ACO Settings
     [SerializeField]
@@ -110,7 +114,7 @@ public class AlgorithmSetup : MonoBehaviour
     private void OnFloatInputChanged(ref float pref, string value)
     {
         pref = float.Parse(value);
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -120,7 +124,7 @@ public class AlgorithmSetup : MonoBehaviour
     private void OnIntInputChanged(ref int pref, string value)
     {
         pref = int.Parse(value);
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -135,7 +139,7 @@ public class AlgorithmSetup : MonoBehaviour
                 CaloriesToMacros();
                 break;
         }
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -147,10 +151,10 @@ public class AlgorithmSetup : MonoBehaviour
         ConstraintType newType =
         // Increment the constraint type by 1 (index is circularly wrapped by an extension method)
         Preferences.Instance.constraintTypes[(int)nutrient] =
-            (ConstraintType)Static.NextCircularArrayIndex((int)type, Enum.GetValues(typeof(ConstraintType)).Length, true);
+            (ConstraintType)ArrayTools.CircularNextIndex((int)type, Enum.GetValues(typeof(ConstraintType)).Length, true);
 
         pressedBtn.GetComponentInChildren<TMP_Text>().text = $"Goal:\n{newType}";
-        Static.SavePreferences();
+        Saving.SavePreferences();
     }
 
 
@@ -196,26 +200,21 @@ public class AlgorithmSetup : MonoBehaviour
     public void OnToggleAddFitnessForMass()
     {
         Preferences.Instance.addFitnessForMass = !Preferences.Instance.addFitnessForMass;
-        Static.SavePreferences();
+        Saving.SavePreferences();
         m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
     }
 
 
     public void OnCycleAlgorithm()
     {
-        Preferences.Instance.algType = (AlgorithmType)
-            Static.NextCircularArrayIndex((int)Preferences.Instance.algType, Enum.GetValues(typeof(AlgorithmType)).Length, true);
-        Static.SavePreferences();
-        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algType}";
-    }
-
-
-    public void OnCycleGAType()
-    {
-        Preferences.Instance.gaType = (GAType)
-            Static.NextCircularArrayIndex((int)Preferences.Instance.gaType, Enum.GetValues(typeof(GAType)).Length, true);
-        Static.SavePreferences();
-        m_gaTypeText.text = $"GA Type:\n{Preferences.Instance.gaType}";
+        Preferences.Instance.algorithmType =
+            ALG_TYPES[ArrayTools.CircularNextIndex(
+                Array.IndexOf(ALG_TYPES, Preferences.Instance.algorithmType, 0, ALG_TYPES.Length),
+                ALG_TYPES.Length,
+                true
+            )];
+        Saving.SavePreferences();
+        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algorithmType}";
     }
 
 
@@ -248,9 +247,7 @@ public class AlgorithmSetup : MonoBehaviour
         m_minStartMassInput.text = p.portionMinStartMass.ToString();
         m_maxStartMassInput.text = p.portionMaxStartMass.ToString();
         m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
-        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algType}";
-
-        m_gaTypeText.text = $"GA Type:\n{Preferences.Instance.gaType}";
+        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algorithmType}";
 
         m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
         m_pheroImportanceInput.text = p.pheroImportance.ToString();
@@ -261,6 +258,6 @@ public class AlgorithmSetup : MonoBehaviour
 
     public void OnAlgSetupNavBtnPressed(bool right)
     {
-        Static.OnNavBtnPressed(right, m_algSetupCategoryPanels, ref m_currentPanelIndex);
+        UITools.OnNavBtnPressed(right, m_algSetupCategoryPanels, ref m_currentPanelIndex);
     }
 }

@@ -2,8 +2,12 @@ To run, there are two different ways; a GUI (Unity) and a console.
 
 
 Users of the software should use Unity for ease of use.
-However the console version yields better performance and should be
-used for experiments. (Worst-case improvement: Less RAM and CPU usage by
+The Unity project allows for saved and easy-to-customise preferences.
+
+However the console version yields better performance, and doesn't
+have long load times.
+It also allows visualising algorithm efficiency through graphical plots.
+(Worst-case improvement: Less RAM and CPU usage by
 Unity frees up more for the algorithm itself).
 
 

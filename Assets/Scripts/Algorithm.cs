@@ -1,11 +1,7 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.IO;
 using System.Collections.ObjectModel;
 
 #if UNITY_64
-using UnityEngine;
 using Random = System.Random;
 #endif
 
@@ -35,57 +31,85 @@ public abstract class Algorithm
     }
 
 
-    private readonly Random m_rand = new();
-    public Random Rand
-    {
-        get { return m_rand; }
-    }
+    // Random number generator
+    public static Random Rand { get; } = new();
 
 
     // All of the foods that were extracted from the dataset.
-    protected ReadOnlyCollection<Food> m_foods;
+    public ReadOnlyCollection<Food> Foods;
+
 
     // User-defined Constraints; one for each Nutrient.
     public ReadOnlyCollection<Constraint> Constraints;
 
-    /// <summary>
-    /// Visible on the GUI.
-    /// </summary>
 
-    // The population of Days currently being processed (there may be more hidden, such as with ACO, but these are the
-    // ones displayed to the user in the GUI.)
-    private List<Day> m_population;             // Underlying
-    public ReadOnlyCollection<Day> Population;  // Visible
-
+    // The current iteration of the algorithm.
     public int IterNum { get; private set; } = 0;
 
-    // The current best day. Encapsulated as a new Day to prevent frontend side effects.
+
+    // --- Best day properties, can only be set together ---
+
+    // The current best day. Cloned as a new Day to prevent side effects.
+    // (OR returned as null if no best day exists)
     private Day m_bestDay;                      // Underlying
-    public Day BestDay
+    public Day BestDay                          // Cloned
     {
-        get
-        {
-            return m_bestDay == null ? null : new(m_bestDay);
-        }
+        get => BestDayExists ? new(m_bestDay) : null;
+    }
+    public bool BestDayExists
+    {
+        get => m_bestDay != null;
     }
 
+
+    // The fitness of the best day.
+    public float BestFitness { get; private set; } = float.PositiveInfinity;
+    public abstract float AverageFitness { get; }
+
+    
+    // The iteration number of the best day.
     public int BestIteration { get; private set; } = 0;
+
 
     // Stores any errors which occur during the dataset stage, to display to the user instead of running.
     public readonly string DatasetError = "";
 
 
-    public Algorithm(bool fillPopulation = true)
+    // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
+    public static Algorithm Build(Type algType)
+    {
+        return (Algorithm)Activator.CreateInstance(algType)!;
+    }
+
+
+    /// <summary>
+    /// Resets the static instance.
+    /// </summary>
+    public static void EndAlgorithm()
+    {
+        m_instance = null;
+    }
+
+
+    protected Algorithm()
     {
         Preferences prefs = Preferences.Instance;
 
+
+        // Load foods from the dataset, and store any errors that occurred.
         DatasetReader dr = new(prefs);
         DatasetError = dr.SetupError;
-
         if (DatasetError != "") return;
-        m_foods = new(dr.ProcessFoods());
+        Foods = new(dr.ProcessFoods());
 
-        // Load constraints from disk.
+
+        // Load constraints from Preferences.
+        Constraints = new(GetConstraintsFromPrefs());
+    }
+
+
+    private Constraint[] GetConstraintsFromPrefs()
+    {
         Constraint[] constraints = new Constraint[Nutrients.Count];
         for (int i = 0; i < Nutrients.Count; i++)
         {
@@ -115,92 +139,49 @@ public abstract class Algorithm
             constraints[i] = constraint;
         }
 
-        Constraints = new(constraints);
-
-        m_population = new();
-        if (fillPopulation)
-            GetStartingPopulation();
-        Population = new(m_population);
+        return constraints;
     }
 
 
     /// <summary>
-    /// Populates the Population data structure with randomly generated Days.
+    /// Handles any initialisation that cannot be done in the constructor.
     /// </summary>
-    /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
-    protected void GetStartingPopulation()
-    {
-        for (int i = 0; i < Preferences.Instance.populationSize; i++)
-        {
-            // Add a number of days to the population (each has random foods)
-            Day day = new();
-            for (int j = 0; j < Preferences.Instance.numStartingPortionsPerDay; j++)
-            {
-                // Add random foods to the day
-                day.AddPortion(GenerateRandomPortion());
-            }
-
-            m_population.Add(day);
-        }
-    }
+    public abstract void Init();
 
 
     /// <summary>
-    /// Generates a random portion (a random food selected from the dataset, with a random
-    /// quantity multiplier).
+    /// The exposed entry point for the next iteration in the algorithm.
     /// </summary>
-    /// <returns></returns>
-    protected Portion GenerateRandomPortion()
-    {
-        Food food = m_foods[m_rand.Next(m_foods.Count)];
-        return new(food, m_rand.Next(Preferences.Instance.portionMinStartMass, Preferences.Instance.portionMaxStartMass));
-    }
-
-
-    public virtual void PostConstructorSetup() { }
-
-
-    /// <summary>
-    /// Must evaluate the fitness first, as to begin with the Population data structure hasn't
-    /// got evaluated fitnesses.
-    /// 
-    /// Every RunIteration method call will begin with fitnesses calculated from the previous
-    /// iteration, even if there was no previous iteration (e.g. starting iteration 1)!
-    /// </summary>
-    public void NextIteration()
+    public void RunIteration()
     {
         IterNum++;
-        RunIteration();
-
-        for (int i = 0; i < Population.Count; i++)
-        {
-            if (m_bestDay == null)
-            {
-                m_bestDay = Population[i];
-                continue;
-            }
-
-            if (Population[i].Fitness < m_bestDay.Fitness)
-            {
-                m_bestDay = Population[i];
-                BestIteration = IterNum;
-            }
-        }
+        NextIteration();
+        UpdateBestDay();
     }
 
 
-    protected abstract void RunIteration();
+    /// <summary>
+    /// The internal iteration handling method, implemented in derived classes.
+    /// </summary>
+    protected abstract void NextIteration();
 
 
-    protected virtual void AddToPopulation(Day day)
+    /// <summary>
+    /// Updates the BestDay attrib if a new best day exists in the population.
+    /// </summary>
+    protected abstract void UpdateBestDay();
+
+
+    /// <summary>
+    /// The only way to "set" the best day, its fitness and iteration.
+    /// These parameters are all private so inherited classes MUST set them all
+    /// together with this method (reducing bugs).
+    /// </summary>
+    protected void SetBestDay(Day day, float fitness, int iteration)
     {
-        m_population.Add(day);
-    }
-
-
-    protected virtual void RemoveFromPopulation(Day day)
-    {
-        m_population.Remove(day);
+        m_bestDay = day;
+        BestFitness = fitness;
+        BestIteration = iteration;
     }
 
 
@@ -220,10 +201,24 @@ public abstract class Algorithm
 
 
     /// <summary>
-    /// Resets the static instance.
+    /// Evaluate the provided solution and return a string corresponding to its fitness, or
+    /// another way of describing as a string how good a solution is.
     /// </summary>
-    public static void EndAlgorithm()
-    {
-        m_instance = null;
-    }
+    public abstract string EvaluateDay(Day day);
+
+
+    /// <summary>
+    /// Generates and returns a string with the average stats of the program (e.g. average population stats
+    /// or average ant stats, etc.)
+    /// </summary>
+    public abstract string GetAverageStatsLabel();
+
+
+    /// <summary>
+    /// Abstract methods which are called during specific Day events. These vary with the choice of algorithm.
+    /// Used to update fitness when it changes, reducing the amount of total GetFitness calls.
+    /// </summary>
+    public abstract void Day_OnPortionAdded(Day day, Portion portion);
+    public abstract void Day_OnPortionRemoved(Day day, Portion portion);
+    public abstract void Day_OnPortionMassModified(Day day, Portion portion, int dmass);
 }

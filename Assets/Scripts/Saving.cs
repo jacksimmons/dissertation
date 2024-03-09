@@ -17,6 +17,15 @@ using UnityEngine;
 public static class Saving
 {
     /// <summary>
+    /// Saves the current static Preferences instance to disk.
+    /// </summary>
+    public static void SavePreferences()
+    {
+        SaveToFile(Preferences.Instance, "Preferences.json");
+    }
+
+
+    /// <summary>
     /// Serialises objects and saves them to a given file location.
     /// Also calls .Cache() on the object beforehand if it : ICached.
     /// </summary>
@@ -61,7 +70,7 @@ public static class Saving
         {
             // Restart the function after creating a new T save
             SaveToFile(new T(), filename);
-            Debug.LogWarning("File does NOT exist! Returning empty object");
+            Logger.Log("File does NOT exist! Returning empty object", Severity.Warning);
             return LoadFromFile<T>(filename);
         }
     }

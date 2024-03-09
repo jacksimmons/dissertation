@@ -22,13 +22,13 @@
 ///</summary>
 public abstract class Constraint
 {
-    public readonly float Limit;
+    public readonly float limit;
 
     public virtual float BestValue
     {
         get
         {
-            return Limit;
+            return limit;
         }
     }
     public virtual float WorstValue
@@ -45,10 +45,11 @@ public abstract class Constraint
         if (limit < 0)
             ThrowArgumentException("limit", limit);
 
-        Limit = limit;
+        this.limit = limit;
     }
 
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     protected static void ThrowArgumentException(string name, float value)
     {
         throw new ArgumentOutOfRangeException(name, $"Value: {value}");
@@ -71,16 +72,11 @@ public abstract class Constraint
 /// </summary>
 public class MinimiseConstraint : Constraint
 {
-    public override float BestValue
-    {
-        get { return 0; }
-    }
+    public override float BestValue { get; } = 0;
 
 
     public MinimiseConstraint(float limit)
-        : base(limit)
-    {
-    }
+        : base(limit) { }
 
 
     public override float _GetFitness(float value)
@@ -88,8 +84,8 @@ public class MinimiseConstraint : Constraint
         // A negative-exponential graph gives an OF which tends to infinity
         // as you approach the limit, L.
         // Graph: y = -1 - (L/(x-L)), x < L (minimise)
-        if (value >= Limit) return float.PositiveInfinity; // Infinitely high fitness
-        return -1 - Limit / (value - Limit);
+        if (value >= limit) return float.PositiveInfinity; // Infinitely high fitness
+        return -1 - limit / (value - limit);
     }
 }
 
@@ -102,8 +98,8 @@ public class MinimiseConstraint : Constraint
 /// </summary>
 public class ConvergeConstraint : Constraint
 {
-    public readonly float Steepness;
-    public readonly float Tolerance;
+    public readonly float steepness;
+    public readonly float tolerance;
 
 
     public ConvergeConstraint(float goal, float steepness, float tolerance)
@@ -114,18 +110,18 @@ public class ConvergeConstraint : Constraint
         if (tolerance <= 0)
             ThrowArgumentException("tolerance", tolerance);
 
-        Steepness = steepness;
-        Tolerance = tolerance;
+        this.steepness = steepness;
+        this.tolerance = tolerance;
     }
 
 
     public override float _GetFitness(float value)
     {
-        if (value <= Limit - Tolerance || value >= Limit + Tolerance) return float.PositiveInfinity;
+        if (value <= limit - tolerance || value >= limit + tolerance) return float.PositiveInfinity;
 
-        float f_a = -MathF.Pow(Limit / Tolerance, 2) / Steepness;
-        float f_b_num = -MathF.Pow(Limit, 2);
-        float f_b_denom = Steepness * (value - (Limit - Tolerance)) * (value - (Limit + Tolerance));
+        float f_a = -MathF.Pow(limit / tolerance, 2) / steepness;
+        float f_b_num = -MathF.Pow(limit, 2);
+        float f_b_denom = steepness * (value - (limit - tolerance)) * (value - (limit + tolerance));
 
         return f_a + f_b_num / f_b_denom;
     }

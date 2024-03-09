@@ -120,12 +120,7 @@ public class Preferences : ICached
     public int portionMinStartMass;
     public int portionMaxStartMass;
     public bool addFitnessForMass;
-    public AlgorithmType algType;
-
-    //
-    // GA-specific settings
-    //
-    public GAType gaType;
+    public string algorithmType;
 
     //
     // ACO-specific settings
@@ -155,39 +150,43 @@ public class Preferences : ICached
         steepnesses = new float[Nutrients.Count];
         constraintTypes = new ConstraintType[Nutrients.Count];
 
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            tolerances[i] = 1;
-            steepnesses[i] = 0.001f;
-            constraintTypes[i] = ConstraintType.Minimise;
-        }
-
         // Default values (provides a good basis without customisation)
+        // Values obtained from initial proposal research
         goals[(int)Nutrient.Protein] = 200;
         goals[(int)Nutrient.Fat] = 100;
         goals[(int)Nutrient.Carbs] = 375;
-        goals[(int)Nutrient.Kcal] = 3200;
+        goals[(int)Nutrient.Kcal] = 3000;
         goals[(int)Nutrient.Sugar] = 30;
         goals[(int)Nutrient.SatFat] = 30;
         goals[(int)Nutrient.TransFat] = 5;
-        goals[(int)Nutrient.Calcium] = 100;
-        goals[(int)Nutrient.Iron] = 100;
-        goals[(int)Nutrient.Iodine] = 100;
+        goals[(int)Nutrient.Calcium] = 700;
+        goals[(int)Nutrient.Iron] = 8.7f;
+        goals[(int)Nutrient.Iodine] = 140;
 
-        tolerances[(int)Nutrient.Protein] = 200;
-        tolerances[(int)Nutrient.Kcal] = 3000;
+
+        for (int i = 0; i < Nutrients.Count; i++)
+        {
+            constraintTypes[i] = ConstraintType.Minimise;
+            tolerances[i] = MathF.Max(1, goals[i]);
+            steepnesses[i] = 0.001f;
+        }
+
 
         constraintTypes[(int)Nutrient.Kcal] = ConstraintType.Converge;
         constraintTypes[(int)Nutrient.Protein] = ConstraintType.Converge;
+        constraintTypes[(int)Nutrient.Carbs] = ConstraintType.Converge;
+        constraintTypes[(int)Nutrient.Fat] = ConstraintType.Converge;
+        constraintTypes[(int)Nutrient.Calcium] = ConstraintType.Converge;
+        constraintTypes[(int)Nutrient.Iron] = ConstraintType.Converge;
+        constraintTypes[(int)Nutrient.Iodine] = ConstraintType.Converge;
+
 
         populationSize = 10;
         numStartingPortionsPerDay = 1;
         portionMinStartMass = 50;
         portionMaxStartMass = 150;
         addFitnessForMass = true;
-        algType = AlgorithmType.GA;
-
-        gaType = GAType.SummedFitness;
+        algorithmType = typeof(AlgSFGA).FullName!;
 
         pheroImportance = 0.5f;
         pheroEvapRate = 0.1f;

@@ -1,29 +1,32 @@
+using System;
 using System.Collections.Generic;
 
 
 public class AlgSFGA : AlgGA
 {
-    protected override Day Selection(List<Day> candidates, bool selectBest = true)
+    protected override Day Selection(List<Day> excluded, bool selectBest = true)
     {
-        int indexA = Rand.Next(0, candidates.Count);
-        // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-        int indexB = (indexA + Rand.Next(1, candidates.Count - 1)) % candidates.Count;
+        Tuple<Day, Day> days = SelectDays(excluded);
+        Day a = days.Item1;
+        Day b = days.Item2;
 
-        float fitA = candidates[indexA].Fitness;
-        float fitB = candidates[indexB].Fitness;
+
+        float fitA = Population[a];
+        float fitB = Population[b];
+
 
         if (selectBest)
         {
-            if (fitA < fitB) return candidates[indexA];
-            if (fitB < fitA) return candidates[indexB];
+            if (fitA < fitB) return a;
+            if (fitB < fitA) return b;
         }
         else
         {
-            if (fitA > fitB) return candidates[indexA];
-            if (fitB > fitA) return candidates[indexB];
+            if (fitA > fitB) return a;
+            if (fitB > fitA) return b;
         }
 
-        return Tiebreak(candidates[indexA], candidates[indexB]);
+        return Tiebreak(a, b);
     }
 
 
