@@ -29,6 +29,8 @@
 // The Top n days are then added to the population for display in the GUI.
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Random = System.Random;
@@ -40,6 +42,28 @@ using Random = System.Random;
 // Warning: You'll want to use no hard constraints for this algorithm, as then all
 // edge fitnesses will likely be infinity, due to each individual portion forming
 // a very sub-optimal day.
+
+/// <summary>
+/// An ACO algorithm for meal planning.
+/// 
+/// This algorithm models ants in real-life, where the ants are placed in a grid of
+/// equally-spaced food portions. (The assumption is made, that every portion is always
+/// equidistant to every other portion, which would be hard to achieve in real-life.)
+/// 
+/// The ants will each begin at different portions to maximise search space exploration.
+/// If there are more ants than portions, some will share start points.
+/// 
+/// (*) The ants will find the shortest path around all of the foods. The ants are given some time
+/// to traverse these foods and lay down enough pheromone to decide the clear worst food.
+/// Then the worst food is removed and replaced with a new one. (Avoid stagnation)
+/// 
+/// Replacing foods is crucial to traverse the whole search space - the search space (1000s of foods,
+/// with any real mass) is too big to tackle all at once.
+/// 
+/// (*) The distance between two foods is determined by the nutritional value of the combined
+/// foods. Given that the first food was eaten, how beneficial would it be to eat the second?
+/// E.g. Having eaten 400g of nuts, it would not be beneficial to have more nuts, or fat/protein! 
+/// </summary>
 public class AlgACO : Algorithm
 {
     // Initialisation
@@ -47,257 +71,111 @@ public class AlgACO : Algorithm
     {
         private static int s_numAnts;
         public readonly int id;
+        private readonly AlgACO m_colony;
+        
+        private readonly int m_startIndex;
 
-        private AlgACO m_colony;
         private Day m_path;
-        public Day Path
-        {
-            get
-            {
-                return new(m_path);
-            }
-        }
-
+        public int PathLength => m_path.portions.Count;
         public float Fitness
         {
             get
             {
+                if (m_partOfPopulation) return m_colony.m_population.GetFitness(m_path);
                 return m_path.GetFitness();
             }
         }
 
-        private readonly int m_startIndex;
-        public int LastIndex
-        {
-            get
-            {
-                return Array.IndexOf(m_colony.m_vertices, m_path.portions[^1]);
-            }
-        }
+        public int LastIndex { get; private set; }
+        private HashSet<int> m_pathIndices;
+
+        private bool m_partOfPopulation;
 
 
-        public Ant(AlgACO colony, int startIndex)
+        public Ant(AlgACO colony, int startIndex, bool partOfPopulation)
         {
             m_colony = colony;
-            m_path = new();
 
             // 0, 1, 2, ...
             id = s_numAnts;
             s_numAnts++;
+
             m_startIndex = startIndex;
 
-            // Add the start vertex
-            m_path.AddPortion(m_colony.m_vertices[startIndex]);
-        }
+            // Initialise the path
+            ResetPath();
 
-
-        public void AddPortion(Portion p)
-        {
-            m_path.AddPortion(p);
-        }
-    }
-
-    private const float EPSILON = 1e-7f;
-    private const int RECURSE_LIMIT = 1;
-    private const int NUM_PORTIONS = 10;
-
-    private float[,] m_fitnesses;
-    private float[,] m_pheromone;
-    private Portion[] m_vertices;
-
-    private int m_startIndex;
-
-    private Ant[] m_ants;
-
-    public override float AverageFitness => 0;
-
-
-    public override void Init()
-    {
-        if (NUM_PORTIONS > Foods.Count) throw new ArgumentOutOfRangeException(nameof(NUM_PORTIONS));
-
-        // Pheromone and fitness initialisation
-        m_fitnesses = new float[NUM_PORTIONS, NUM_PORTIONS];
-        m_pheromone = new float[NUM_PORTIONS, NUM_PORTIONS];
-
-        // Easier to iterate over portions than Foods
-        m_vertices = new Portion[NUM_PORTIONS];
-
-        m_ants = new Ant[Preferences.Instance.populationSize];
-
-
-        for (int i = 0; i < NUM_PORTIONS; i++)
-        {
-            m_vertices[i] = new(Foods[i])
+            m_partOfPopulation = partOfPopulation;
+            if (m_partOfPopulation)
             {
-                Mass = Rand.Next(Preferences.Instance.portionMinStartMass, Preferences.Instance.portionMaxStartMass)
-            };
-        }
-
-
-        for (int i = 0; i < NUM_PORTIONS; i++)
-        {
-            for (int j = 0; j < NUM_PORTIONS; j++)
-            {
-                m_fitnesses[i, j] = CalculateEdgeFitness(i, j);
-                m_pheromone[i, j] = (float)Rand.NextDouble();
+                // Add the path to the population
+                m_colony.m_population.Add(m_path!);
             }
         }
 
 
-        m_startIndex = GetBestMatrixEdge(m_fitnesses, true).Item1;
-        InitialiseAnts();
-    }
-
-
-    /// <summary>
-    /// The fitness of an edge is the difference in fitness
-    /// that occurs when adding the second food.
-    /// 
-    /// This means the edges are NOT bi-directional.
-    /// </summary>
-    /// <param name="i">The previous vertex.</param>
-    /// <param name="j">The new vertex.</param>
-    /// <returns>The difference in fitness as a result
-    /// of adding vertex `j`.</returns>
-    private float CalculateEdgeFitness(int i, int j)
-    {
-        Day fitnessTester = new();
-        fitnessTester.AddPortion(m_vertices[i]);
-        float originalFitness = fitnessTester.GetFitness();
-
-        fitnessTester.AddPortion(m_vertices[j]);
-
-        // Regardless of i, the new fitness being infinity makes this edge terrible.
-        if (float.IsPositiveInfinity(fitnessTester.GetFitness())) return float.PositiveInfinity;
-
-        // Check if fitness goes from infinity to a finite value
-        if (float.IsPositiveInfinity(originalFitness))
+        /// <summary>
+        /// Reset the ant's path.
+        /// </summary>
+        public void ResetPath()
         {
-            if (!float.IsPositiveInfinity(fitnessTester.GetFitness()))
+            if (m_partOfPopulation)
+                m_colony.m_population.Remove(m_path);
+
+            m_path = new();
+            m_pathIndices = new(NUM_PORTIONS);
+
+            if (m_partOfPopulation)
+                m_colony.m_population.Add(m_path);
+
+            AddIndex(m_startIndex);
+        }
+
+
+        /// <summary>
+        /// Adds a portion by index in the colony's vertices array.
+        /// </summary>
+        public void AddIndex(int index)
+        {
+            m_path.AddPortion(m_colony.m_vertices[index]);
+            m_pathIndices.Add(index);
+            LastIndex = index;
+        }
+
+
+        public bool PathContains(int portionIndex)
+        {
+            return m_pathIndices.Contains(portionIndex);
+        }
+
+
+        public Day ClonePath()
+        {
+            return new(m_path);
+        }
+
+
+        public void DepositPheromone()
+        {
+            if (m_path.portions.Count <= 1) return;
+
+            float increment = Preferences.Instance.pheroImportance / m_colony.m_population.GetFitness(m_path);
+            for (int j = 1; j < m_path.portions.Count; j++)
             {
-                // A movement from Infinity to a finite value should be considered very highly.
-                // Give this edge a fitness of 0.
-                return 0;
+                m_colony.m_pheromone[j - 1, j] += increment;
             }
-            return float.PositiveInfinity;
+
+            m_colony.m_pheromone[m_path.portions.Count - 1, 0] += increment;
         }
 
-        return MathF.Abs(fitnessTester.GetFitness() - originalFitness);
-    }
 
-
-    /// <summary>
-    /// Perform an action on every element in the matrix.
-    /// Matrix must have standard dimensions (NUM_PORTIONS X NUM_PORTIONS)
-    /// </summary>
-    private void ActOnMatrix(float[,] mat, Action<int, int, float> act)
-    {
-        for (int i = 0; i < NUM_PORTIONS; i++)
-        {
-            for (int j = 0; j < NUM_PORTIONS; j++)
-            {
-                act(i, j, mat[i, j]);
-            }
-        }
-    }
-
-
-    private Tuple<int, int> GetBestMatrixEdge(float[,] mat, bool minimise = false)
-    {
-        float best = minimise ? float.PositiveInfinity : 0;
-        int bestI = -1;
-        int bestJ = -1;
-
-        ActOnMatrix(mat, (int i, int j, float x) =>
-        {
-            if (minimise)
-            {
-                if (x < best)
-                {
-                    best = x;
-                    bestI = i;
-                    bestJ = j;
-                }
-            }
-            else
-            {
-                if (x > best)
-                {
-                    best = x;
-                    bestI = i;
-                    bestJ = j;
-                }
-            }
-        });
-
-        return new(bestI, bestJ);
-    }
-
-
-    private void InitialiseAnts()
-    {
-        for (int i = 0; i < Preferences.Instance.populationSize; i++)
-        {
-            Ant ant = new(this, m_startIndex);
-            m_ants[i] = ant;
-        }
-    }
-
-
-    protected override void NextIteration()
-    {
-        // Generate ant solutions
-        for (int i = 0; i < Preferences.Instance.populationSize; i++)
-        {
-            Ant ant = m_ants[i];
-            ThreadPool.QueueUserWorkItem(RunAntThread!, ant);
-        }
-
-        // Update pheromone
-        UpdatePheromone();
-
-        // Reset all ants
-        InitialiseAnts();
-    }
-
-
-    protected override void UpdateBestDay()
-    {
-        foreach (Ant ant in m_ants)
-        {
-            float antFitness = ant.Fitness;
-            if (antFitness < BestFitness || BestDay == null)
-                SetBestDay(ant.Path, antFitness, IterNum);
-        }
-    }
-
-
-    /// <summary>
-    /// Handles an ant thread. Converts the object state into the parameters
-    /// required for running the ant.
-    /// </summary>
-    /// <param name="state">The state provided to the thread (parameters).</param>
-    private void RunAntThread(object state)
-    {
-        Ant ant = state as Ant;
-        ant.RunAnt();
-    }
-
-
-    partial class Ant
-    {
         /// <summary>
         /// Gets an ant (empty Day) to traverse its whole path,
         /// based on a pheromone/desirability probability calculation.
         /// </summary>
-        /// <param name="ant">The ant.</param>
         public void RunAnt(int recursion = 0)
         {
-            // The ant always has at least one vertex, as it is initialised with one
-            int lastVertex = LastIndex;
-
-            float[] probabilities = GetAllVertexProbabilities(lastVertex);
+            float[] probabilities = GetAllVertexProbabilities(LastIndex);
 
             // Clamp the probability to the range [EPSILON, 1 - EPSILON]
             float probability = MathF.Max(MathF.Min((float)Rand.NextDouble(), 1 - EPSILON), EPSILON);
@@ -323,7 +201,7 @@ public class AlgACO : Algorithm
             // otherwise.
             if (nextVertex != -1)
             {
-                AddPortion(m_colony.m_vertices[nextVertex]);
+                AddIndex(nextVertex);
 
                 if (recursion + 1 < RECURSE_LIMIT)
                     RunAnt(recursion + 1);
@@ -339,19 +217,26 @@ public class AlgACO : Algorithm
 
 
         /// <summary>
-        /// Calculates the probability that an ant will select
-        /// any of the possible next vertices, when moving from
-        /// `prev`. A probability of -1 indicates that the ant
+        /// In this form of ACO, the "probability" of vertex selection translates into
+        /// the mass of the portion selected.
+        /// 
+        /// ALL portions in the initial population are added to each ant, except the
+        /// really bad ones will have an infinitessimal mass.
+        /// 
+        /// Applies for movement from `prev`. A multiplier of -1 indicates the ant
         /// cannot go there.
         /// 
         /// (tau[i,j]^(alpha) * eta[i,j]^(beta)) /
         /// (sum_h(tau[i,h]^(alpha) * eta[i,h]^(beta))
+        /// 
+        /// Not stored in a data structure (this would minimise calculations in case
+        /// ants go from the same previous node) because this would have to be serially
+        /// calculated, slowing the more-demanding threaded program down.
         /// </summary>
         /// <param name="prev">Last selected portion index.</param>
-        /// <param name="ant">The ant (Day) selecting.</param>
-        /// <returns>An array containing the probability that
-        /// each vertex is selected, by index.</returns>
-        private float[] GetAllVertexProbabilities(int prev)
+        /// <returns>An array containing the "probability" value for each vertex
+        /// by index.</returns>
+        public float[] GetAllVertexProbabilities(int prev)
         {
             float[] probs = new float[NUM_PORTIONS];
 
@@ -362,13 +247,14 @@ public class AlgACO : Algorithm
                 J[h] = 0;
 
                 if (h == prev) continue;
-                if (m_path.portions.Contains(m_colony.m_vertices[h])) continue;
+                if (PathContains(h)) continue;
+
+                float f = m_colony.m_fitnesses[prev, h];
+                // Probability of selection is 0 for an Infinity fitness edge.
+                if (float.IsPositiveInfinity(f)) continue;
 
                 float p = m_colony.m_pheromone[prev, h];
-                float f = m_colony.m_fitnesses[prev, h];
 
-                // Probability of selection is 0 for an Infinity edge.
-                if (float.IsPositiveInfinity(f)) continue;
 
                 J[h] = MathF.Pow(p, Preferences.Instance.acoAlpha)
                      * MathF.Pow(f, Preferences.Instance.acoBeta);
@@ -389,6 +275,260 @@ public class AlgACO : Algorithm
         }
     }
 
+    private const float EPSILON = 1e-7f;
+
+    // Needs to be greater than the number of portions, otherwise restricts number of portions in each path
+    private const int NUM_PORTIONS = 10;
+    private const int RECURSE_LIMIT = NUM_PORTIONS;
+
+    // Number of iterations before replacing the worst food.
+    // High value => Deeper search (more iterations for evaluation)
+    // Low value => Wider search (more foods)
+    private const int STAGNATION_ITERS = 1000;
+    private const bool USE_THREADS = false; // Saves time on ~100 ants, loses time on 10 ants
+    private const bool ELITIST = false;
+
+    private float[,] m_fitnesses = new float[NUM_PORTIONS, NUM_PORTIONS];
+    private float[,] m_pheromone = new float[NUM_PORTIONS, NUM_PORTIONS];
+    private Portion[] m_vertices = new Portion[NUM_PORTIONS];
+    private Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
+
+    //private bool[] m_exploredFoods;
+
+
+    public override void Init()
+    {
+        if (RECURSE_LIMIT < NUM_PORTIONS)
+            Logger.Log("Recursion limit is less than the number of portions!", Severity.Error);
+
+
+        //m_exploredFoods = new bool[Foods.Count];
+
+
+        // Create vertices
+        for (int i = 0; i < NUM_PORTIONS; i++)
+        {
+            m_vertices[i] = GetNewPortion();
+        }
+
+
+        // Calculate and assign edge fitnesses and pheromone
+        ActOnMatrix(m_fitnesses, (int i, int j, float _) =>
+        {
+            m_fitnesses[i, j] = CalculateEdgeFitness(i, j);
+            m_pheromone[i, j] = (float)Rand.NextDouble();
+        });
+
+
+        // Create ants
+        for (int i = 0; i < Preferences.Instance.populationSize; i++)
+        {
+            // Ants are split roughly equally between the portions
+            Ant ant = new(this, i % NUM_PORTIONS, true);
+            m_ants[i] = ant;
+        }
+    }
+
+
+    public Portion GetNewPortion()
+    {
+        //int randIndex = Rand.Next(Foods.Count);
+        //if (m_exploredFoods[randIndex])
+        //{
+        //    Logger.Log("Explored random food already.");
+        //    int newIndex = ArrayTools.CircularNextIndex(randIndex, Foods.Count, true);
+
+        //    while (m_exploredFoods[newIndex])
+        //    {
+        //        newIndex = ArrayTools.CircularNextIndex(newIndex, Foods.Count, true);
+
+        //        // If the selected index looped all the way around and all foods were explored...
+        //        if (newIndex == randIndex)
+        //        {
+        //            Logger.Log("Algorithm has completed!", Severity.Error);
+        //        }
+        //    }
+        //}
+
+        return new(Foods[Rand.Next(Foods.Count)], Rand.Next(Preferences.MIN_PORTION_MASS, Preferences.MAX_PORTION_MASS));
+    }
+
+
+    /// <summary>
+    /// The fitness of an edge is the difference in fitness that occurs when adding the second food.
+    /// 
+    /// This means the edges are NOT bi-directional.
+    /// </summary>
+    /// <param name="i">The previous vertex.</param>
+    /// <param name="j">The new vertex.</param>
+    /// <returns>The difference in fitness as a result of adding vertex `j`.</returns>
+    private float CalculateEdgeFitness(int i, int j)
+    {
+        Ant fitnessTester = new(this, i, false);
+        float fitnessBefore = fitnessTester.Fitness;
+
+        fitnessTester.AddIndex(j);
+        float fitnessAfter = fitnessTester.Fitness;
+
+        return MathF.Abs(fitnessAfter - fitnessBefore);
+    }
+
+
+    /// <summary>
+    /// Perform an action on every element in the matrix.
+    /// Matrix must have standard dimensions (NUM_PORTIONS X NUM_PORTIONS)
+    /// </summary>
+    private static void ActOnMatrix(float[,] mat, Action<int, int, float> act)
+    {
+        for (int i = 0; i < NUM_PORTIONS; i++)
+        {
+            for (int j = 0; j < NUM_PORTIONS; j++)
+            {
+                act(i, j, mat[i, j]);
+            }
+        }
+    }
+
+
+    //private Tuple<int, int> GetBestMatrixEdge(float[,] mat, bool minimise = false)
+    //{
+    //    float best = minimise ? float.PositiveInfinity : 0;
+
+    //    // Default edge; if all are infinity return 0 to 1
+    //    int bestI = 0;
+    //    int bestJ = 1;
+
+    //    ActOnMatrix(mat, (int i, int j, float x) =>
+    //    {
+    //        if (minimise)
+    //        {
+    //            if (x < best)
+    //            {
+    //                best = x;
+    //                bestI = i;
+    //                bestJ = j;
+    //            }
+    //        }
+    //        else
+    //        {
+    //            if (x > best)
+    //            {
+    //                best = x;
+    //                bestI = i;
+    //                bestJ = j;
+    //            }
+    //        }
+    //    });
+
+    //    return new(bestI, bestJ);
+    //}
+
+
+    protected override void NextIteration()
+    {
+        // Reset the simulation
+        if (IterNum % STAGNATION_ITERS == 0)
+        {
+            ReplaceWorstFood();
+        }
+
+
+        // Reset all ants
+        ResetAnts();
+
+
+        // Generate ant solutions
+        // https://stackoverflow.com/questions/6529659/wait-for-queueuserworkitem-to-complete
+
+        if (USE_THREADS)
+        {
+            ManualResetEvent completionEvent = new(false);
+            int threadsLeft = Preferences.Instance.populationSize;
+            for (int i = 0; i < Preferences.Instance.populationSize; i++)
+            {
+                Ant ant = m_ants[i];
+
+                /// <summary>
+                /// Handles an ant thread. Converts the object state into the parameters
+                /// required for running the ant.
+                /// </summary>
+                /// <param name="state">The state provided to the thread (parameters).</param>
+                void RunAntThread(object state)
+                {
+                    Ant ant = state as Ant;
+                    ant.RunAnt();
+
+                    if (Interlocked.Decrement(ref threadsLeft) == 0) completionEvent.Set();
+                }
+
+                ThreadPool.QueueUserWorkItem(RunAntThread!, ant);
+            }
+
+            completionEvent.WaitOne();
+        }
+        else
+        {
+            for (int i = 0; i < Preferences.Instance.populationSize; i++)
+            {
+                m_ants[i].RunAnt();
+            }
+        }
+
+        // Update pheromone
+        UpdatePheromone();
+    }
+
+
+    /// <summary>
+    /// Remove the worst food in the experiment, and replace it with a new random
+    /// one from the dataset.
+    /// 
+    /// The "worst" is calculated by selecting the vertex with the lowest total
+    /// pheromone incoming from all other vertices.
+    /// 
+    /// Generally improves algorithm performance.
+    /// </summary>
+    private void ReplaceWorstFood()
+    {
+        float[] pheroSumIntoEachVert = new float[NUM_PORTIONS];
+        for (int i = 0; i < NUM_PORTIONS; i++)
+        {
+            for (int j = 0; j < NUM_PORTIONS; j++)
+            {
+                pheroSumIntoEachVert[j] += m_pheromone[i, j];
+            }
+        }
+
+        int worstIndex = Array.IndexOf(pheroSumIntoEachVert, pheroSumIntoEachVert.Min());
+
+        // Replace the worst index and mark it as explored
+        //m_exploredFoods[worstIndex] = true;
+        m_vertices[worstIndex] = GetNewPortion();
+
+        // Calculate and assign new fitnesses
+        for (int i = 0; i < NUM_PORTIONS; i++)
+        {
+            m_fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
+            m_fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);
+
+            m_pheromone[i, worstIndex] = (float)Rand.NextDouble();
+            m_pheromone[worstIndex, i] = (float)Rand.NextDouble();
+        }
+
+
+        // Reset pheromone
+        ActOnMatrix(m_pheromone, (int i, int j, float _) => m_pheromone[i, j] = (float)Rand.NextDouble());
+    }
+
+
+    private void ResetAnts()
+    {
+        for (int i = 0; i < m_ants.Length; i++)
+        {
+            m_ants[i].ResetPath();
+        }
+    }
+
 
     private void UpdatePheromone()
     {
@@ -401,18 +541,26 @@ public class AlgACO : Algorithm
         }
 
         // Add pheromone to edges used by ants in their paths
-        //for (int i = 0; i < Population.Count; i++)
-        //{
-        //    if (Population[i].portions.Count <= 1) continue;
+        for (int i = 0; i < Preferences.Instance.populationSize; i++)
+        {
+            m_ants[i].DepositPheromone();
+        }
 
-        //    float increment = Preferences.Instance.pheroImportance / TourFitness(Population[i]);
-        //    for (int j = 0; j < Population[i].portions.Count; j++)
-        //    {
-        //        m_pheromone[i, j] += increment;
-        //    }
+        if (BestDayExists && ELITIST) DepositPheromone(BestDay, BestFitness);
+    }
 
-        //    m_pheromone[Population[i].portions.Count - 1, 0] += increment;
-        //}
+
+    private void DepositPheromone(Day path, float fitness)
+    {
+        if (path.portions.Count <= 1) return;
+
+        float increment = Preferences.Instance.pheroImportance / fitness;
+        for (int j = 1; j < path.portions.Count; j++)
+        {
+            m_pheromone[j - 1, j] += increment;
+        }
+
+        m_pheromone[path.portions.Count - 1, 0] += increment;
     }
 
 
@@ -422,67 +570,17 @@ public class AlgACO : Algorithm
     /// </summary>
     /// <param name="day">The day (tour).</param>
     /// <returns>The fitness.</returns>
-    private float TourFitness(Day day)
-    {
-        if (day.portions.Count <= 1) return float.PositiveInfinity;
+    //private float TourFitness(Ant ant)
+    //{
+    //    if (day.portions.Count <= 1) return float.PositiveInfinity;
 
-        float fitness = 0;
-        for (int i = 0; i < day.portions.Count - 1; i++)
-        {
-            fitness += EdgeFitness(day.portions[i], day.portions[i + 1]);
-        }
-        fitness += EdgeFitness(day.portions[^1], day.portions[0]);
+    //    float fitness = 0;
+    //    for (int i = 0; i < day.portions.Count - 1; i++)
+    //    {
+    //        fitness += EdgeFitness(day.portions[i], day.portions[i + 1]);
+    //    }
+    //    fitness += EdgeFitness(day.portions[^1], day.portions[0]);
 
-        return fitness;
-    }
-
-
-    /// <summary>
-    /// Calculates the fitness of an edge, from two portions.
-    /// </summary>
-    /// <returns>The fitness.</returns>
-    private float EdgeFitness(Portion a, Portion b)
-    {
-        return m_fitnesses[Foods.IndexOf(a.food), Foods.IndexOf(b.food)];
-    }
-
-
-    /// <summary>
-    /// Evaluate the provided solution and return a string corresponding to its fitness, or
-    /// another way of describing as a string how good a solution is.
-    /// </summary>
-    public override string EvaluateDay(Day day)
-    {
-        return $"Fitness: {day.GetFitness()}";
-    }
-
-
-    /// <summary>
-    /// Generates and returns a string with the average stats of the program (e.g. average population stats
-    /// or average ant stats, etc.)
-    /// </summary>
-    public override string GetAverageStatsLabel()
-    {
-        float sumFitness = 0;
-        for (int i = 0; i < Preferences.Instance.populationSize; i++)
-        {
-            sumFitness += m_ants[i].Fitness;
-        }
-        return $"Fitness: {sumFitness / Preferences.Instance.populationSize}";
-    }
-
-
-    public override void Day_OnPortionAdded(Day day, Portion portion)
-    {
-    }
-
-
-    public override void Day_OnPortionRemoved(Day day, Portion portion)
-    {
-    }
-
-
-    public override void Day_OnPortionMassModified(Day day, Portion portion, int dmass)
-    {
-    }
+    //    return fitness;
+    //}
 }

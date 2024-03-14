@@ -27,7 +27,7 @@ public static class Logger
     /// <param name="message">The message to log.</param>
     /// <param name="severity">Severity of the log, affecting the output stream
     /// or message. Default is Log.</param>
-    public static void Log(object message, Severity severity = Severity.Log)
+    public static void Log(object message, Severity severity = Severity.Log, [System.Runtime.CompilerServices.CallerMemberName] string memName = "")
     {
 #if UNITY_64
         switch (severity)
@@ -46,14 +46,13 @@ public static class Logger
         switch (severity)
         {
             case Severity.Log:
-                Console.WriteLine(message);
+                Console.WriteLine($"{memName}: {message}");
                 break;
             case Severity.Warning:
-                Console.WriteLine($"WARN: {message}");
+                Console.WriteLine($"{memName} WARN: {message}");
                 break;
             case Severity.Error:
-                Console.WriteLine($"ERROR: {message}");
-                break;
+                throw new Exception($"{memName} ERROR: {message}");
         }
 #endif
     }
@@ -82,6 +81,12 @@ public static class ArrayTools
 
         // Overwrite the last element with the second last element
         array[^1] = next;
+    }
+
+
+    public static T CircularNextElement<T>(T[] arr, int current, bool right)
+    {
+        return arr[CircularNextIndex(current, arr.Length, right)];
     }
 
 

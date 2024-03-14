@@ -1,15 +1,9 @@
-﻿using System;
-
-
-/// <summary>
-/// A constraint nudges the algorithm towards a more desirable value for a parameter.
+﻿/// A constraint nudges (or forces, if a hard constraint is used) the algorithm towards a more
+/// desirable value for a parameter.
 /// In this project they represent 2D curves of a nutrient (x) against its optimality (y = f(x)).
 /// 
 /// The lower the value outputted by the curve function, the more optimal the value (x)
 /// is for this nutrient.
-/// 
-/// The curve functions are not specified by the user - the user picks from a selection of pre-
-/// designed curves which should fit every optimisation "type" they could want.
 /// 
 /// Abbreviations:
 /// - OF = Objective Function
@@ -17,114 +11,37 @@
 /// - S = Steepness
 /// - T = Tolerance either side of k (y tends to infinity at x = L - T or x = L + T)
 /// - L = Limit (Maximum, or Convergence point)
-/// - Min = Minimum of a range
-/// - Max = Maximum of a range
-///</summary>
+using System;
+
+
+/// <summary>
+/// Abstract base class for Constraints.
+/// </summary>
 public abstract class Constraint
 {
-    public readonly float limit;
+    public abstract float BestValue { get; }
+    public abstract float WorstValue { get; }
 
-    public virtual float BestValue
+
+    public static Constraint Build(ConstraintData data)
     {
-        get
-        {
-            return limit;
-        }
-    }
-    public virtual float WorstValue
-    {
-        get
-        {
-            return float.PositiveInfinity;
-        }
+        return (Constraint)Activator.CreateInstance(Type.GetType(data.type), data)!;
     }
 
 
-    public Constraint(float limit)
-    {
-        if (limit < 0)
-            ThrowArgumentException("limit", limit);
-
-        this.limit = limit;
-    }
+    public abstract float GetFitness(float amount);
 
 
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    protected static void ThrowArgumentException(string name, float value)
-    {
-        throw new ArgumentOutOfRangeException(name, $"Value: {value}");
-    }
-
-
-    /// <summary>
-    /// Get the fitness of a quantity value for a Day of food.
-    /// Can be approximated for individual portions, by multiplying by IdealNumPortionsPerDay.
-    /// </summary>
-    /// <param name="value">The quantity value for the whole Day.</param>
-    /// <returns>The fitness of the quantity value.</returns>
-    public abstract float _GetFitness(float value);
+    public abstract string Verbose();
 }
 
 
-/// <summary>
-/// A negative-exponential constraint which encourages minimisation.
-/// Graph: y = -1 - (k/(x-k)), x < k
-/// </summary>
-public class MinimiseConstraint : Constraint
+public struct ConstraintData
 {
-    public override float BestValue { get; } = 0;
-
-
-    public MinimiseConstraint(float limit)
-        : base(limit) { }
-
-
-    public override float _GetFitness(float value)
-    {
-        // A negative-exponential graph gives an OF which tends to infinity
-        // as you approach the limit, L.
-        // Graph: y = -1 - (L/(x-L)), x < L (minimise)
-        if (value >= limit) return float.PositiveInfinity; // Infinitely high fitness
-        return -1 - limit / (value - limit);
-    }
-}
-
-
-/// <summary>
-/// A constraint which encourages convergence on a specific value (the limit), and
-/// tolerates deviation up to the tolerance parameter. Fitness increase as the tolerance
-/// limits are approached can be controlled by the steepness. 
-/// Graph: y = -L^2/(ST^2) - L^2/S[(x-(L-T))(x-(L+T))], L - T < x < L + T
-/// </summary>
-public class ConvergeConstraint : Constraint
-{
-    public readonly float steepness;
-    public readonly float tolerance;
-
-
-    public ConvergeConstraint(float goal, float steepness, float tolerance)
-        : base(goal)
-    {
-        if (steepness <= 0)
-            ThrowArgumentException("steepness", steepness);
-        if (tolerance <= 0)
-            ThrowArgumentException("tolerance", tolerance);
-
-        this.steepness = steepness;
-        this.tolerance = tolerance;
-    }
-
-
-    public override float _GetFitness(float value)
-    {
-        if (value <= limit - tolerance || value >= limit + tolerance) return float.PositiveInfinity;
-
-        float f_a = -MathF.Pow(limit / tolerance, 2) / steepness;
-        float f_b_num = -MathF.Pow(limit, 2);
-        float f_b_denom = steepness * (value - (limit - tolerance)) * (value - (limit + tolerance));
-
-        return f_a + f_b_num / f_b_denom;
-    }
+    public float min;
+    public float max;
+    public float goal;
+    public string type;
 }
 
 
@@ -132,28 +49,165 @@ public class ConvergeConstraint : Constraint
 /// A constraint which gives a fitness of 0 if in a specified range.
 /// Otherwise, gives an infinite fitness.
 /// Graph is a conditional function:
-///     { infinity, x <= Min
-/// y = { infinity, x >= Max
+///     { infinity, x < Min
+/// y = { infinity, x > Max
 ///     { 0, otherwise
 ///     
-/// It is constructed as an infinitely steep ConvergeConstraint.
-/// </summary>
-public class RangeConstraint : ConvergeConstraint
+/// It is constructed as 
+public class HardConstraint : Constraint
 {
-    // Creates a ConvergeConstraint centered at the mean of min and max.
-    // Then makes it infinitely steep with a negligable weight of 1.
-    // The tolerance either side is just half the difference between the max and the min.
-    public RangeConstraint(float min, float max) : base((min + max) / 2, 1, (max - min)/2) { }
+    public readonly float min;
+    public readonly float max;
+
+
+    public override float BestValue => (min + max) / 2;
+    public override float WorstValue => float.PositiveInfinity;
+
+
+    public HardConstraint(float min, float max) : base()
+    {
+        this.min = min;
+        this.max = max;
+
+        if (max < min)
+            Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
+    }
+
+
+    public HardConstraint(ConstraintData data) : base()
+    {
+        min = data.min;
+        max = data.max;
+
+        if (max < min)
+            Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
+    }
+
+
+    public override float GetFitness(float amount)
+    {
+        if (amount < min || amount > max)
+            return float.PositiveInfinity;
+        return 0;
+    }
+
+
+    public override string Verbose()
+    {
+        return $"Hard constraint [{min}, {max}]";
+    }
 }
 
 
 /// <summary>
-/// A "non-constraint" which is not taken into consideration. Gives a fitness of 0 always.
+/// A negative-exponential constraint which encourages minimisation and is a hard constraint
+/// at the max value.
 /// </summary>
-public class NullConstraint : Constraint
+public class MinimiseConstraint : HardConstraint
 {
-    public NullConstraint() : base(float.PositiveInfinity) { }
+    public override float BestValue => 0;
+    public override float WorstValue => float.PositiveInfinity;
 
 
-    public override float _GetFitness(float value) { return 0; }
+    public MinimiseConstraint(float max) : base(0, max)
+    {
+        if (max <= 0)
+            Logger.Log($"Argument max ({max}) was <= 0.", Severity.Error);
+    }
+
+
+    public MinimiseConstraint(ConstraintData data) : base(data) { }
+
+
+    public override float GetFitness(float amount)
+    {
+        // A negative-exponential graph gives an OF which tends to infinity
+        // as you approach the limit, L.
+        // Graph: y = -1 - (L/(x-L)), x <= L (minimise)
+        if (float.IsPositiveInfinity(base.GetFitness(amount))) return float.PositiveInfinity;
+
+        // If x == max, sometimes this can give -Infinity.
+        return MathF.Abs(-1 - max / (amount - max));
+    }
+
+
+    public override string Verbose()
+    {
+        return base.Verbose() + $": Minimise";
+    }
+}
+
+
+/// <summary>
+/// A constraint which encourages convergence on a specific value (the limit), and acts as a
+/// hard constraint at the same time. Fitness increases linearly with deviation from convergence
+/// point, and becomes infinity if outside the specified bounds.
+/// Graph: y = -L^2/(ST^2) - L^2/S[(x-(L-T))(x-(L+T))], L - T < x < L + T
+/// </summary>
+public class ConvergeConstraint : HardConstraint
+{
+    public readonly float goal;
+
+
+    public override float BestValue => goal;
+    public override float WorstValue => float.PositiveInfinity;
+
+
+    public ConvergeConstraint(float goal, float min, float max)
+        : base(min, max)
+    {
+        this.goal = goal;
+
+        if (goal <= 0)
+            Logger.Log($"Goal: {goal} is out of range. It must be > 0.", Severity.Error);
+    }
+
+
+    public ConvergeConstraint(ConstraintData data) : base(data)
+    {
+        goal = data.goal;
+
+        if (goal <= 0 || goal < min || goal > max)
+            Logger.Log($"Goal: {goal} is out of range. It must be > 0, > min ({min}) and < max ({max}).", Severity.Error);
+    }
+
+
+    public override float GetFitness(float amount)
+    {
+        if (float.IsPositiveInfinity(base.GetFitness(amount))) return float.PositiveInfinity;
+
+        //if (amount > goal)
+        //{
+        //    // Use graph for > goal:
+        //    // y = (max/(goal-max)) - (max/(x-max)).
+        //    // Constant first term was calculated with a boundary condition: -k - (max/(goal-max)) = 0.
+
+        //    return max / (goal - max) - max / (amount - max);
+        //}
+        //else if (amount < goal)
+        //{
+        //    // Use graph for < goal:
+        //    // y = (min/(x-min)) - (min/(goal-min))
+        //    // Constant second term calculated with a similar boundary condition.
+
+        //    return min / (amount - min) - min / (goal - min);
+        //}
+
+        //return 0;
+
+        float tolerance = MathF.Max(goal - min, max - goal);
+        float steepness = 0.0001f;
+
+        float f_a = -MathF.Pow(goal / tolerance, 2) / steepness;
+        float f_b_num = -MathF.Pow(goal, 2);
+        float f_b_denom = steepness * (amount - (goal - tolerance)) * (amount - (goal + tolerance));
+
+        return f_a + f_b_num / f_b_denom;
+    }
+
+
+    public override string Verbose()
+    {
+        return base.Verbose() + $": Converge at {goal}";
+    }
 }

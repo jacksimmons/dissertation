@@ -10,27 +10,27 @@ public class Test_Constraint
         ConvergeConstraint cc = new(goal, steepness, tolerance);
 
         // Test that the goal gives a fitness of 0.
-        Assert.True(Mathf.Approximately(cc._GetFitness(100), 0));
+        Assert.True(Mathf.Approximately(cc.GetFitness(100), 0));
 
         // Test that values get increasingly worse as the input deviates from the goal. (Both directions)
         float prevFitness = 0;
         for (float i = goal + 1; i < goal + tolerance; i++)
         {
-            float thisFitness = cc._GetFitness(i);
+            float thisFitness = cc.GetFitness(i);
             Assert.True(thisFitness > prevFitness);
             prevFitness = thisFitness;
         }
         prevFitness = 0;
         for (float i = goal - 1; i > goal - tolerance; i--)
         {
-            float thisFitness = cc._GetFitness(i);
+            float thisFitness = cc.GetFitness(i);
             Assert.True(thisFitness > prevFitness);
             prevFitness = thisFitness;
         }
 
         // Test limits
-        Assert.True(float.IsPositiveInfinity(cc._GetFitness(90)));
-        Assert.True(float.IsPositiveInfinity(cc._GetFitness(110)));
+        Assert.True(float.IsPositiveInfinity(cc.GetFitness(90)));
+        Assert.True(float.IsPositiveInfinity(cc.GetFitness(110)));
     }
 
 
@@ -39,13 +39,13 @@ public class Test_Constraint
         MinimiseConstraint mc = new(limit);
 
         // Test that the limit gives an infinite fitness
-        Assert.True(float.IsPositiveInfinity(mc._GetFitness(limit)));
+        Assert.True(float.IsPositiveInfinity(mc.GetFitness(limit)));
 
         // Test that values get increasingly worse as the input approaches the limit.
         float prevFitness = 0;
         for (float i = 1; i < limit; i++)
         {
-            float thisFitness = mc._GetFitness(i);
+            float thisFitness = mc.GetFitness(i);
             Assert.True(thisFitness > prevFitness);
             prevFitness = thisFitness;
         }

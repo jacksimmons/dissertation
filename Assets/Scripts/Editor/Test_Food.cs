@@ -27,7 +27,7 @@ public class Test_Food : AlgSFGA
         {
             m_minConstraints[i] = new MinimiseConstraint(10_000);
             m_convConstraints[i] = new ConvergeConstraint(10_000, 0.001f, 10_000);
-            m_rangeConstraints[i] = new RangeConstraint(0, 10_000);
+            m_rangeConstraints[i] = new HardConstraint(0, 10_000);
         }
     }
 
@@ -49,16 +49,16 @@ public class Test_Food : AlgSFGA
     [Test]
     public void FitnessTest()
     {
-        foreach (Day day in Population)
+        foreach (var kvp in Population)
         {
-            float fitness = day.GetFitness();
+            float fitness = kvp.Value;
 
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
 
             for (int i = 0; i < Nutrients.Count; i++)
             {
-                float proxFitness = Constraints[i]._GetFitness(day.GetNutrientAmount((Nutrient)i));
+                float proxFitness = Constraints[i].GetFitness(kvp.Key.GetNutrientAmount((Nutrient)i));
                 // Fitness for each proximate can only be positive or 0.
                 Assert.IsTrue(proxFitness >= 0);
             }
@@ -105,13 +105,13 @@ public class Test_Food : AlgSFGA
         }
 
         ReadOnlyCollection<Constraint> roConstraints = new(constraints);
-        foreach (Day day in Population)
+        foreach (var kvp in Population)
         {
             // Test that the best day is always at least as good as any randomly selected day.
-            Assert.IsFalse(Pareto.DominatesOrMND(Day.Compare(bestDay, day, roConstraints, constraints.Length)));
+            Assert.IsFalse(Pareto.DominatesOrMND(Day.Compare(bestDay, kvp.Key, roConstraints)));
 
             // Test that the worst day is always at least as bad as any randomly selected day.
-            Assert.IsFalse(Pareto.DominatedOrMND(Day.Compare(worstDay, day, roConstraints, constraints.Length)));
+            Assert.IsFalse(Pareto.DominatedOrMND(Day.Compare(worstDay, kvp.Key, roConstraints)));
 
             // Test that the best day STRICTLY dominates the worst day
             Assert.IsTrue(Day.Compare(bestDay, worstDay) == ParetoComparison.StrictlyDominates);

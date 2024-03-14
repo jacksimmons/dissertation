@@ -60,9 +60,9 @@ public class AlgPDGA : AlgGA
     /// Adds a day (if possible) to one of the comparison sets.
     /// If the day gets dominated by all other comparison set members, it will not get added to any.
     /// </summary>
-    protected override void AddToPopulation(Day day, float fitness)
+    protected override void AddToPopulation(Day day)
     {
-        base.AddToPopulation(day, fitness);
+        base.AddToPopulation(day);
 
         for (int i = 0; i < Sets.Count; i++)
         {
@@ -165,7 +165,7 @@ public class AlgPDGA : AlgGA
     /// </summary>
     private Day Tiebreak(Day a, Day b, bool selectBest)
     {
-        List<Day> comparisonSet = new(Population.Keys);
+        List<Day> comparisonSet = new(m_population.Days);
         for (int i = 0; i < Sets.Count; i++)
         {
             comparisonSet.AddRange(Sets[i].Days);
@@ -180,15 +180,15 @@ public class AlgPDGA : AlgGA
         {
             if (dominanceA > dominanceB) return a;
             if (dominanceB > dominanceA) return b;
-            if (Population[a] < Population[b]) return a;
-            if (Population[b] < Population[a]) return b;
+            if (m_population.GetFitness(a) < m_population.GetFitness(b)) return a;
+            if (m_population.GetFitness(b) < m_population.GetFitness(a)) return b;
         }
         else
         {
             if (dominanceA < dominanceB) return a;
             if (dominanceB < dominanceA) return b;
-            if (Population[a] > Population[b]) return a;
-            if (Population[b] > Population[a]) return b;
+            if (m_population.GetFitness(a) > m_population.GetFitness(b)) return a;
+            if (m_population.GetFitness(b) > m_population.GetFitness(a)) return b;
         }
 
         if (Rand.Next(2) == 1)

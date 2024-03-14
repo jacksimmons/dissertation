@@ -18,28 +18,6 @@ public enum EAssignedSex
 }
 
 
-public enum ConstraintType
-{
-    Null,
-    Minimise,
-    Converge
-}
-
-
-public enum AlgorithmType
-{
-    GA,
-    ACO
-}
-
-
-public enum GAType
-{
-    SummedFitness,
-    ParetoDominance,
-}
-
-
 public interface ICached
 {
     /// <summary>
@@ -101,12 +79,9 @@ public class Preferences : ICached
     public EAssignedSex assignedSex;
 
     //
-    // Params for each constraint (indices matching enum values)
+    // Constraints
     //
-    public float[] goals;
-    public float[] tolerances;
-    public float[] steepnesses;
-    public ConstraintType[] constraintTypes;
+    public ConstraintData[] constraints;
 
 
     // ALG SETUP MENU--------------
@@ -121,6 +96,8 @@ public class Preferences : ICached
     public int portionMaxStartMass;
     public bool addFitnessForMass;
     public string algorithmType;
+    public const int MIN_PORTION_MASS = 1;
+    public const int MAX_PORTION_MASS = 1000;
 
     //
     // ACO-specific settings
@@ -145,41 +122,20 @@ public class Preferences : ICached
         heightInCM = 170;
         assignedSex = EAssignedSex.Male;
 
-        goals = new float[Nutrients.Count];
-        tolerances = new float[Nutrients.Count];
-        steepnesses = new float[Nutrients.Count];
-        constraintTypes = new ConstraintType[Nutrients.Count];
+        constraints = new ConstraintData[Nutrients.Count];
 
-        // Default values (provides a good basis without customisation)
-        // Values obtained from initial proposal research
-        goals[(int)Nutrient.Protein] = 200;
-        goals[(int)Nutrient.Fat] = 100;
-        goals[(int)Nutrient.Carbs] = 375;
-        goals[(int)Nutrient.Kcal] = 3000;
-        goals[(int)Nutrient.Sugar] = 30;
-        goals[(int)Nutrient.SatFat] = 30;
-        goals[(int)Nutrient.TransFat] = 5;
-        goals[(int)Nutrient.Calcium] = 700;
-        goals[(int)Nutrient.Iron] = 8.7f;
-        goals[(int)Nutrient.Iodine] = 140;
+        constraints[(int)Nutrient.Kcal] = new() { min = 0f, max = 3500f, goal = 2700f, type = "ConvergeConstraint" };
+        constraints[(int)Nutrient.Protein] = new() { min = 0f, max = 200f, goal = 150f, type = "ConvergeConstraint" };
+        constraints[(int)Nutrient.Fat] = new() { max = 150f, goal = 100f, type = "MinimiseConstraint" };
+        constraints[(int)Nutrient.Carbs] = new() { max = 375f, goal = 300f, type = "MinimiseConstraint" };
 
+        constraints[(int)Nutrient.Sugar] = new() { max = 30f, type = "MinimiseConstraint" };
+        constraints[(int)Nutrient.SatFat] = new() { max = 30f, type = "MinimiseConstraint" };
+        constraints[(int)Nutrient.TransFat] = new() { max = 5f, type = "MinimiseConstraint" };
 
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            constraintTypes[i] = ConstraintType.Minimise;
-            tolerances[i] = MathF.Max(1, goals[i]);
-            steepnesses[i] = 0.001f;
-        }
-
-
-        constraintTypes[(int)Nutrient.Kcal] = ConstraintType.Converge;
-        constraintTypes[(int)Nutrient.Protein] = ConstraintType.Converge;
-        constraintTypes[(int)Nutrient.Carbs] = ConstraintType.Converge;
-        constraintTypes[(int)Nutrient.Fat] = ConstraintType.Converge;
-        constraintTypes[(int)Nutrient.Calcium] = ConstraintType.Converge;
-        constraintTypes[(int)Nutrient.Iron] = ConstraintType.Converge;
-        constraintTypes[(int)Nutrient.Iodine] = ConstraintType.Converge;
-
+        constraints[(int)Nutrient.Calcium] = new() { max = 700f, type = "HardConstraint" };
+        constraints[(int)Nutrient.Iodine] = new() { max = 140f, type = "HardConstraint" };
+        constraints[(int)Nutrient.Iron] = new() { max = 8.7f, type = "HardConstraint" };
 
         populationSize = 10;
         numStartingPortionsPerDay = 1;
@@ -188,10 +144,13 @@ public class Preferences : ICached
         addFitnessForMass = true;
         algorithmType = typeof(AlgSFGA).FullName!;
 
-        pheroImportance = 0.5f;
+        pheroImportance = 1f;
+
+        // Consistent results with this value
         pheroEvapRate = 0.1f;
-        acoAlpha = 1;
-        acoBeta = 1;
+
+        acoAlpha = 1f;
+        acoBeta = 1f;
     }
 
 
@@ -292,10 +251,9 @@ public class Preferences : ICached
         }
 
         str += "\nAlgorithm Constraints:\n";
-        foreach (Nutrient nutrient in Nutrients.Values)
+        foreach (ConstraintData constraint in constraints)
         {
-            str += $"{nutrient} - Goal[{goals[(int)nutrient]}] Tolerance[{tolerances[(int)nutrient]}] Steepness[{steepnesses[(int)nutrient]}]"
-                + $" Constraint[{constraintTypes[(int)nutrient]}]\n";
+            str += $"Min:{constraint.min} Max:{constraint.max} Goal:{constraint.goal} Type:{constraint.type}\n";
         }
 
         str += "\n";

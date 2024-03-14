@@ -587,7 +587,7 @@ GameObject:
   - component: {fileID: 8291725202914748752}
   - component: {fileID: 4594841703696437405}
   m_Layer: 5
-  m_Name: ToleranceLabel
+  m_Name: MaxLabel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -641,7 +641,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Tolerance:'
+  m_text: 'Max:'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -668,7 +668,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 13.65
+  m_fontSize: 18.1
   m_fontSizeBase: 10
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -722,7 +722,7 @@ GameObject:
   - component: {fileID: 4053708270895968096}
   - component: {fileID: 5844776459583806158}
   m_Layer: 5
-  m_Name: SteepnessLabel
+  m_Name: MinLabel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -776,7 +776,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Steepness:'
+  m_text: 'Min:'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -803,7 +803,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12.6
+  m_fontSize: 18.1
   m_fontSizeBase: 10
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -956,7 +956,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4078067483550969671, guid: 518a64417d43edc4688e639383c6b1ca, type: 3}
       propertyPath: m_Name
-      value: SteepnessInput
+      value: MinInput
       objectReference: {fileID: 0}
     - target: {fileID: 4540946034751479835, guid: 518a64417d43edc4688e639383c6b1ca, type: 3}
       propertyPath: m_Pivot.x
@@ -1058,7 +1058,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4078067483550969671, guid: 518a64417d43edc4688e639383c6b1ca, type: 3}
       propertyPath: m_Name
-      value: ToleranceInput
+      value: MaxInput
       objectReference: {fileID: 0}
     - target: {fileID: 4540946034751479835, guid: 518a64417d43edc4688e639383c6b1ca, type: 3}
       propertyPath: m_Pivot.x

@@ -20,14 +20,14 @@ public class Test_Algorithm : AlgSFGA
     {
         // Assert number of random days and portions
         Assert.IsTrue(Population.Count == Preferences.Instance.populationSize);
-        foreach (Day day in Population)
+        foreach (var kvp in Population)
         {
-            Assert.IsTrue(day.portions.Count == Preferences.Instance.numStartingPortionsPerDay);
+            Assert.IsTrue(kvp.Key.portions.Count == Preferences.Instance.numStartingPortionsPerDay);
 
             // Assert that the random ranges are satisfied for every portion
-            for (int j = 0; j < day.portions.Count; j++)
+            for (int j = 0; j < kvp.Key.portions.Count; j++)
             {
-                float mass = day.portions[j].Mass;
+                float mass = kvp.Key.portions[j].Mass;
                 Assert.IsTrue(mass >= Preferences.Instance.portionMinStartMass && mass <= Preferences.Instance.portionMaxStartMass);
             }
         }

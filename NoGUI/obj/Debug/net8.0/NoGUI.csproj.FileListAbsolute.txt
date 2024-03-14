@@ -20,4 +20,4 @@ C:\Git\dissertation\NoGUI\bin\Debug\net8.0\runtimes\win-arm64\native\libSkiaShar
 C:\Git\dissertation\NoGUI\bin\Debug\net8.0\runtimes\win-x64\native\libSkiaSharp.dll
 C:\Git\dissertation\NoGUI\bin\Debug\net8.0\runtimes\win-x86\native\libSkiaSharp.dll
 C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.csproj.AssemblyReference.cache
-C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.csproj.CopyComplete
+C:\Git\dissertation\NoGUI\obj\Debug\net8.0\NoGUI.csproj.Up2Date

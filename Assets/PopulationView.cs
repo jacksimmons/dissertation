@@ -66,36 +66,34 @@ public class PopulationView : MonoBehaviour
         }
 
 
-        // Display days in the population (if GA)
-        if (Type.GetType( Preferences.Instance.algorithmType ).IsSubclassOf( typeof(AlgGA) ))
+        // Display days in the population
+        foreach (var kvp in Algorithm.Instance.Population)
         {
-            foreach (Day day in ((AlgGA)Algorithm.Instance).Population)
+            GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
+
+            obj.transform.GetChild(0).GetComponent<TMP_Text>().text = AlgorithmOutput.GetDayLabel(kvp.Key);
+
+            Button btn = obj.GetComponent<Button>();
+            btn.onClick.AddListener(() => OnPopButtonPressed(kvp.Key));
+            obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
+        }
+
+
+        // Refresh the current day UI if still in the population, or is the best day
+        if (m_currentlyDisplayedDay != null && Algorithm.Instance.BestDay != null)
+        {
+            if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.ContainsKey(m_currentlyDisplayedDay))
             {
-                GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
-
-                obj.transform.GetChild(0).GetComponent<TMP_Text>().text = AlgorithmOutput.GetDayLabel(day);
-
-                Button btn = obj.GetComponent<Button>();
-                btn.onClick.AddListener(() => OnPopButtonPressed(day));
-                obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
+                UpdatePortionUI(m_currentlyDisplayedDay, 0);
+                UpdateDayUI(m_currentlyDisplayedDay);
             }
-
-
-            // Refresh the current day UI if still in the population, or is the best day
-            if (m_currentlyDisplayedDay != null && Algorithm.Instance.BestDay != null)
+            else
             {
-                if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || ((AlgGA)Algorithm.Instance).Population.Contains(m_currentlyDisplayedDay))
-                {
-                    UpdatePortionUI(m_currentlyDisplayedDay, 0);
-                    UpdateDayUI(m_currentlyDisplayedDay);
-                }
-                else
-                {
-                    ClearPortionUI();
-                    ClearDayUI();
-                }
+                ClearPortionUI();
+                ClearDayUI();
             }
         }
+        
 
         // Set the average stats text
         m_avgDayText.text = Algorithm.Instance.GetAverageStatsLabel();

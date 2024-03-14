@@ -4,15 +4,15 @@ using System.Collections.Generic;
 
 public class AlgSFGA : AlgGA
 {
-    protected override Day Selection(List<Day> excluded, bool selectBest = true)
+    protected override Day Selection(List<Day> included, bool selectBest = true)
     {
-        Tuple<Day, Day> days = SelectDays(excluded);
+        Tuple<Day, Day> days = SelectDays(included);
         Day a = days.Item1;
         Day b = days.Item2;
 
 
-        float fitA = Population[a];
-        float fitB = Population[b];
+        float fitA = m_population.GetFitness(a);
+        float fitB = m_population.GetFitness(b);
 
 
         if (selectBest)

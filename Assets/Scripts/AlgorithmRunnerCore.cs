@@ -10,12 +10,6 @@ public class AlgorithmRunnerCore
     public Algorithm Alg { get; private set; }
 
 
-#if !UNITY_64
-    private List<Tuple<float, float, float>> m_datapoints = new();
-    public ReadOnlyCollection<Tuple<float, float, float>> datapoints;
-#endif
-
-
     // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
     public AlgorithmRunnerCore()
     {
@@ -36,10 +30,6 @@ public class AlgorithmRunnerCore
 
         // Perform any work that can't be done in the constructor.
         Alg.Init();
-
-#if !UNITY_64
-        datapoints = new(m_datapoints);
-#endif
     }
 
 
@@ -55,21 +45,6 @@ public class AlgorithmRunnerCore
 
         sw.Stop();
 
-#if !UNITY_64
-        AddToGraph(Algorithm.Instance.BestFitness, Algorithm.Instance.AverageFitness);
-#endif
-
         return sw.ElapsedMilliseconds;
     }
-
-
-    /// <summary>
-    /// Add the results to datapoints, to be output in a graph later.
-    /// </summary>
-#if !UNITY_64
-    private void AddToGraph(float bestFitness, float avgFitness)
-    {
-        m_datapoints.Add(new(bestFitness, 0, Algorithm.Instance.IterNum));
-    }
-#endif
 }

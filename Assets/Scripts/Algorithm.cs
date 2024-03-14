@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+
 
 #if UNITY_64
 using Random = System.Random;
@@ -39,12 +43,19 @@ public abstract class Algorithm
     public ReadOnlyCollection<Food> Foods;
 
 
-    // User-defined Constraints; one for each Nutrient.
+    // User-defined Constraints.
     public ReadOnlyCollection<Constraint> Constraints;
 
 
     // The current iteration of the algorithm.
     public int IterNum { get; private set; } = 0;
+
+
+    // The visible population of Days.
+    protected Population m_population = new();
+
+        // Dictionary storing the previously recorded average stats (for each nutrient)
+    private Dictionary<Nutrient, float> m_prevAvgPopStats = new();
 
 
     // --- Best day properties, can only be set together ---
@@ -64,7 +75,7 @@ public abstract class Algorithm
 
     // The fitness of the best day.
     public float BestFitness { get; private set; } = float.PositiveInfinity;
-    public abstract float AverageFitness { get; }
+    public virtual float AverageFitness => m_population.GetAvgFitness();
 
     
     // The iteration number of the best day.
@@ -104,43 +115,36 @@ public abstract class Algorithm
 
 
         // Load constraints from Preferences.
-        Constraints = new(GetConstraintsFromPrefs());
+        Constraints = new(Preferences.Instance.constraints.Select(x => Constraint.Build(x)).ToList());
     }
 
 
-    private Constraint[] GetConstraintsFromPrefs()
-    {
-        Constraint[] constraints = new Constraint[Nutrients.Count];
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            // If the constraintTypes arraylength is insufficient, the nutrient has no constraintType setting.
-            if (Preferences.Instance.constraintTypes.Length <= i)
-            {
-                constraints[i] = new NullConstraint();
-                continue;
-            }
+    //private List<Constraint> GetConstraintsFromPrefs()
+    //{
+    //    List<Constraint> constraints = Preferences.Instance.constraints;
+    //    for (int i = 0; i < Nutrients.Count; i++)
+    //    {
+    //        // Otherwise create the required constraint
+    //        Constraint constraint;
+    //        float goal = Preferences.Instance.goals[i];
+    //        switch (Preferences.Instance.constraintTypes[i])
+    //        {
+    //            case ConstraintType.Minimise:
+    //                constraint = new MinimiseConstraint(goal);
+    //                break;
+    //            case ConstraintType.Converge:
+    //                constraint = new ConvergeConstraint(goal, Preferences.Instance.steepnesses[i], Preferences.Instance.tolerances[i]);
+    //                break;
+    //            default:
+    //                constraint = new NullConstraint();
+    //                break;
+    //        }
 
-            // Otherwise create the required constraint
-            Constraint constraint;
-            float goal = Preferences.Instance.goals[i];
-            switch (Preferences.Instance.constraintTypes[i])
-            {
-                case ConstraintType.Minimise:
-                    constraint = new MinimiseConstraint(goal);
-                    break;
-                case ConstraintType.Converge:
-                    constraint = new ConvergeConstraint(goal, Preferences.Instance.steepnesses[i], Preferences.Instance.tolerances[i]);
-                    break;
-                default:
-                    constraint = new NullConstraint();
-                    break;
-            }
+    //        constraints[i] = constraint;
+    //    }
 
-            constraints[i] = constraint;
-        }
-
-        return constraints;
-    }
+    //    return constraints;
+    //}
 
 
     /// <summary>
@@ -166,10 +170,29 @@ public abstract class Algorithm
     protected abstract void NextIteration();
 
 
+    public virtual void OnDayUpdated(Day day)
+    {
+        m_population.FlagAsOutdated(day);
+    }
+
+
     /// <summary>
     /// Updates the BestDay attrib if a new best day exists in the population.
     /// </summary>
-    protected abstract void UpdateBestDay();
+    private void UpdateBestDay()
+    {
+        foreach (Day day in m_population.Days)
+        {
+            float fitness = m_population.GetFitness(day);
+            if (fitness < BestFitness || !BestDayExists)
+            {
+                SetBestDay(day, fitness, IterNum);
+            }
+        }
+
+        // Prevent other classes modifying the best day by cloning it
+        SetBestDay(new(BestDay), BestFitness, BestIteration);
+    }
 
 
     /// <summary>
@@ -189,36 +212,49 @@ public abstract class Algorithm
     /// Use this to get the number of non-null constraints defined in the Constraints
     /// dictionary.
     /// </summary>
-    public int GetNumConstraints()
-    {
-        int cnt = 0;
-        for (int i = 0; i < Nutrients.Count; i++)
-        {
-            if (Constraints[i].GetType() != typeof(NullConstraint)) cnt++;
-        }
-        return cnt;
-    }
+    //public int GetNumConstraints()
+    //{
+    //    int cnt = 0;
+    //    for (int i = 0; i < Nutrients.Count; i++)
+    //    {
+    //        if (Constraints[i].GetType() != typeof(NullConstraint)) cnt++;
+    //    }
+    //    return cnt;
+    //}
 
 
     /// <summary>
     /// Evaluate the provided solution and return a string corresponding to its fitness, or
     /// another way of describing as a string how good a solution is.
     /// </summary>
-    public abstract string EvaluateDay(Day day);
+    public virtual string EvaluateDay(Day day)
+    {
+        return $"Fitness: {m_population.GetFitness(day)}";
+    }
 
 
     /// <summary>
     /// Generates and returns a string with the average stats of the program (e.g. average population stats
     /// or average ant stats, etc.)
     /// </summary>
-    public abstract string GetAverageStatsLabel();
+    public virtual string GetAverageStatsLabel()
+    {
+        string avgStr = "";
+        foreach (Nutrient nutrient in Nutrients.Values)
+        {
+            float sum = 0;
+            foreach (Day day in m_population.Days)
+            {
+                sum += day.GetNutrientAmount(nutrient);
+            }
 
+            float avg = sum / Nutrients.Count;
+            if (!m_prevAvgPopStats.ContainsKey(nutrient)) m_prevAvgPopStats[nutrient] = avg;
 
-    /// <summary>
-    /// Abstract methods which are called during specific Day events. These vary with the choice of algorithm.
-    /// Used to update fitness when it changes, reducing the amount of total GetFitness calls.
-    /// </summary>
-    public abstract void Day_OnPortionAdded(Day day, Portion portion);
-    public abstract void Day_OnPortionRemoved(Day day, Portion portion);
-    public abstract void Day_OnPortionMassModified(Day day, Portion portion, int dmass);
+            avgStr += $"{nutrient}: {avg:F2}(+{avg - m_prevAvgPopStats[nutrient]:F2}){Nutrients.GetUnit(nutrient)}\n";
+
+            m_prevAvgPopStats[nutrient] = avg;
+        }
+        return avgStr;
+    }
 }

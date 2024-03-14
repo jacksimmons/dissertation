@@ -67,15 +67,15 @@ public struct Portion
 
     public int Mass
     {
-        get { return (int)MathF.Round(100 * Multiplier); }
+        readonly get { return (int)MathF.Round(100 * Multiplier); }
         set
         {
-            if (value <= 0)
-                Logger.Log($"Mass was not positive: {value}", Severity.Error);
+            if (value < 0)
+                Logger.Log($"Mass was negative: {value}", Severity.Error);
             Multiplier = (float)value / 100;
         }
     }
-    public float Multiplier { get; private set; }
+    public float Multiplier { get; set; }
 
 
     public Portion(Food food)
@@ -92,13 +92,13 @@ public struct Portion
     }
 
 
-    public float GetNutrientAmount(Nutrient nutrient)
+    public readonly float GetNutrientAmount(Nutrient nutrient)
     {
         return food.nutrients[(int)nutrient] * Multiplier;
     }
 
 
-    public bool IsEqualTo(Portion other)
+    public readonly bool IsEqualTo(Portion other)
     {
         return food.IsEqualTo(other.food) && Multiplier == other.Multiplier;
     }
@@ -108,7 +108,7 @@ public struct Portion
     /// Gets a verbose description of this portion.
     /// </summary>
     /// <returns>The string data.</returns>
-    public string Verbose()
+    public readonly string Verbose()
     {
         string asString = $"name: {food.name}\n";
         for (int i = 0; i < Nutrients.Count; i++)
@@ -130,6 +130,8 @@ public class Day
     private readonly List<Portion> _portions;
     public readonly ReadOnlyCollection<Portion> portions;
 
+    // Only change this array when one of the portions changes, eliminating the
+    // need to perform expensive Linq Sum operations every iteration.
     private readonly float[] m_nutrientAmounts = new float[Nutrients.Count];
 
     public int Mass { get; private set; } = 0;
@@ -157,27 +159,20 @@ public class Day
     /// </summary>
     public static ParetoComparison Compare(Day a, Day b)
     {
-        return Compare(a, b, Algorithm.Instance.Constraints, Algorithm.Instance.GetNumConstraints());
+        return Compare(a, b, Algorithm.Instance.Constraints);
     }
 
 
-    public static ParetoComparison Compare(Day a, Day b, ReadOnlyCollection<Constraint> constraints, int numConstraints)
+    public static ParetoComparison Compare(Day a, Day b, ReadOnlyCollection<Constraint> constraints)
     {
         // Store how many constraints this is better/worse than `day` on.
         int betterCount = 0;
         int worseCount = 0;
 
-        // This loop exits if this has better or equal fitness on every constraint.
         for (int i = 0; i < Nutrients.Count; i++)
         {
-            // Quick exit for null constraints
-            if (constraints[i].GetType() == typeof(NullConstraint))
-                continue;
-
-            Nutrient n = Nutrients.Values[i];
-
-            float fitnessA = constraints[i]._GetFitness(a.GetNutrientAmount(n));
-            float fitnessB = constraints[i]._GetFitness(b.GetNutrientAmount(n));
+            float fitnessA = constraints[i].GetFitness(a.GetNutrientAmount((Nutrient)i));
+            float fitnessB = constraints[i].GetFitness(b.GetNutrientAmount((Nutrient)i));
 
             if (fitnessA < fitnessB)
                 betterCount++;
@@ -194,7 +189,7 @@ public class Day
                 return ParetoComparison.MutuallyNonDominating;
 
             // Worse on all => Strictly Dominated
-            if (worseCount == numConstraints)
+            if (worseCount == constraints.Count)
                 return ParetoComparison.StrictlyDominated;
 
             // Worse on 1+, and not better on any => Dominated
@@ -203,7 +198,7 @@ public class Day
         else
         {
             // Better on all => Strictly Dominates
-            if (betterCount == numConstraints)
+            if (betterCount == constraints.Count)
                 return ParetoComparison.StrictlyDominates;
 
             // Not worse on any, and better on 1+ => Dominates
@@ -237,9 +232,7 @@ public class Day
         // Otherwise, add the portion (it has a unique food)
         if (!merged)
             _portions.Add(portion);
-
-
-        Algorithm.Instance.Day_OnPortionAdded(this, portion);
+        Algorithm.Instance.OnDayUpdated(this);
     }
 
 
@@ -253,13 +246,26 @@ public class Day
         if (_portions.Count <= 1)
             return;
 
-        SubtractPortionProperties(portions[index]);
-
-
-        Algorithm.Instance.Day_OnPortionRemoved(this, _portions[index]);
-        
+        SubtractPortionProperties(_portions[index]);
 
         _portions.RemoveAt(index);
+        Algorithm.Instance.OnDayUpdated(this);
+    }
+
+
+    /// <summary>
+    /// Replaces portion at given index with a new one.
+    /// The only way to publicly change the last portion in the day.
+    /// </summary>
+    /// <param name="portion">The portion to overwrite with.</param>
+    /// <param name="index">The index to overwrite at.</param>
+    public void ReplacePortion(Portion portion, int index)
+    {
+        SubtractPortionProperties(_portions[index]);
+        AddPortionProperties(portion);
+
+        _portions[index] = portion;
+        Algorithm.Instance.OnDayUpdated(this);
     }
 
 
@@ -273,9 +279,7 @@ public class Day
         // Create dummy portion with mass = dmass
         Portion dummy = new(p.food, dmass);
         AddPortionProperties(dummy);
-
-
-        Algorithm.Instance.Day_OnPortionMassModified(this, _portions[index], dmass);
+        Algorithm.Instance.OnDayUpdated(this);
     }
 
 
@@ -336,8 +340,12 @@ public class Day
     /// <summary>
     /// Evaluates the fitness of this day.
     /// </summary>
+    /// <param name="targetPortionNum">
+    /// When this is set, this func extrapolates the fitness of the Day, evaluating how fit the Day would be
+    /// if the Day's nutrient amounts were multiplied by (targetPortionNum/portions.Count).
+    /// </param>
     /// <returns>The fitness as a float.</returns>
-    public float GetFitness()
+    public float GetFitness(int targetPortionNum = -1)
     {
         // Calculate the overall fitness value based on the sum of the fitness of the individual
         // nutrient amounts. (E.g. protein leads to a fitness value, which is multiplied to the fat fitness,
@@ -345,10 +353,13 @@ public class Day
 
         float fitness = 0;
 
+        // Extrapolation multiplier, by default 1 for no extrapolation.
+        float mult = targetPortionNum > 0 ? ((float)targetPortionNum / portions.Count) : 1;
+
         for (int i = 0; i < Nutrients.Count; i++)
         {
             float amount = m_nutrientAmounts[i];
-            fitness += Algorithm.Instance.Constraints[i]._GetFitness(amount);
+            fitness += mult * Algorithm.Instance.Constraints[i].GetFitness(amount);
 
             // Quick exit for infinity fitness
             if (fitness == float.PositiveInfinity) return fitness;
@@ -357,7 +368,7 @@ public class Day
         if (Preferences.Instance.addFitnessForMass)
         {
             // Penalise Days with lots of mass
-            fitness += Mass;
+            fitness += mult * Mass;
         }
 
         return fitness;
