@@ -72,8 +72,7 @@ namespace NoGUI
 
             if (!bestPrefSet) Logger.Error("Experiment didn't yield a best result.");
 
-            Logger.Log($"Best preference value: {bestPrefVal}. Best fitness {experimentBestAlg.BestFitness}" +
-                "\n{experimentBestAlg.BestDay.Verbose()}");
+            Logger.Log($"Best preference value: {bestPrefVal}. Best fitness {experimentBestAlg.BestFitness}\n{experimentBestAlg.BestDay.Verbose()}");
             return bestPrefVal;
         }
 

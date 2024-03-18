@@ -186,7 +186,6 @@ public class Preferences : ICached
     private void SetConstraint(ENutrient nut, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
         constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight };
-        Logger.Log($"Last: {nut}");
         Constraint.Build(constraints[(int)nut]); // May throw an error, useful to check if all params are valid
     }
 

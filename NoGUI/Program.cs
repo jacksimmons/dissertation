@@ -26,7 +26,7 @@ namespace NoGUI
             Preferences.Instance = prefs;
 
             Stopwatch sw = Stopwatch.StartNew();
-            Experiment.RunPreferenceExperiment(ref Preferences.Instance.populationSize, 10, 100);
+            Experiment.RunPreferenceExperiment(ref Preferences.Instance.maxPortionMass, 500, 5000);
             sw.Stop();
 
             Console.WriteLine($"Program execution time: {(float)sw.ElapsedMilliseconds / 1000}s.");
