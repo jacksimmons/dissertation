@@ -153,7 +153,9 @@ public class CrossoverRunner
 
 
         if (m_children.Item2.Mass == 0)
-            Logger.Error("Mass was 0");
+        {
+            Logger.Error("Crossover was not split correctly.");
+        }
 
 
         return m_children;

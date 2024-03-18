@@ -115,7 +115,7 @@ public class Day
     // need to perform expensive Linq Sum operations every iteration.
     private readonly float[] m_nutrientAmounts = new float[Nutrient.Count];
 
-    public int Mass => portions.Sum(x => x.Mass);
+    public int Mass { get; private set; } = 0;
 
 
     public Day(Algorithm algorithm)
@@ -131,6 +131,7 @@ public class Day
         _portions = new(day.portions);
         portions = new(_portions);
         m_algorithm = day.m_algorithm;
+        Mass = day.Mass;
         m_nutrientAmounts = day.m_nutrientAmounts;
     }
 
@@ -140,24 +141,25 @@ public class Day
 
     public void AddPortion(Portion portion)
     {
-        AddPortionProperties(portion);
-
         bool merged = false;
 
         // Merge new portion with an existing one if it has the same name.
         for (int i = 0; i < portions.Count; i++)
         {
             Portion existing = portions[i];
-            if (existing.food.Name == portion.food.Name)
+            if (existing.food == portion.food)
             {
                 existing.Mass += portion.Mass;
                 merged = true;
+                _portions[i] = existing;
+                break;
             }
         }
 
         // Otherwise, add the portion (it has a unique food)
         if (!merged)
             _portions.Add(portion);
+        AddPortionProperties(portion);
         m_algorithm.OnDayUpdated(this);
     }
 
@@ -173,7 +175,6 @@ public class Day
             return;
 
         SubtractPortionProperties(_portions[index]);
-
         _portions.RemoveAt(index);
         m_algorithm.OnDayUpdated(this);
     }
@@ -189,7 +190,6 @@ public class Day
 
         Portion diff = new(p.food, dmass);
         AddPortionProperties(diff);
-
         m_algorithm.OnDayUpdated(this);
     }
 
@@ -204,6 +204,7 @@ public class Day
         {
             m_nutrientAmounts[i] += portion.GetNutrientAmount((ENutrient)i);
         }
+        Mass += portion.Mass;
     }
 
 
@@ -213,6 +214,7 @@ public class Day
         {
             m_nutrientAmounts[i] -= portion.GetNutrientAmount((ENutrient)i);
         }
+        Mass -= portion.Mass;
     }
 
 
