@@ -49,6 +49,7 @@ public class ConstraintData
     public float Min;
     public float Max;
     public float Goal;
+    public float Weight;
     public string Type = "";
 }
 
@@ -66,21 +67,20 @@ public class HardConstraint : Constraint
 {
     public readonly float min;
     public readonly float max;
+    public readonly float weight;
 
 
     public override float BestValue => (min + max) / 2;
     public override float WorstValue => float.PositiveInfinity;
 
 
-    public HardConstraint(float min, float max) : base()
+    public HardConstraint(float min, float max, float weight) : base()
     {
         this.min = min;
         this.max = max;
+        this.weight = weight;
 
-        if (max < min)
-            Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
-        if (min < 0)
-            Logger.Error($"Argument min ({min}) was <= 0.");
+        CheckParams();
     }
 
 
@@ -88,11 +88,24 @@ public class HardConstraint : Constraint
     {
         min = data.Min;
         max = data.Max;
+        weight = data.Weight;
 
+        CheckParams();
+    }
+
+
+    /// <summary>
+    /// Do not inherit this. Base constructor is called first, so HardConstraint will check the params of
+    /// the inherited class before the inherited constructor has begun.
+    /// </summary>
+    protected void CheckParams()
+    {
         if (max < min)
             Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
         if (min < 0)
-            Logger.Error($"Argument min ({min}) was <= 0.");
+            Logger.Error($"Argument min ({min}) was < 0.");
+        if (weight < 0)
+            Logger.Error($"Argument weight ({weight}) was < 0.");
     }
 
 
@@ -121,11 +134,7 @@ public class MinimiseConstraint : HardConstraint
     public override float WorstValue => float.PositiveInfinity;
 
 
-    public MinimiseConstraint(float max) : base(0, max)
-    {
-        if (max <= 0)
-            Logger.Log($"Argument max ({max}) was <= 0.", Severity.Error);
-    }
+    public MinimiseConstraint(float max, float weight) : base(0, max, weight) { }
 
 
     public MinimiseConstraint(ConstraintData data) : base(data) { }
@@ -139,7 +148,7 @@ public class MinimiseConstraint : HardConstraint
         if (float.IsPositiveInfinity(base.GetFitness(amount)) || MathfTools.Approx(amount, max)) return float.PositiveInfinity;
         // If amount == max, sometimes this can give -Infinity, so assign a fitness of Infinity in this case.
 
-        return MathF.Abs(-1 - max / (amount - max));
+        return weight * MathF.Abs(-1 - max / (amount - max));
     }
 
 
@@ -165,13 +174,12 @@ public class ConvergeConstraint : HardConstraint
     public override float WorstValue => float.PositiveInfinity;
 
 
-    public ConvergeConstraint(float goal, float min, float max)
-        : base(min, max)
+    public ConvergeConstraint(float goal, float min, float max, float weight)
+        : base(min, max, weight)
     {
         this.goal = goal;
 
-        if (goal < 0 || goal < min || goal > max)
-            Logger.Log($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).", Severity.Error);
+        CheckParams();
     }
 
 
@@ -179,8 +187,16 @@ public class ConvergeConstraint : HardConstraint
     {
         goal = data.Goal;
 
+        CheckParams();
+    }
+
+
+    private new void CheckParams()
+    {
+        base.CheckParams();
+
         if (goal < 0 || goal < min || goal > max)
-            Logger.Log($"Goal: {goal} is out of range. It must be > 0, > min ({min}) and < max ({max}).", Severity.Error);
+            Logger.Log($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).", Severity.Error);
     }
 
 
@@ -208,7 +224,7 @@ public class ConvergeConstraint : HardConstraint
         // If amount has reached the limit, return Infinity. Removing this leads to -Infinity possibility.
         if (MathfTools.Approx(f_b_denom, 0)) return float.PositiveInfinity;
 
-        return f_a + f_b_num / f_b_denom;
+        return weight * (f_a + f_b_num / f_b_denom);
     }
 
 

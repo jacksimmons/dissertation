@@ -136,56 +136,25 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Calculate and assign kcal goal based on macro goals (kcal = 9 * fat + 4 * protein + 4 * carbs).
-    /// The equation means that 1g fat = 9kcal, 1g protein = 4kcal, 1g carbs = 4kcal.
-    /// </summary>
     private void MacrosToCalories()
     {
-        Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal =
-            Preferences.Instance.constraints[(int)ENutrient.Protein].Goal * 4
-            + Preferences.Instance.constraints[(int)ENutrient.Fat].Goal * 9
-            + Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal * 4;
+        CalorieMassConverter.MacrosToCalories(
+            ref Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
+            Preferences.Instance.constraints[(int)ENutrient.Protein].Goal,
+            Preferences.Instance.constraints[(int)ENutrient.Fat].Goal,
+            Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal
+        );
     }
 
 
-    /// <summary>
-    /// Calculate and assign macro goals based on kcal goal.
-    /// If total macros are non-zero, multiplies each macro by a multiplier that ensures they
-    /// satisfy the ratio (kcal = 9 * fat + 4 * protein + 4 * carbs) [See MacrosToCalories for why].
-    /// If total macros are zero, need to assign macros based on a recommended ratio [From research].
-    /// </summary>
     private void CaloriesToMacros()
     {
-        ref float kcal    = ref Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal;
-        ref float protein = ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal;
-        ref float fat     = ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal;
-        ref float carbs   = ref Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal;
-
-        // Calories calculated from the macros (not necessarily correct, goal is to correct it).
-        float ratioCalories = 9 * fat + 4 * protein + 4 * carbs;
-
-        // Div by zero case - assign recommended macro ratios from the given kcal.
-        if (Mathf.Approximately(ratioCalories, 0))
-        {
-            float proteinCalories = 0.2f * kcal;
-            float fatCalories = 0.3f * kcal;
-            float carbCalories = 0.5f * kcal;
-
-            // Convert calories to grams by dividing by each macro's respective ratio
-            protein = proteinCalories / 4;
-            fat     = fatCalories / 9;
-            carbs   = carbCalories / 4;
-
-            return;
-        }
-
-        // Default case - multiply macros so they satisfy the ratio kcal = 9fat + 4protein + 4carbs
-        float multiplier = kcal / ratioCalories;
-        
-        protein *= multiplier;
-        fat     *= multiplier;
-        carbs   *= multiplier;
+        CalorieMassConverter.CaloriesToMacros(
+            Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
+            ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal,
+            ref Preferences.Instance.constraints[(int)ENutrient.Fat].Goal,
+            ref Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal
+        );
     }
 
 

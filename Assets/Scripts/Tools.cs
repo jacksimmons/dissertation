@@ -147,6 +147,55 @@ public static class UITools
 #endif
 
 
+public static class CalorieMassConverter
+{
+    /// <summary>
+    /// Sets calories to the sum of the caloric values of provided macros.
+    /// [Citation needed] 1g of protein, fat or carbohydrate has 4, 9 or 4 kcal caloric value respectively.
+    /// </summary>
+    /// <param name="calories">The calories to update.</param>
+    public static void MacrosToCalories(ref float calories, float proteinG, float fatG, float carbsG)
+    {
+        calories = proteinG * 4 + fatG * 8 + carbsG * 4;
+    }
+
+    
+    /// <summary>
+    /// If macros existed before, multiplies them by a ratio to ensure the macro calorie value equals the preferences calorie value.
+    /// Otherwise, generates macros according to a sensible ratio of p/f/c: 20/35/45
+    /// [Citation needed]
+    /// </summary>
+    /// <param name="calories">The calories to generate sensible macros for.</param>
+    public static void CaloriesToMacros(float calories, ref float proteinG, ref float fatG, ref float carbsG)
+    {
+        // Calories calculated from the macros (not necessarily correct, goal is to correct it).
+        float ratioCalories = 4 * proteinG + 9 * fatG + 4 * carbsG;
+
+        // Div by zero case - assign recommended macro ratios from the given kcal.
+        if (MathfTools.Approx(ratioCalories, 0))
+        {
+            float proteinCalories = 0.2f * calories;
+            float fatCalories = 0.35f * calories;
+            float carbCalories = 0.45f * calories;
+
+            // Convert calories to grams by dividing by each macro's respective ratio
+            proteinG = proteinCalories / 4;
+            fatG = fatCalories / 9;
+            carbsG = carbCalories / 4;
+
+            return;
+        }
+
+        // Default case - multiply macros so they satisfy the ratio kcal = 9fat + 4protein + 4carbs
+        float multiplier = calories / ratioCalories;
+
+        proteinG *= multiplier;
+        fatG *= multiplier;
+        carbsG *= multiplier;
+    }
+}
+
+
 public static class MathfTools
 {
     // For grams stored as a float, gives precision of up to 1mg.

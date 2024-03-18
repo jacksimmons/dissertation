@@ -18,8 +18,6 @@ public class Test_GA
     [Test]
     public void RunTests()
     {
-        string[] gaAlgs = { "AlgSFGA", "AlgPDGA" };
-
         AlgSFGA sfga = (AlgSFGA)Algorithm.Build(typeof(AlgSFGA));
         sfga.Init();
 

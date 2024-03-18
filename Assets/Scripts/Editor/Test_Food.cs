@@ -23,9 +23,9 @@ public class Test_Food : AlgSFGA
 
         for (int i = 0; i < Nutrient.Count; i++)
         {
-            m_minConstraints[i] = new MinimiseConstraint(10_000);
-            m_convConstraints[i] = new ConvergeConstraint(10_000, 0.001f, 10_000);
-            m_rangeConstraints[i] = new HardConstraint(0, 10_000);
+            m_minConstraints[i] = new MinimiseConstraint(10_000, 1);
+            m_convConstraints[i] = new ConvergeConstraint(10_000, 0.001f, 10_000, 1);
+            m_rangeConstraints[i] = new HardConstraint(0, 10_000, 1);
         }
     }
 

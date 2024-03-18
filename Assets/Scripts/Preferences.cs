@@ -130,18 +130,48 @@ public class Preferences : ICached
     {
         constraints = new ConstraintData[Nutrient.Count];
 
-        constraints[(int)ENutrient.Kcal] = new() { Min = 0f, Max = 3500f, Goal = 2700f, Type = "ConvergeConstraint" };
-        constraints[(int)ENutrient.Protein] = new() { Min = 0f, Max = 200f, Goal = 150f, Type = "ConvergeConstraint" };
-        constraints[(int)ENutrient.Fat] = new() { Max = 150f, Goal = 100f, Type = "MinimiseConstraint" };
-        constraints[(int)ENutrient.Carbs] = new() { Max = 375f, Goal = 300f, Type = "MinimiseConstraint" };
+        // Defaults for Men
 
-        constraints[(int)ENutrient.Sugar] = new() { Max = 30f, Type = "MinimiseConstraint" };
-        constraints[(int)ENutrient.SatFat] = new() { Max = 30f, Type = "MinimiseConstraint" };
-        constraints[(int)ENutrient.TransFat] = new() { Max = 5f, Type = "MinimiseConstraint" };
+        // Default weight: 3 (Detrimental)
+        SetConstraint(ENutrient.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
+        SetConstraint(ENutrient.SatFat, typeof(MinimiseConstraint), max: 30f, weight: 3);
+        SetConstraint(ENutrient.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
 
-        constraints[(int)ENutrient.Calcium] = new() { Max = 700f, Type = "HardConstraint" };
-        constraints[(int)ENutrient.Iodine] = new() { Max = 140f, Type = "HardConstraint" };
-        constraints[(int)ENutrient.Iron] = new() { Max = 8.7f, Type = "HardConstraint" };
+        // Default weight: 2 (Essential to survival)
+        SetConstraint(ENutrient.Kcal, typeof(ConvergeConstraint), max: 3500f, weight: 2, min: 2000f, goal: 3000f);
+
+        // Auto-generate default p/f/c properties based on the above constraint
+        ConstraintData proteinData  = new();
+        ConstraintData fatData      = new();
+        ConstraintData carbsData    = new();
+
+        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Min,  ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
+        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max,  ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
+        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
+
+        SetConstraint(ENutrient.Protein,  typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, min: proteinData.Min,  goal: proteinData.Goal);
+        SetConstraint(ENutrient.Fat,      typeof(ConvergeConstraint), max: fatData.Max,     weight: 2, min: fatData.Min,      goal: fatData.Goal);
+        SetConstraint(ENutrient.Carbs,    typeof(ConvergeConstraint), max: carbsData.Max,   weight: 2, min: carbsData.Min,    goal: carbsData.Goal);
+
+        // Default weight: 1 (Beneficial)
+        // For these, set the goal to be the recommended amount from the NHS.
+        // The maximum is the highest "definitely safe" amount recommended by the NHS.
+        SetConstraint(ENutrient.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, goal: 700f);
+        SetConstraint(ENutrient.Iron,    typeof(ConvergeConstraint), max: 17f,   weight: 1, goal: 8.7f);
+        SetConstraint(ENutrient.Iodine,  typeof(ConvergeConstraint), max: 500f,  weight: 1, goal: 140f);
+
+        SetConstraint(ENutrient.VitA,  typeof(ConvergeConstraint), max:1500f, weight: 1, goal:700f);
+        SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100f, weight: 1, goal: 1f);
+        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f,  weight: 1, goal: 1.3f);
+        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f,  weight: 1, goal: 1.3f);
+        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f,  weight: 1, goal: 16.5f);
+        SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f,  weight: 1, goal: 1.4f);
+        SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max:1000f, weight: 1, goal: 200f);
+        SetConstraint(ENutrient.VitB12,typeof(ConvergeConstraint), max:2000f, weight: 1, goal: 1.5f);
+        SetConstraint(ENutrient.VitC,  typeof(ConvergeConstraint), max:1000f, weight: 1, goal: 40f);
+        SetConstraint(ENutrient.VitD,  typeof(ConvergeConstraint), max: 100f, weight: 1, goal: 10f); // Not needed if sunny.
+        SetConstraint(ENutrient.VitE,  typeof(ConvergeConstraint), max: 540f, weight: 1, goal: 4f);
+        SetConstraint(ENutrient.VitK1, typeof(ConvergeConstraint), max:1000f, weight: 1, goal: 70f); // Goal: 1 microgram per kg bodyweight.
 
         pheroImportance = 1f;
 
@@ -150,6 +180,14 @@ public class Preferences : ICached
 
         acoAlpha = 1f;
         acoBeta = 1f;
+    }
+
+
+    private void SetConstraint(ENutrient nut, Type constraintType, float max, float weight, float min = 0, float goal = 0)
+    {
+        constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight };
+        Logger.Log($"Last: {nut}");
+        Constraint.Build(constraints[(int)nut]); // May throw an error, useful to check if all params are valid
     }
 
 

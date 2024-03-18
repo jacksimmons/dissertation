@@ -50,6 +50,8 @@ public abstract class Algorithm
     // The iteration number of the best day.
     public int BestIteration { get; private set; } = 0;
 
+    // The best possible day that could exist with the given constraints. Must have a fitness of 0.
+
 
     public virtual float AverageFitness => m_population.GetAvgFitness(); // The average fitness of the population.
     public readonly string DatasetError = ""; // Stores any errors which occur during the dataset stage, to display to the user instead of running.

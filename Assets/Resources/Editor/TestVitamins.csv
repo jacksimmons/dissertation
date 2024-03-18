@@ -1,9 +1,9 @@
-Food Code,Food Name,Description,Group,Previous,Main data references,Footnote,Sodium (mg),Potassium (mg),Calcium (mg),Magnesium (mg),Phosphorus (mg),Iron (mg),Copper (mg),Zinc (mg),Chloride (mg),Manganese (mg),Selenium (µg),Iodine (µg)
-,,,,,,,NA,K,CA,MG,P,FE,CU,ZN,CL,MN,SE,I
-,,,,,,,Sodium,Potassium,Calcium,Magnesium,Phosphorus,Iron,Copper,Zinc,Chloride,Manganese,Selenium,Iodine
-Normal,Test1,Desc1,Group1,,Ref1,,,,100,,,30,,,,,,20
-Boundary1,TestB1,DescB1,GroupB1,,,,,,0,,,0,,,,,,0
-Boundary2,TestB2,DescB2,GroupB2,,,,,,Tr,,,Tr,,,,,,Tr
-Erroneous1,TestE1,DescE1,GroupE1,,,,,,N,,,N,,,,,,N
-Erroneous2,TestE2,DescE2,GroupE2,,,,,,-1,,,-1,,,,,,-1
-Erroneous3,TestE3,DescE3,GroupE3,,,,,,-2,,,-2,,,,,,-2
+Food Code,Food Name,Description,Group,Previous,Main data references,Footnote,Retinol (µg),Carotene (µg),Retinol Equivalent (µg),Vitamin D (µg),Vitamin E (mg),Vitamin K1 (µg),Thiamin (mg),Riboflavin (mg),Niacin (mg),Tryptophan/60 (mg),Niacin equivalent (mg),Vitamin B6 (mg),Vitamin B12 (µg),Folate (µg),Pantothenate (mg),Biotin (µg),Vitamin C (mg)
+,,,,,,,RET,CAREQU,RETEQU,VITD,VITE,VITK1,THIA,RIBO,NIAC,TRYP60,NIACEQU,VITB6,VITB12,FOLT,PANTO,BIOT,VITC
+,,,,,,,Retinol,Carotene,Total retinol equivalent,Total Vitamin D,Total Vitamin E,Phylloquinone,Thiamin,Riboflavin,Niacin,Tryptophan divided by 60,Niacin equivalent,Vitamin B6,Vitamin B12,Folate,Pantothenate,Biotin,Vitamin C
+Normal,Test1,Desc1,Group1,,Ref1,,,,1,9,10,11,2,3,,,4,5,7,6,,,8
+Boundary1,TestB1,DescB1,GroupB1,,,,,,0,0,0,0,0,0,,,0,0,0,0,,,0
+Boundary2,TestB2,DescB2,GroupB2,,,,,,Tr,Tr,Tr,Tr,Tr,Tr,,,Tr,Tr,Tr,Tr,,,Tr
+Erroneous1,TestE1,DescE1,GroupE1,,,,,,N,N,N,N,N,N,,,N,N,N,N,,,N
+Erroneous2,TestE2,DescE2,GroupE2,,,,,,-1,-1,-1,-1,-1,-1,,,-1,-1,-1,-1,,,-1
+Erroneous3,TestE3,DescE3,GroupE3,,,,,,-2,-2,-2,-2,-2,-2,,,-2,-2,-2,-2,,,-2

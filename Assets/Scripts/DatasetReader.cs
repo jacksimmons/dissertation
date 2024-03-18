@@ -116,6 +116,7 @@ public class DatasetReader
         {
             { DatasetFile.Proximates, proximatesData },
             { DatasetFile.Inorganics, inorganicsData },
+            { DatasetFile.Vitamins,   vitaminsData },
         });
         m_prefs = prefs;
         m_dataset = new();
@@ -135,6 +136,18 @@ public class DatasetReader
         m_inorganicsColumns[9] = ENutrient.Calcium;
         m_inorganicsColumns[12] = ENutrient.Iron;
         m_inorganicsColumns[18] = ENutrient.Iodine;
+
+        m_vitaminsColumns[9] = ENutrient.VitA; // "Retinol equivalent"
+        m_vitaminsColumns[13] = ENutrient.VitB1;
+        m_vitaminsColumns[14] = ENutrient.VitB2;
+        m_vitaminsColumns[17] = ENutrient.VitB3; // "Niacin equivalent"
+        m_vitaminsColumns[18] = ENutrient.VitB6;
+        m_vitaminsColumns[20] = ENutrient.VitB9;
+        m_vitaminsColumns[19] = ENutrient.VitB12;
+        m_vitaminsColumns[23] = ENutrient.VitC;
+        m_vitaminsColumns[10] = ENutrient.VitD;
+        m_vitaminsColumns[11] = ENutrient.VitE;
+        m_vitaminsColumns[12] = ENutrient.VitK1;
     }
 
 
@@ -321,7 +334,7 @@ public class DatasetReader
 
         if (wordIndex >= columns.Length)
         {
-            Logger.Log("Word index >= number of columns.", Severity.Warning);
+            // The file, for some reason, has trailing empty data commas. So quick exit.
             return currentFood;
         }
 
