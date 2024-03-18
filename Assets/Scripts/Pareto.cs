@@ -55,7 +55,7 @@ public static class Pareto
         {
             if (day == other) continue;
 
-            switch (UnstrictComparison(Day.Compare(day, other)))
+            switch (UnstrictComparison(day.CompareTo(other)))
             {
                 // Only case where this day is NOT non-dominated.
                 case ParetoComparison.Dominated:

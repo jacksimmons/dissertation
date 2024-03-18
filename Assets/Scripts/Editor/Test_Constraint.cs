@@ -2,48 +2,56 @@ using NUnit.Framework;
 using System;
 using UnityEngine;
 
+
+/// <summary>
+/// Test suite for the Constraint class and its subclasses.
+/// </summary>
 public class Test_Constraint
 {
-    private void ConvergenceTest(float goal, float steepness, float tolerance)
+    private void HardTest(HardConstraint hc)
     {
-        // This constraint should support a range of goal - tolerance < x < goal + tolerance.
-        ConvergeConstraint cc = new(goal, steepness, tolerance);
+        for (float i = hc.min; i < hc.max; i++)
+        {
+            Assert.True(Mathf.Approximately(hc.GetFitness(i), 0));
+        }
 
+        // Test limits
+        Assert.True(float.IsPositiveInfinity(hc.GetFitness(hc.min - 1)));
+        Assert.True(float.IsPositiveInfinity(hc.GetFitness(hc.max + 1)));
+    }
+
+
+    private void ConvergenceTest(ConvergeConstraint cc)
+    {
         // Test that the goal gives a fitness of 0.
-        Assert.True(Mathf.Approximately(cc.GetFitness(100), 0));
+        Assert.True(Mathf.Approximately(cc.GetFitness(cc.goal), 0));
 
         // Test that values get increasingly worse as the input deviates from the goal. (Both directions)
         float prevFitness = 0;
-        for (float i = goal + 1; i < goal + tolerance; i++)
+        for (float i = cc.goal + 1; i < cc.max; i++)
         {
             float thisFitness = cc.GetFitness(i);
             Assert.True(thisFitness > prevFitness);
             prevFitness = thisFitness;
         }
         prevFitness = 0;
-        for (float i = goal - 1; i > goal - tolerance; i--)
+        for (float i = cc.goal - 1; i > cc.min; i--)
         {
             float thisFitness = cc.GetFitness(i);
             Assert.True(thisFitness > prevFitness);
             prevFitness = thisFitness;
         }
-
-        // Test limits
-        Assert.True(float.IsPositiveInfinity(cc.GetFitness(90)));
-        Assert.True(float.IsPositiveInfinity(cc.GetFitness(110)));
     }
 
 
-    private void MinimiseTest(float limit)
+    private void MinimiseTest(MinimiseConstraint mc)
     {
-        MinimiseConstraint mc = new(limit);
-
         // Test that the limit gives an infinite fitness
-        Assert.True(float.IsPositiveInfinity(mc.GetFitness(limit)));
+        Assert.True(float.IsPositiveInfinity(mc.GetFitness(mc.max)));
 
         // Test that values get increasingly worse as the input approaches the limit.
         float prevFitness = 0;
-        for (float i = 1; i < limit; i++)
+        for (float i = 1; i < mc.max; i++)
         {
             float thisFitness = mc.GetFitness(i);
             Assert.True(thisFitness > prevFitness);
@@ -55,54 +63,45 @@ public class Test_Constraint
     [Test]
     public void NormalTest()
     {
-        float goal = 100; float steepness = 1; float tolerance = 10;
-        ConvergenceTest(goal: goal, steepness, tolerance);
-        MinimiseTest(limit: goal);
-    }
-
-
-    private void CCThrowsOutOfRangeTest(float goal, float steepness, float tolerance)
-    {
-        Assert.Throws(
-            typeof(ArgumentOutOfRangeException),
-            new(() => ConvergenceTest(goal, steepness, tolerance)));
-    }
-
-
-    private void MCThrowsOutOfRangeTest(float limit)
-    {
-        Assert.Throws(
-            typeof(ArgumentOutOfRangeException),
-            new(() => MinimiseTest(limit)));
+        float goal = 100; float min = 90; float max = 110;
+        HardTest(new(min, max));
+        ConvergenceTest(new(goal, min, max));
+        MinimiseTest(new(max));
     }
 
 
     [Test]
     public void ErroneousTest()
     {
-        float goal = -100; float steepness = -1; float tolerance = -10;
-        CCThrowsOutOfRangeTest(goal, steepness, tolerance);
-        MCThrowsOutOfRangeTest(goal);
+        void HCThrowsOutOfRangeTest(float min, float max)
+        {
+            Assert.Throws(
+                typeof(Exception),
+                new(() => HardTest(new(min, max))));
+        }
+        void CCThrowsOutOfRangeTest(float goal, float min, float max)
+        {
+            Assert.Throws(
+                typeof(Exception),
+                new(() => ConvergenceTest(new(goal, min, max))));
+        }
+        void MCThrowsOutOfRangeTest(float max)
+        {
+            Assert.Throws(
+                typeof(Exception),
+                new(() => MinimiseTest(new(max))));
+        }
 
-        //
-        // Test it throws with just one parameter out of range
-        //
 
-        // Goal
-        steepness = 1; tolerance = 10;
-        CCThrowsOutOfRangeTest(goal, steepness, tolerance);
-        MCThrowsOutOfRangeTest(goal);
+        // Test one parameter being invalid each time (only test parameters that are introduced with each subclass; no
+        // need to test HC params again with CC.
+        HCThrowsOutOfRangeTest(-1, 1); // min < 0
+        HCThrowsOutOfRangeTest(2, 1); // max < min (encompasses max < 0)
 
-        //
-        // Convergence constraint only - no other constraints have steepness or tolerance parameters.
-        //
+        MCThrowsOutOfRangeTest(0); // max <= 0
 
-        // Steepness
-        goal = 100; steepness = 0;
-        CCThrowsOutOfRangeTest(goal, steepness, tolerance);
-
-        // Tolerance
-        steepness = 1; tolerance = -10;
-        CCThrowsOutOfRangeTest(goal, steepness, tolerance);
+        CCThrowsOutOfRangeTest(-1, 1, 2); // goal < 0
+        CCThrowsOutOfRangeTest(5, 6, 7); // goal < min
+        CCThrowsOutOfRangeTest(5, 3, 4); // goal > max
     }
 }

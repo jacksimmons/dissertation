@@ -2,12 +2,17 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PopulationView : MonoBehaviour
 {
+    [SerializeField]
+    private AlgorithmBehaviour m_algRunner;
+
+
     [SerializeField]
     private GameObject m_dayItem;
     [SerializeField]
@@ -54,7 +59,7 @@ public class PopulationView : MonoBehaviour
 
 
         // Display the best day
-        Day bestDay = Algorithm.Instance.BestDay;
+        Day bestDay = m_algRunner.Algorithm.BestDay;
         if (bestDay != null)
         {
             Transform bestDayBtn = m_popContent.transform.GetChild(0);
@@ -62,27 +67,28 @@ public class PopulationView : MonoBehaviour
             bestDayBtn.GetComponent<Button>().onClick.RemoveAllListeners();
             bestDayBtn.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(bestDay));
 
-            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {Algorithm.Instance.BestFitness})";
+            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {m_algRunner.Algorithm.BestFitness})";
         }
 
 
         // Display days in the population
-        foreach (var kvp in Algorithm.Instance.Population)
+        List<Day> days = m_algRunner.Algorithm.DayFitnesses.Keys.ToList();
+        foreach (Day day in days)
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
 
-            obj.transform.GetChild(0).GetComponent<TMP_Text>().text = AlgorithmOutput.GetDayLabel(kvp.Key);
+            obj.transform.GetChild(0).GetComponent<TMP_Text>().text = m_algRunner.Algorithm.GetDayLabel(day);
 
             Button btn = obj.GetComponent<Button>();
-            btn.onClick.AddListener(() => OnPopButtonPressed(kvp.Key));
+            btn.onClick.AddListener(() => OnPopButtonPressed(day));
             obj.SetActive(true); // The template is always inactive, so need to explicitly make the copy active
         }
 
 
         // Refresh the current day UI if still in the population, or is the best day
-        if (m_currentlyDisplayedDay != null && Algorithm.Instance.BestDay != null)
+        if (m_currentlyDisplayedDay != null && m_algRunner.Algorithm.BestDay != null)
         {
-            if (Algorithm.Instance.BestDay.IsEqualTo(m_currentlyDisplayedDay) || Algorithm.Instance.Population.ContainsKey(m_currentlyDisplayedDay))
+            if (m_algRunner.Algorithm.BestDay.IsEqualTo(m_currentlyDisplayedDay) || m_algRunner.Algorithm.DayFitnesses.Keys.Contains(m_currentlyDisplayedDay))
             {
                 UpdatePortionUI(m_currentlyDisplayedDay, 0);
                 UpdateDayUI(m_currentlyDisplayedDay);
@@ -96,7 +102,7 @@ public class PopulationView : MonoBehaviour
         
 
         // Set the average stats text
-        m_avgDayText.text = Algorithm.Instance.GetAverageStatsLabel();
+        m_avgDayText.text = m_algRunner.Algorithm.GetAverageStatsLabel();
     }
 
 

@@ -1,75 +1,42 @@
+// Non-unity components of AlgorithmRunner.
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using TMPro;
-using Unity.VisualScripting;
-using UnityEditor;
-using UnityEngine;
 
 
-/// <summary>
-/// Handles the iterations of an algorithm, as well as construction/destruction.
-/// </summary>
-public class AlgorithmRunner : MonoBehaviour
+public class AlgorithmRunner
 {
-    public Algorithm Algorithm
+    public Algorithm Alg { get; private set; }
+
+
+    // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
+    public AlgorithmRunner()
     {
-        get { return m_core.Alg; }
+        // Instantiate Alg using Algorithm.Build
+        // Alg is the algorithm casted to an Algorithm object, but it can represent any
+        // class which satisfies ": Algorithm".
+        string algType = Preferences.Instance.algorithmType;
+        Alg = Algorithm.Build(Type.GetType(algType)!);
+
+
+        // Perform any work that can't be done in the constructor.
+        Alg.Init();
     }
 
-    [SerializeField]
-    private MenuStackHandler m_menu;
-    [SerializeField]
-    private TMP_Text m_iterTimeTakenText;
-    [SerializeField]
-    private TMP_Text m_iterNumText;
-    [SerializeField]
-    private PopulationView m_populationView;
 
-    private AlgorithmRunnerCore m_core;
-
-    [SerializeField]
-    private TextAsset m_graph;
-
-
-    public void Init()
+    /// <returns>The time taken for the iterations to pass.</returns>
+    public float RunIterations(int numIters)
     {
-        m_core = new();
+        Stopwatch sw = Stopwatch.StartNew();
 
-        if (Algorithm.DatasetError != "")
+        for (int i = 0; i < numIters; i++)
         {
-            m_menu.ShowPopup("Error", Algorithm.DatasetError, Color.red);
-            return;
+            Alg.RunIteration();
         }
 
-        ResetAlgorithmUI();
-    }
+        sw.Stop();
 
-
-    private void ResetAlgorithmUI()
-    {
-        UpdateAlgorithmUI(0, 0);
-    }
-
-
-    private void UpdateAlgorithmUI(float time_ms, int iters)
-    {       
-        m_populationView.UpdatePopView();
-        m_iterNumText.text = $"Iteration: {Algorithm.IterNum}";
-        m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";
-    }
-
-
-    /// <summary>
-    /// Runs multiple next iterations, and updates the UI and graph file only once.
-    /// </summary>
-    public void RunIterations(int numIters)
-    {
-        float ms = m_core.RunIterations(numIters);
-        UpdateAlgorithmUI(ms, numIters);
+        return sw.ElapsedMilliseconds;
     }
 }

@@ -5,11 +5,11 @@ using System.Collections.ObjectModel;
 
 /// <summary>
 /// These enums are based on the naming convention of the dataset I am using.
-/// Nutrients = Macronutrients; Protein Fat Carbohydrates Energy Sugar SatFat TransFat etc.
+/// Nutrient = Macronutrients; Protein Fat Carbohydrates Energy Sugar SatFat TransFat etc.
 /// Inorganics = Elements; Sodium Potassium Calcium Magnesium etc.
 /// Vitamins = Vitamin A, B, etc.
 /// </summary>
-public enum Nutrient
+public enum ENutrient
 {
     // Proximates
     Protein,
@@ -41,21 +41,21 @@ public enum Nutrient
 }
 
 
-public static class Nutrients
+public static class Nutrient
 {
-    // Property-like static variables for Nutrient enum length, and Nutrient enum values.
-    public static int Count = Enum.GetValues(typeof(Nutrient)).Length;
-    public static Nutrient[] Values = (Nutrient[])Enum.GetValues(typeof(Nutrient));
+    // Property-like static variables for ENutrient enum length, and ENutrient enum values.
+    public static int Count = Enum.GetValues(typeof(ENutrient)).Length;
+    public static ENutrient[] Values = (ENutrient[])Enum.GetValues(typeof(ENutrient));
 
 
-    public static string GetUnit(Nutrient nutrient)
+    public static string GetUnit(ENutrient nutrient)
     {
         return nutrient switch
         {
-            Nutrient.Protein or Nutrient.Fat or Nutrient.Carbs or Nutrient.Sugar or Nutrient.SatFat or Nutrient.TransFat => "g",
-            Nutrient.Calcium or Nutrient.Iron => "mg",
-            Nutrient.Iodine => "µg",
-            Nutrient.Kcal => "kcal",
+            ENutrient.Protein or ENutrient.Fat or ENutrient.Carbs or ENutrient.Sugar or ENutrient.SatFat or ENutrient.TransFat => "g",
+            ENutrient.Calcium or ENutrient.Iron => "mg",
+            ENutrient.Iodine => "µg",
+            ENutrient.Kcal => "kcal",
             _ => throw new ArgumentOutOfRangeException(nameof(nutrient)),
         };
     }

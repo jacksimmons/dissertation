@@ -23,7 +23,7 @@ public enum DatasetFile
 /// All of the data associated with a food in the dataset.
 /// All nutrients are measured for a 100g portion.
 /// </summary>
-public struct FoodData
+public class FoodData
 {
     public string code;
     public string name;
@@ -35,15 +35,20 @@ public struct FoodData
 
     public string description;
     public string foodGroup;
-    public string reference;
     public float[] nutrients;
+
+
+    public FoodData()
+    {
+        nutrients = new float[Nutrient.Count];
+    }
 
 
     public FoodData MergeWith(FoodData other)
     {
         if (other.CompositeKey == CompositeKey)
         {
-            for (int i = 0; i < Nutrients.Count; i++)
+            for (int i = 0; i < Nutrient.Count; i++)
             {
                 // If not initialised in this nutrients, take it from the other nutrients.
                 if (MathfTools.Approx(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
@@ -73,9 +78,9 @@ public class DatasetReader
 
     private Dictionary<string, FoodData> m_dataset; // Keys are composite keys representing their corresponding food value uniquely.
 
-    private readonly Nutrient[] m_proximateColumns = new Nutrient[47]; // The number of columns with useful data in starting from col 0.
-    private readonly Nutrient[] m_inorganicsColumns = new Nutrient[19];
-    private readonly Nutrient[] m_vitaminsColumns = new Nutrient[24];
+    private readonly ENutrient[] m_proximateColumns = new ENutrient[47]; // The number of columns with useful data in starting from col 0.
+    private readonly ENutrient[] m_inorganicsColumns = new ENutrient[19];
+    private readonly ENutrient[] m_vitaminsColumns = new ENutrient[24];
 
     public readonly string SetupError = "";
 
@@ -115,25 +120,25 @@ public class DatasetReader
         m_prefs = prefs;
         m_dataset = new();
 
-        FillNutrientArray(m_proximateColumns, (Nutrient)(-1));
-        FillNutrientArray(m_inorganicsColumns, (Nutrient)(-1));
-        FillNutrientArray(m_vitaminsColumns, (Nutrient)(-1));
+        FillNutrientArray(m_proximateColumns, (ENutrient)(-1));
+        FillNutrientArray(m_inorganicsColumns, (ENutrient)(-1));
+        FillNutrientArray(m_vitaminsColumns, (ENutrient)(-1));
 
-        m_proximateColumns[9] = Nutrient.Protein;
-        m_proximateColumns[10] = Nutrient.Fat;
-        m_proximateColumns[11] = Nutrient.Carbs;
-        m_proximateColumns[12] = Nutrient.Kcal;
-        m_proximateColumns[16] = Nutrient.Sugar;
-        m_proximateColumns[27] = Nutrient.SatFat;
-        m_proximateColumns[45] = Nutrient.TransFat;
+        m_proximateColumns[9] = ENutrient.Protein;
+        m_proximateColumns[10] = ENutrient.Fat;
+        m_proximateColumns[11] = ENutrient.Carbs;
+        m_proximateColumns[12] = ENutrient.Kcal;
+        m_proximateColumns[16] = ENutrient.Sugar;
+        m_proximateColumns[27] = ENutrient.SatFat;
+        m_proximateColumns[45] = ENutrient.TransFat;
 
-        m_inorganicsColumns[9] = Nutrient.Calcium;
-        m_inorganicsColumns[12] = Nutrient.Iron;
-        m_inorganicsColumns[18] = Nutrient.Iodine;
+        m_inorganicsColumns[9] = ENutrient.Calcium;
+        m_inorganicsColumns[12] = ENutrient.Iron;
+        m_inorganicsColumns[18] = ENutrient.Iodine;
     }
 
 
-    private void FillNutrientArray(Nutrient[] array, Nutrient value)
+    private void FillNutrientArray(ENutrient[] array, ENutrient value)
     {
         for (int i = 0; i < array.Length; i++)
         {
@@ -161,7 +166,7 @@ public class DatasetReader
 
             // Check the current food isn't missing essential data (due to N, Tr or "")
             // This missing data is given the value -1, as seen in the delimiter ',' case.
-            for (int i = 0; i < Nutrients.Count; i++)
+            for (int i = 0; i < Nutrient.Count; i++)
             {
                 if (data.nutrients[i] < 0)
                     goto NextFood;
@@ -182,7 +187,7 @@ public class DatasetReader
         const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
 
         FoodData currentFood = new();
-        currentFood.nutrients = new float[Nutrients.Count];
+        currentFood.nutrients = new float[Nutrient.Count];
 
         string currentWord = "";
 
@@ -241,7 +246,7 @@ public class DatasetReader
 
                             // Reset
                             currentFood = new();
-                            currentFood.nutrients = new float[Nutrients.Count];
+                            currentFood.nutrients = new float[Nutrient.Count];
                         }
                     }
 
@@ -270,7 +275,7 @@ public class DatasetReader
 
     /// <summary>
     /// </summary>
-    /// <returns>The updated FoodData struct.</returns>
+    /// <returns>The updated FoodData.</returns>
     private FoodData HandleColumnLookup(DatasetFile file, FoodData currentFood, string currentWord, int wordIndex, float floatVal)
     {
         switch (wordIndex)
@@ -287,9 +292,9 @@ public class DatasetReader
             case 3:
                 currentFood.foodGroup = currentWord;
                 return currentFood;
-            case 5:
-                currentFood.reference = currentWord;
-                return currentFood;
+            //case 5:
+            //    currentFood.reference = currentWord;
+            //    return currentFood;
         }
 
         HandleNutrientLookup(file, wordIndex, currentFood, floatVal);
@@ -299,7 +304,7 @@ public class DatasetReader
 
     private FoodData HandleNutrientLookup(DatasetFile file, int wordIndex, FoodData currentFood, float floatVal)
     {
-        Nutrient[] columns;
+        ENutrient[] columns;
 
         switch (file)
         {
@@ -320,7 +325,7 @@ public class DatasetReader
             return currentFood;
         }
 
-        if (columns[wordIndex] != (Nutrient)(-1))
+        if (columns[wordIndex] != (ENutrient)(-1))
             currentFood.nutrients[(int)columns[wordIndex]] = floatVal;
 
         return currentFood;

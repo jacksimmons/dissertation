@@ -89,28 +89,31 @@ public class AlgACO : Algorithm
         public int LastIndex { get; private set; }
         private HashSet<int> m_pathIndices;
 
-        private bool m_partOfPopulation;
+        private readonly bool m_partOfPopulation;
 
 
         public Ant(AlgACO colony, int startIndex, bool partOfPopulation)
         {
             m_colony = colony;
 
-            // 0, 1, 2, ...
-            id = s_numAnts;
-            s_numAnts++;
+            m_partOfPopulation = partOfPopulation;
+            m_path = new(m_colony);
+            if (partOfPopulation)
+            {
+                // 0, 1, 2, ...
+                id = s_numAnts;
+                s_numAnts++;
+                m_colony.m_population.Add(m_path);
+            }
+            else
+            {
+                id = -1;
+            }
 
             m_startIndex = startIndex;
 
             // Initialise the path
             ResetPath();
-
-            m_partOfPopulation = partOfPopulation;
-            if (m_partOfPopulation)
-            {
-                // Add the path to the population
-                m_colony.m_population.Add(m_path!);
-            }
         }
 
 
@@ -122,7 +125,7 @@ public class AlgACO : Algorithm
             if (m_partOfPopulation)
                 m_colony.m_population.Remove(m_path);
 
-            m_path = new();
+            m_path = new(m_colony);
             m_pathIndices = new(NUM_PORTIONS);
 
             if (m_partOfPopulation)
@@ -176,23 +179,7 @@ public class AlgACO : Algorithm
         public void RunAnt(int recursion = 0)
         {
             float[] probabilities = GetAllVertexProbabilities(LastIndex);
-
-            // Clamp the probability to the range [EPSILON, 1 - EPSILON]
-            float probability = MathF.Max(MathF.Min((float)Rand.NextDouble(), 1 - EPSILON), EPSILON);
-
-            // Calculate which vertex was selected, through
-            // a sum-of-probabilities check.
-            float sum = 0;
-            int nextVertex = -1;
-            for (int i = 0; i < NUM_PORTIONS; i++)
-            {
-                sum += probabilities[i];
-                if (sum > probability)
-                {
-                    nextVertex = i;
-                    break;
-                }
-            }
+            int nextVertex = MathfTools.GetFirstSurpassedProbability(probabilities);
 
             // If the next vertex was selected, then add the
             // new portion and continue.
@@ -275,8 +262,6 @@ public class AlgACO : Algorithm
         }
     }
 
-    private const float EPSILON = 1e-7f;
-
     // Needs to be greater than the number of portions, otherwise restricts number of portions in each path
     private const int NUM_PORTIONS = 10;
     private const int RECURSE_LIMIT = NUM_PORTIONS;
@@ -286,7 +271,6 @@ public class AlgACO : Algorithm
     // Low value => Wider search (more foods)
     private const int STAGNATION_ITERS = 1000;
     private const bool USE_THREADS = false; // Saves time on ~100 ants, loses time on 10 ants
-    private const bool ELITIST = false;
 
     private float[,] m_fitnesses = new float[NUM_PORTIONS, NUM_PORTIONS];
     private float[,] m_pheromone = new float[NUM_PORTIONS, NUM_PORTIONS];
@@ -308,7 +292,8 @@ public class AlgACO : Algorithm
         // Create vertices
         for (int i = 0; i < NUM_PORTIONS; i++)
         {
-            m_vertices[i] = GetNewPortion();
+            Portion randP = RandomPortion;
+            m_vertices[i] = randP;
         }
 
 
@@ -327,30 +312,6 @@ public class AlgACO : Algorithm
             Ant ant = new(this, i % NUM_PORTIONS, true);
             m_ants[i] = ant;
         }
-    }
-
-
-    public Portion GetNewPortion()
-    {
-        //int randIndex = Rand.Next(Foods.Count);
-        //if (m_exploredFoods[randIndex])
-        //{
-        //    Logger.Log("Explored random food already.");
-        //    int newIndex = ArrayTools.CircularNextIndex(randIndex, Foods.Count, true);
-
-        //    while (m_exploredFoods[newIndex])
-        //    {
-        //        newIndex = ArrayTools.CircularNextIndex(newIndex, Foods.Count, true);
-
-        //        // If the selected index looped all the way around and all foods were explored...
-        //        if (newIndex == randIndex)
-        //        {
-        //            Logger.Log("Algorithm has completed!", Severity.Error);
-        //        }
-        //    }
-        //}
-
-        return new(Foods[Rand.Next(Foods.Count)], Rand.Next(Preferences.MIN_PORTION_MASS, Preferences.MAX_PORTION_MASS));
     }
 
 
@@ -501,9 +462,8 @@ public class AlgACO : Algorithm
 
         int worstIndex = Array.IndexOf(pheroSumIntoEachVert, pheroSumIntoEachVert.Min());
 
-        // Replace the worst index and mark it as explored
-        //m_exploredFoods[worstIndex] = true;
-        m_vertices[worstIndex] = GetNewPortion();
+        // Replace the worst index with a random portion
+        m_vertices[worstIndex] = RandomPortion;
 
         // Calculate and assign new fitnesses
         for (int i = 0; i < NUM_PORTIONS; i++)
@@ -546,7 +506,7 @@ public class AlgACO : Algorithm
             m_ants[i].DepositPheromone();
         }
 
-        if (BestDayExists && ELITIST) DepositPheromone(BestDay, BestFitness);
+        if (BestDayExists && Preferences.Instance.elitist) DepositPheromone(BestDay, BestFitness);
     }
 
 

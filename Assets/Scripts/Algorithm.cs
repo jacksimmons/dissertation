@@ -12,51 +12,25 @@ using Random = System.Random;
 
 public abstract class Algorithm
 {
-    // Singleton pattern
-    private static Algorithm m_instance;
-    public static Algorithm Instance
-    {
-        get
-        {
-            if (m_instance != null) return m_instance;
-
-
-            // Assign the Instance variable ASAP so this doesn't occur.
-            throw new InvalidOperationException("No Algorithm instance exists.");
-        }
-
-
-        // AlgorithmRunner(Core) is the first / only to set this.
-        set
-        {
-            if (m_instance == null) m_instance = value;
-            else throw new InvalidOperationException("Algorithm instance was already set.");
-        }
-    }
-
-
     // Random number generator
     public static Random Rand { get; } = new();
 
+    private readonly ReadOnlyCollection<Food> Foods;     // All of the foods that were extracted from the dataset.
+    public ReadOnlyCollection<Constraint> Constraints;   // User-defined constraints, one for each nutrient.
 
-    // All of the foods that were extracted from the dataset.
-    public ReadOnlyCollection<Food> Foods;
+    public int IterNum { get; private set; } = 0;        // The current iteration of the algorithm.
 
-
-    // User-defined Constraints.
-    public ReadOnlyCollection<Constraint> Constraints;
-
-
-    // The current iteration of the algorithm.
-    public int IterNum { get; private set; } = 0;
+    protected Population m_population = new();           // Population stores all Days in the population and their associated data.
+    public ReadOnlyDictionary<Day, float> DayFitnesses => m_population.DayFitnesses;
 
 
-    // The visible population of Days.
-    protected Population m_population = new();
+    // A huge data structure storing all possible portions from the dataset in non-random order.
+    // Preferences.Instance.minPortionMass and Preferences.Instance.maxPortionMass can drastically change the
+    // size of this in memory. (By default, it is about 3M elements, or at least 3MB)
+    private Portion[] m_portions = Array.Empty<Portion>();
+    protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
 
-        // Dictionary storing the previously recorded average stats (for each nutrient)
-    private Dictionary<Nutrient, float> m_prevAvgPopStats = new();
-
+    private readonly Dictionary<ENutrient, float> m_prevAvgPopStats = new(); // Stores the average nutrient amount for the whole population from last iteration.
 
     // --- Best day properties, can only be set together ---
 
@@ -71,35 +45,14 @@ public abstract class Algorithm
     {
         get => m_bestDay != null;
     }
-
-
-    // The fitness of the best day.
-    public float BestFitness { get; private set; } = float.PositiveInfinity;
-    public virtual float AverageFitness => m_population.GetAvgFitness();
-
+    public float BestFitness { get; private set; } = float.PositiveInfinity; // The fitness of the Best Day.
     
     // The iteration number of the best day.
     public int BestIteration { get; private set; } = 0;
 
 
-    // Stores any errors which occur during the dataset stage, to display to the user instead of running.
-    public readonly string DatasetError = "";
-
-
-    // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
-    public static Algorithm Build(Type algType)
-    {
-        return (Algorithm)Activator.CreateInstance(algType)!;
-    }
-
-
-    /// <summary>
-    /// Resets the static instance.
-    /// </summary>
-    public static void EndAlgorithm()
-    {
-        m_instance = null;
-    }
+    public virtual float AverageFitness => m_population.GetAvgFitness(); // The average fitness of the population.
+    public readonly string DatasetError = ""; // Stores any errors which occur during the dataset stage, to display to the user instead of running.
 
 
     protected Algorithm()
@@ -114,37 +67,57 @@ public abstract class Algorithm
         Foods = new(dr.ProcessFoods());
 
 
+        // Generate the search space from these foods
+        // MAX - MIN + 1 is the number of elements MIN <= x <= MAX. (E.g. 2 <= x <= 3 => x in {2, 3} (count 2) and 3 - 2 + 1 = 2)
+        int portionsPerFood = Preferences.Instance.maxPortionMass - Preferences.Instance.minPortionMass + 1;
+        m_portions = new Portion[Foods.Count * portionsPerFood];
+        for (int i = 0; i < Foods.Count; i++)
+        {
+            for (int j = 0; j < portionsPerFood; j++)
+            {
+                // The mass of the portion can be calculated by just adding the minimum mass to j.
+                m_portions[i * portionsPerFood + j] = new(Foods[i], j + Preferences.Instance.minPortionMass);
+            }
+        }
+
+
         // Load constraints from Preferences.
-        Constraints = new(Preferences.Instance.constraints.Select(x => Constraint.Build(x)).ToList());
+        Constraints = new(Preferences.Instance.constraints.Select(Constraint.Build).ToList());
+
+
+        // Handle erroneous preference values.
+        if (Preferences.Instance.acoAlpha <= 0)
+            Logger.Error("Invalid parameter: acoAlpha was <= 0.");
+        if (Preferences.Instance.acoBeta <= 0)
+            Logger.Error("Invalid parameter: acoBeta was <= 0.");
+        if (Preferences.Instance.minPortionMass <= 0)
+            Logger.Error("Invalid parameter: minPortionMass was <= 0.");
+        if (Preferences.Instance.maxPortionMass < Preferences.Instance.minPortionMass)
+            Logger.Error("Invalid parameter: maxPortionMass was < minPortionMass.");
+        if (Preferences.Instance.numStartingPortionsPerDay <= 0)
+            Logger.Error("Invalid parameter: numStartingPortionsPerDay was <= 0.");
+        if (Preferences.Instance.pheroEvapRate < 0)
+            Logger.Error("Invalid parameter: pheroEvapRate was < 0.");
+        if (Preferences.Instance.pheroImportance < 0)
+            Logger.Error("Invalid parameter: pheroImportance was < 0.");
+        if (Preferences.Instance.populationSize <= 0)
+            Logger.Error("Invalid parameter: populationSize was <= 0.");
     }
 
 
-    //private List<Constraint> GetConstraintsFromPrefs()
-    //{
-    //    List<Constraint> constraints = Preferences.Instance.constraints;
-    //    for (int i = 0; i < Nutrients.Count; i++)
-    //    {
-    //        // Otherwise create the required constraint
-    //        Constraint constraint;
-    //        float goal = Preferences.Instance.goals[i];
-    //        switch (Preferences.Instance.constraintTypes[i])
-    //        {
-    //            case ConstraintType.Minimise:
-    //                constraint = new MinimiseConstraint(goal);
-    //                break;
-    //            case ConstraintType.Converge:
-    //                constraint = new ConvergeConstraint(goal, Preferences.Instance.steepnesses[i], Preferences.Instance.tolerances[i]);
-    //                break;
-    //            default:
-    //                constraint = new NullConstraint();
-    //                break;
-    //        }
+    // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
+    /// <summary>
+    /// Instantiate an Algorithm subclass instance.
+    /// </summary>
+    /// <param name="algType">A type which is a subclass of Algorithm.</param>
+    /// <returns></returns>
+    public static Algorithm Build(Type algType)
+    {
+        if (!algType.IsSubclassOf(typeof(Algorithm)))
+            Logger.Error($"Invalid Algorithm type: {algType.FullName!}.");
 
-    //        constraints[i] = constraint;
-    //    }
-
-    //    return constraints;
-    //}
+        return (Algorithm)Activator.CreateInstance(algType)!;
+    }
 
 
     /// <summary>
@@ -181,7 +154,8 @@ public abstract class Algorithm
     /// </summary>
     private void UpdateBestDay()
     {
-        foreach (Day day in m_population.Days)
+        List<Day> days = DayFitnesses.Keys.ToList();
+        foreach (Day day in days)
         {
             float fitness = m_population.GetFitness(day);
             if (fitness < BestFitness || !BestDayExists)
@@ -209,18 +183,14 @@ public abstract class Algorithm
 
 
     /// <summary>
-    /// Use this to get the number of non-null constraints defined in the Constraints
-    /// dictionary.
+    /// Returns a label string describing the properties of the given day.
     /// </summary>
-    //public int GetNumConstraints()
-    //{
-    //    int cnt = 0;
-    //    for (int i = 0; i < Nutrients.Count; i++)
-    //    {
-    //        if (Constraints[i].GetType() != typeof(NullConstraint)) cnt++;
-    //    }
-    //    return cnt;
-    //}
+    public string GetDayLabel(Day day)
+    {
+        string label = $"Portions: {day.portions.Count} ";
+        label += EvaluateDay(day);
+        return label;
+    }
 
 
     /// <summary>
@@ -240,18 +210,18 @@ public abstract class Algorithm
     public virtual string GetAverageStatsLabel()
     {
         string avgStr = "";
-        foreach (Nutrient nutrient in Nutrients.Values)
+        foreach (ENutrient nutrient in Nutrient.Values)
         {
             float sum = 0;
-            foreach (Day day in m_population.Days)
+            foreach (Day day in DayFitnesses.Keys)
             {
                 sum += day.GetNutrientAmount(nutrient);
             }
 
-            float avg = sum / Nutrients.Count;
+            float avg = sum / Nutrient.Count;
             if (!m_prevAvgPopStats.ContainsKey(nutrient)) m_prevAvgPopStats[nutrient] = avg;
 
-            avgStr += $"{nutrient}: {avg:F2}(+{avg - m_prevAvgPopStats[nutrient]:F2}){Nutrients.GetUnit(nutrient)}\n";
+            avgStr += $"{nutrient}: {avg:F2}(+{avg - m_prevAvgPopStats[nutrient]:F2}){Nutrient.GetUnit(nutrient)}\n";
 
             m_prevAvgPopStats[nutrient] = avg;
         }

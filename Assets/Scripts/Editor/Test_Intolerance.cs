@@ -12,7 +12,7 @@ using UnityEngine;
 public class Test_Intolerance
 {
     /// <summary>
-    /// Gets the list of foods contained in the whole dataset (Nutrients.csv).
+    /// Gets the list of foods contained in the whole dataset (Nutrient.csv).
     /// Then asserts that all foods obtained are valid for the given preferences.
     /// (DatasetReader should do this automatically)
     /// </summary>

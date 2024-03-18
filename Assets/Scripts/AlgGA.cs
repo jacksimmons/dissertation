@@ -6,7 +6,7 @@ using System.Linq;
 
 public abstract class AlgGA : Algorithm
 {
-    private const int MutationMassChangeMin = 0;
+    private const int MutationMassChangeMin = 1;
     private const int MutationMassChangeMax = 10;
 
     // Chance for any portion to be mutated in an algorithm pass.
@@ -15,12 +15,36 @@ public abstract class AlgGA : Algorithm
 
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // 0 or 1 -> No convergence
-    private const float ChanceToAddOrRemovePortion = 0.01f;
+    private const float ChanceToAddOrRemovePortion = 0.1f;
+
+    // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
+    // program as this approaches 1.
+    private const float PROPORTION_PARENTS = 0.5f;
+    protected int m_numParents = (int)(Preferences.Instance.populationSize * (PROPORTION_PARENTS / 2)) * 2; // Cannot be odd
+
+    protected int m_tournamentSize = Math.Min((int)(Preferences.Instance.populationSize * 0.2f), 2);
 
 
     public override void Init()
     {
         LoadStartingPopulation();
+
+
+        // Handle erroneous properties
+        if (MutationMassChangeMin < 0 || MutationMassChangeMin > MutationMassChangeMax)
+            Logger.Error("Invalid parameter: mutation min < 0 or mutation min > mutation max.");
+
+        if (MutationMassChangeMax < 0 || MutationMassChangeMin > MutationMassChangeMax)
+            Logger.Error("Invalid parameter: mutation max < 0 or mutation max < mutation min.");
+
+        if (ChanceToMutatePortion < 0)
+            Logger.Error("Invalid parameter: mutation chance was < 0.");
+
+        if (m_numParents <= 0)
+            Logger.Error("Invalid parameter: numparents was <= 0.");
+
+
+        Logger.Log($"Num parents: {m_numParents}, Tourney size: {m_tournamentSize}");
     }
 
 
@@ -33,11 +57,11 @@ public abstract class AlgGA : Algorithm
         for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
             // Add a number of days to the population (each has random foods)
-            Day day = new();
+            Day day = new(this);
             for (int j = 0; j < Preferences.Instance.numStartingPortionsPerDay; j++)
             {
                 // Add random foods to the day
-                day.AddPortion(GenerateRandomPortion());
+                day.AddPortion(RandomPortion);
             }
 
             AddToPopulation(day);
@@ -57,74 +81,19 @@ public abstract class AlgGA : Algorithm
     }
 
 
-    /// <summary>
-    /// Generates a random portion (a random food selected from the dataset, with a random
-    /// quantity multiplier).
-    /// </summary>
-    /// <returns></returns>
-    protected Portion GenerateRandomPortion()
+    protected override abstract void NextIteration();
+
+
+    protected Tuple<Day, Day> Reproduction(Tuple<Day, Day> parents)
     {
-        Food food = Foods[Rand.Next(Foods.Count)];
-        return new(food, Rand.Next(Preferences.Instance.portionMinStartMass, Preferences.Instance.portionMaxStartMass));
-    }
-
-
-    protected override void NextIteration()
-    {
-        List<Day> included = new(m_population.Days);
-
-        // --- (Best) Selection ---
-        Day selectedDayA = Selection(included);
-        // Exclude the first best day, as need to find a second best day.
-        included.Remove(selectedDayA);
-        Day selectedDayB = Selection(included);
-        // Exclude the second best day, to simplify worst-selection later.
-        included.Remove(selectedDayB);
-
-
         // --- Crossover ---
-        Tuple<Day, Day> children = Crossover(new(selectedDayA, selectedDayB));
-
+        Tuple<Day, Day> children = Crossover(parents);
 
         // --- Mutation ---
         MutateDay(children.Item1);
         MutateDay(children.Item2);
 
-        // Optimistically add the two children (assuming they are not the worst
-        // days in the population, a reasonable assumption)
-        AddToPopulation(children.Item1);
-        AddToPopulation(children.Item2);
-
-
-        // --- (Worst) Selection --- i.e. Elitism
-        // Search through the days that weren't the best days (excluded list still
-        // applies).
-        Day worstDayA = Selection(included, false);
-        // Exclude the first worst day, as need to find a second worst day.
-        included.Remove(worstDayA);
-        Day worstDayB = Selection(included, false);
-
-        // Remove the worst two days (these could be the just-added children)
-        RemoveFromPopulation(worstDayA);
-        RemoveFromPopulation(worstDayB);
-    }
-
-
-    protected abstract Day Selection(List<Day> excluded, bool selectBest = true);
-
-
-    /// <summary>
-    /// Selects two days from an inclusion list. The two days are guaranteed to be different.
-    /// Assumes the population size is >= 2.
-    /// </summary>
-    /// <param name="included">The list of included days.</param>
-    /// <returns>The two days selected.</returns>
-    protected Tuple<Day, Day> SelectDays(List<Day> included)
-    {
-        int indexA = Rand.Next(included.Count);
-        int indexB = (indexA + Rand.Next(1, included.Count - 1)) % included.Count;
-
-        return new(included[indexA], included[indexB]);
+        return children;
     }
 
 
@@ -145,13 +114,10 @@ public abstract class AlgGA : Algorithm
     /// </summary>
     /// <param name="parents">The two parents. Expects non-null Days.</param>
     /// <returns>Two children with only crossover applied.</returns>
-    protected Tuple<Day, Day> Crossover(Tuple<Day, Day> parents)
+    public Tuple<Day, Day> Crossover(Tuple<Day, Day> parents)
     {
-        CrossoverRunner runner = new(parents);
+        CrossoverRunner runner = new(parents, this);
         Tuple<Day, Day> children = runner.NPointCrossover();
-
-        if (children.Item1.portions.Count == 0) Logger.Log("Oops", Severity.Error);
-        if (children.Item2.portions.Count == 0) Logger.Log("Oops", Severity.Error);
         return children;
     }
 
@@ -189,7 +155,7 @@ public abstract class AlgGA : Algorithm
         bool removePortion = Rand.NextDouble() < ChanceToAddOrRemovePortion;
 
         if (addPortion)
-            day.AddPortion(GenerateRandomPortion());
+            day.AddPortion(RandomPortion);
 
         if (removePortion)
             day.RemovePortion(Rand.Next(day.portions.Count));

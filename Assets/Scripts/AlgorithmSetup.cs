@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public class AlgorithmSetup : MonoBehaviour
 {
-    // Nutrient fields (each object's index represents its Nutrient enum value)
+    // ENutrient fields (each object's index represents its ENutrient enum value)
     [SerializeField]
     private GameObject[] m_nutrientFields;
 
@@ -24,21 +24,6 @@ public class AlgorithmSetup : MonoBehaviour
     private TMP_Text m_addFitnessForMassBtnTxt;
     [SerializeField]
     private TMP_Text m_algTypeText;
-
-    public static readonly string[] ALG_TYPES =
-    { 
-        typeof(AlgSFGA).FullName!,
-        typeof(AlgPDGA).FullName!,
-        typeof(AlgACO).FullName!,
-    };
-
-
-    public static readonly string[] CONSTRAINT_TYPES =
-    {
-        typeof(HardConstraint).FullName!,
-        typeof(MinimiseConstraint).FullName!,
-        typeof(ConvergeConstraint).FullName!,
-    };
 
 
     // ACO Settings
@@ -66,7 +51,7 @@ public class AlgorithmSetup : MonoBehaviour
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
         {
             GameObject go;
-            Nutrient nutrient;
+            ENutrient nutrient;
 
             // _i usage scoped
             {
@@ -74,17 +59,17 @@ public class AlgorithmSetup : MonoBehaviour
 
                 // Must store the nutrient as a local variable, for use in the listener declarations.
                 // Using iter var directly would lead to := m_nutrientFields.Length whenever a listener event occurred.
-                nutrient = (Nutrient)_i;
+                nutrient = (ENutrient)_i;
             }
 
             TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();
             goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value));
 
             TMP_InputField minInput = go.transform.Find("MinInput").GetComponent<TMP_InputField>();
-            minInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].min, value));
+            minInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Min, value));
 
             TMP_InputField maxInput = go.transform.Find("MaxInput").GetComponent<TMP_InputField>();
-            maxInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].max, value));
+            maxInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Max, value));
 
             Button constraintTypeBtn = go.transform.Find("ConstraintTypeBtn").GetComponent<Button>();
             constraintTypeBtn.onClick.AddListener(() => OnCycleConstraintType(nutrient, constraintTypeBtn));
@@ -93,8 +78,8 @@ public class AlgorithmSetup : MonoBehaviour
         m_popSizeInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.populationSize, value));
         m_numStartingPortionsPerDayInput.onEndEdit.AddListener(
             (string value) => OnIntInputChanged(ref Preferences.Instance.numStartingPortionsPerDay, value));
-        m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMinStartMass, value));
-        m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.portionMaxStartMass, value));
+        m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.minPortionMass, value));
+        m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.maxPortionMass, value));
 
         m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroImportance, value));
         m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroEvapRate, value));
@@ -105,9 +90,9 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void OnGoalInputChanged(Nutrient nutrient, string value)
+    private void OnGoalInputChanged(ENutrient nutrient, string value)
     {
-        OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].goal, value);
+        OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Goal, value);
         OnGoalChanged(nutrient);
         UpdateUI();
     }
@@ -136,14 +121,14 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void OnGoalChanged(Nutrient nutrient)
+    private void OnGoalChanged(ENutrient nutrient)
     {
         switch (nutrient)
         {
-            case Nutrient.Protein: case Nutrient.Fat: case Nutrient.Carbs:
+            case ENutrient.Protein: case ENutrient.Fat: case ENutrient.Carbs:
                 MacrosToCalories();
                 break;
-            case Nutrient.Kcal:
+            case ENutrient.Kcal:
                 CaloriesToMacros();
                 break;
         }
@@ -157,10 +142,10 @@ public class AlgorithmSetup : MonoBehaviour
     /// </summary>
     private void MacrosToCalories()
     {
-        Preferences.Instance.constraints[(int)Nutrient.Kcal].goal =
-            Preferences.Instance.constraints[(int)Nutrient.Protein].goal * 4
-            + Preferences.Instance.constraints[(int)Nutrient.Fat].goal * 9
-            + Preferences.Instance.constraints[(int)Nutrient.Carbs].goal * 4;
+        Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal =
+            Preferences.Instance.constraints[(int)ENutrient.Protein].Goal * 4
+            + Preferences.Instance.constraints[(int)ENutrient.Fat].Goal * 9
+            + Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal * 4;
     }
 
 
@@ -172,10 +157,10 @@ public class AlgorithmSetup : MonoBehaviour
     /// </summary>
     private void CaloriesToMacros()
     {
-        ref float kcal    = ref Preferences.Instance.constraints[(int)Nutrient.Kcal].goal;
-        ref float protein = ref Preferences.Instance.constraints[(int)Nutrient.Protein].goal;
-        ref float fat     = ref Preferences.Instance.constraints[(int)Nutrient.Protein].goal;
-        ref float carbs   = ref Preferences.Instance.constraints[(int)Nutrient.Carbs].goal;
+        ref float kcal    = ref Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal;
+        ref float protein = ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal;
+        ref float fat     = ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal;
+        ref float carbs   = ref Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal;
 
         // Calories calculated from the macros (not necessarily correct, goal is to correct it).
         float ratioCalories = 9 * fat + 4 * protein + 4 * carbs;
@@ -204,16 +189,16 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void OnCycleConstraintType(Nutrient nutrient, Button btn)
+    private void OnCycleConstraintType(ENutrient nutrient, Button btn)
     {
         // Get original type
-        string type = Preferences.Instance.constraints[(int)nutrient].type;
+        string type = Preferences.Instance.constraints[(int)nutrient].Type;
 
-        int indexOfType = Array.IndexOf(CONSTRAINT_TYPES, type);
+        int indexOfType = Array.IndexOf(Preferences.CONSTRAINT_TYPES, type);
         if (indexOfType == -1) Logger.Log($"Provided constraint type ({type}) was not valid.", Severity.Error);
 
         // Set the new type
-        string newType = Preferences.Instance.constraints[(int)nutrient].type = ArrayTools.CircularNextElement(CONSTRAINT_TYPES, indexOfType, true);
+        string newType = Preferences.Instance.constraints[(int)nutrient].Type = ArrayTools.CircularNextElement(Preferences.CONSTRAINT_TYPES, indexOfType, true);
 
         // Update the button label to reflect the change (need to do this as this input
         // is not done through an input field)
@@ -233,9 +218,9 @@ public class AlgorithmSetup : MonoBehaviour
     public void OnCycleAlgorithm()
     {
         Preferences.Instance.algorithmType =
-            ALG_TYPES[ArrayTools.CircularNextIndex(
-                Array.IndexOf(ALG_TYPES, Preferences.Instance.algorithmType, 0, ALG_TYPES.Length),
-                ALG_TYPES.Length,
+            Preferences.ALG_TYPES[ArrayTools.CircularNextIndex(
+                Array.IndexOf(Preferences.ALG_TYPES, Preferences.Instance.algorithmType, 0, Preferences.ALG_TYPES.Length),
+                Preferences.ALG_TYPES.Length,
                 true
             )];
         Saving.SavePreferences();
@@ -251,27 +236,27 @@ public class AlgorithmSetup : MonoBehaviour
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
         {
             GameObject go;
-            Nutrient nutrient;
+            ENutrient nutrient;
 
             {
                 go = m_nutrientFields[_i];
 
                 // Must store the nutrient as a local variable, for use in the listener declarations.
                 // Using iter var directly would lead to := m_nutrientFields.Length whenever a listener event occurred.
-                nutrient = (Nutrient)_i;
+                nutrient = (ENutrient)_i;
             }
 
-            go.transform.Find("GoalInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].goal.ToString();
-            go.transform.Find("MinInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].min.ToString();
-            go.transform.Find("MaxInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].max.ToString();
+            go.transform.Find("GoalInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Goal.ToString();
+            go.transform.Find("MinInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Min.ToString();
+            go.transform.Find("MaxInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Max.ToString();
 
-            go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = constraints[(int)nutrient].type;
+            go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = constraints[(int)nutrient].Type;
         }
 
         m_popSizeInput.text = p.populationSize.ToString();
         m_numStartingPortionsPerDayInput.text = p.numStartingPortionsPerDay.ToString();
-        m_minStartMassInput.text = p.portionMinStartMass.ToString();
-        m_maxStartMassInput.text = p.portionMaxStartMass.ToString();
+        m_minStartMassInput.text = p.minPortionMass.ToString();
+        m_maxStartMassInput.text = p.maxPortionMass.ToString();
         m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
         m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algorithmType}";
 

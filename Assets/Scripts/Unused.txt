@@ -322,10 +322,10 @@
         /// </summary>
         private static float[]? GetNutrientInput()
         {
-            float[] floats = new float[Nutrients.Count];
-            for (int i = 0; i < Nutrients.Count; i++)
+            float[] floats = new float[Nutrient.Count];
+            for (int i = 0; i < Nutrient.Count; i++)
             {
-                Console.Write($"[float] Enter the value for {Nutrients.Values[i]}\n> ");
+                Console.Write($"[float] Enter the value for {Nutrient.Values[i]}\n> ");
                 string? line = Console.ReadLine();
 
                 if (line != null && float.TryParse(line, out floats[i]))

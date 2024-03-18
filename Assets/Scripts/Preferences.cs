@@ -62,21 +62,29 @@ public class Preferences : ICached
     // PREFS MENU------------------
 
 
+    public static readonly string[] ALG_TYPES =
+    {
+        typeof(AlgSFGA).FullName!,
+        typeof(AlgACO).FullName!,
+    };
+
+
+    public static readonly string[] CONSTRAINT_TYPES =
+    {
+        typeof(HardConstraint).FullName!,
+        typeof(MinimiseConstraint).FullName!,
+        typeof(ConvergeConstraint).FullName!,
+    };
+
+
     //
     // Food Groups
     //
-    public bool eatsLandMeat; // Carnivore, Lactose-Intolerant
-    public bool eatsSeafood; // Carnivore, Pescatarian, LI
-    public bool eatsAnimalProduce; // Vegetarian, LI
-    public bool eatsLactose; // Vegetarian, i.e. no Milk
+    public bool eatsLandMeat = true; // Carnivore, Lactose-Intolerant
+    public bool eatsSeafood = true; // Carnivore, Pescatarian, LI
+    public bool eatsAnimalProduce = true; // Vegetarian, LI
+    public bool eatsLactose = true; // Vegetarian, i.e. no Milk
 
-    //
-    // Body
-    //
-    public EWeightGoal weightGoal;
-    public float weightInKG;
-    public float heightInCM;
-    public EAssignedSex assignedSex;
 
     //
     // Constraints
@@ -90,14 +98,13 @@ public class Preferences : ICached
     //
     // Algorithm settings
     //
-    public int populationSize;
-    public int numStartingPortionsPerDay;
-    public int portionMinStartMass;
-    public int portionMaxStartMass;
-    public bool addFitnessForMass;
-    public string algorithmType;
-    public const int MIN_PORTION_MASS = 1;
-    public const int MAX_PORTION_MASS = 1000;
+    public int populationSize = 10;
+    public int numStartingPortionsPerDay = 1;
+    public int minPortionMass = 1;
+    public int maxPortionMass = 500;
+    public bool addFitnessForMass = true;
+    public string algorithmType = typeof(AlgSFGA).FullName!;
+    public bool elitist = true;
 
     //
     // ACO-specific settings
@@ -108,41 +115,33 @@ public class Preferences : ICached
     public float acoAlpha;      // Pheromone exponent
     public float acoBeta;       // Desirability exponent
 
+    //
+    // Experiment settings
+    //
+    // Max fitness value plotted on the output graph.
+    public const int MAX_FITNESS = 50_000;
+    // Any fitness below this will be assigned maximum selection pressure.
+    public const int CRITICAL_FITNESS = 1_000;
+
 
     // By default, the user's settings should permit every food type - this
     // best fits the average person.
     public Preferences()
     {
-        eatsLandMeat = true;
-        eatsSeafood = true;
-        eatsAnimalProduce = true;
-        eatsLactose = true;
-        weightGoal = EWeightGoal.MaintainWeight;
-        weightInKG = 70;
-        heightInCM = 170;
-        assignedSex = EAssignedSex.Male;
+        constraints = new ConstraintData[Nutrient.Count];
 
-        constraints = new ConstraintData[Nutrients.Count];
+        constraints[(int)ENutrient.Kcal] = new() { Min = 0f, Max = 3500f, Goal = 2700f, Type = "ConvergeConstraint" };
+        constraints[(int)ENutrient.Protein] = new() { Min = 0f, Max = 200f, Goal = 150f, Type = "ConvergeConstraint" };
+        constraints[(int)ENutrient.Fat] = new() { Max = 150f, Goal = 100f, Type = "MinimiseConstraint" };
+        constraints[(int)ENutrient.Carbs] = new() { Max = 375f, Goal = 300f, Type = "MinimiseConstraint" };
 
-        constraints[(int)Nutrient.Kcal] = new() { min = 0f, max = 3500f, goal = 2700f, type = "ConvergeConstraint" };
-        constraints[(int)Nutrient.Protein] = new() { min = 0f, max = 200f, goal = 150f, type = "ConvergeConstraint" };
-        constraints[(int)Nutrient.Fat] = new() { max = 150f, goal = 100f, type = "MinimiseConstraint" };
-        constraints[(int)Nutrient.Carbs] = new() { max = 375f, goal = 300f, type = "MinimiseConstraint" };
+        constraints[(int)ENutrient.Sugar] = new() { Max = 30f, Type = "MinimiseConstraint" };
+        constraints[(int)ENutrient.SatFat] = new() { Max = 30f, Type = "MinimiseConstraint" };
+        constraints[(int)ENutrient.TransFat] = new() { Max = 5f, Type = "MinimiseConstraint" };
 
-        constraints[(int)Nutrient.Sugar] = new() { max = 30f, type = "MinimiseConstraint" };
-        constraints[(int)Nutrient.SatFat] = new() { max = 30f, type = "MinimiseConstraint" };
-        constraints[(int)Nutrient.TransFat] = new() { max = 5f, type = "MinimiseConstraint" };
-
-        constraints[(int)Nutrient.Calcium] = new() { max = 700f, type = "HardConstraint" };
-        constraints[(int)Nutrient.Iodine] = new() { max = 140f, type = "HardConstraint" };
-        constraints[(int)Nutrient.Iron] = new() { max = 8.7f, type = "HardConstraint" };
-
-        populationSize = 10;
-        numStartingPortionsPerDay = 1;
-        portionMinStartMass = 50;
-        portionMaxStartMass = 150;
-        addFitnessForMass = true;
-        algorithmType = typeof(AlgSFGA).FullName!;
+        constraints[(int)ENutrient.Calcium] = new() { Max = 700f, Type = "HardConstraint" };
+        constraints[(int)ENutrient.Iodine] = new() { Max = 140f, Type = "HardConstraint" };
+        constraints[(int)ENutrient.Iron] = new() { Max = 8.7f, Type = "HardConstraint" };
 
         pheroImportance = 1f;
 
@@ -184,7 +183,7 @@ public class Preferences : ICached
     /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
     public bool IsFoodGroupAllowed(Food food)
     {
-        string foodGroup = food.foodGroup;
+        string foodGroup = food.FoodGroup;
 
         // In case of no food group, say it is not allowed.
         // Safest approach - removes all foods without a proper food group label.
@@ -225,7 +224,7 @@ public class Preferences : ICached
 
 
         // Unique keywords to catch hybrid items (e.g. Tuna sandwich)
-        string name = food.name.ToLower();
+        string name = food.Name.ToLower();
 
         if (name.Contains("salmon") && !eatsSeafood) return false;
         if (name.Contains("cod") && !eatsSeafood) return false;
@@ -253,7 +252,7 @@ public class Preferences : ICached
         str += "\nAlgorithm Constraints:\n";
         foreach (ConstraintData constraint in constraints)
         {
-            str += $"Min:{constraint.min} Max:{constraint.max} Goal:{constraint.goal} Type:{constraint.type}\n";
+            str += $"Min:{constraint.Min} Max:{constraint.Max} Goal:{constraint.Goal} Type:{constraint.Type}\n";
         }
 
         str += "\n";

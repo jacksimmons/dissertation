@@ -25,7 +25,11 @@ public abstract class Constraint
 
     public static Constraint Build(ConstraintData data)
     {
-        return (Constraint)Activator.CreateInstance(Type.GetType(data.type), data)!;
+        Type type = Type.GetType(data.Type)!;
+        if (!type.IsSubclassOf(typeof(Constraint)))
+            Logger.Error($"Invalid Constraint type: {data.Type}.");
+
+        return (Constraint)Activator.CreateInstance(Type.GetType(data.Type)!, data)!;
     }
 
 
@@ -36,12 +40,16 @@ public abstract class Constraint
 }
 
 
-public struct ConstraintData
+/// <summary>
+/// Stores parameters for any constraint. Note these are not Properties, to allow each parameter
+/// to be changed by ref.
+/// </summary>
+public class ConstraintData
 {
-    public float min;
-    public float max;
-    public float goal;
-    public string type;
+    public float Min;
+    public float Max;
+    public float Goal;
+    public string Type = "";
 }
 
 
@@ -71,16 +79,20 @@ public class HardConstraint : Constraint
 
         if (max < min)
             Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
+        if (min < 0)
+            Logger.Error($"Argument min ({min}) was <= 0.");
     }
 
 
     public HardConstraint(ConstraintData data) : base()
     {
-        min = data.min;
-        max = data.max;
+        min = data.Min;
+        max = data.Max;
 
         if (max < min)
             Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
+        if (min < 0)
+            Logger.Error($"Argument min ({min}) was <= 0.");
     }
 
 
@@ -124,9 +136,9 @@ public class MinimiseConstraint : HardConstraint
         // A negative-exponential graph gives an OF which tends to infinity
         // as you approach the limit, L.
         // Graph: y = -1 - (L/(x-L)), x <= L (minimise)
-        if (float.IsPositiveInfinity(base.GetFitness(amount))) return float.PositiveInfinity;
+        if (float.IsPositiveInfinity(base.GetFitness(amount)) || MathfTools.Approx(amount, max)) return float.PositiveInfinity;
+        // If amount == max, sometimes this can give -Infinity, so assign a fitness of Infinity in this case.
 
-        // If x == max, sometimes this can give -Infinity.
         return MathF.Abs(-1 - max / (amount - max));
     }
 
@@ -158,16 +170,16 @@ public class ConvergeConstraint : HardConstraint
     {
         this.goal = goal;
 
-        if (goal <= 0)
-            Logger.Log($"Goal: {goal} is out of range. It must be > 0.", Severity.Error);
+        if (goal < 0 || goal < min || goal > max)
+            Logger.Log($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).", Severity.Error);
     }
 
 
     public ConvergeConstraint(ConstraintData data) : base(data)
     {
-        goal = data.goal;
+        goal = data.Goal;
 
-        if (goal <= 0 || goal < min || goal > max)
+        if (goal < 0 || goal < min || goal > max)
             Logger.Log($"Goal: {goal} is out of range. It must be > 0, > min ({min}) and < max ({max}).", Severity.Error);
     }
 
@@ -175,32 +187,26 @@ public class ConvergeConstraint : HardConstraint
     public override float GetFitness(float amount)
     {
         if (float.IsPositiveInfinity(base.GetFitness(amount))) return float.PositiveInfinity;
+        // If amount == max, sometimes this can give -Infinity, so assign a fitness of Infinity in this case.
 
-        //if (amount > goal)
-        //{
-        //    // Use graph for > goal:
-        //    // y = (max/(goal-max)) - (max/(x-max)).
-        //    // Constant first term was calculated with a boundary condition: -k - (max/(goal-max)) = 0.
+        float tolerance;
+        if (amount > goal)
+        {
+            tolerance = max - goal;
+        }
+        else
+        {
+            tolerance = goal - min;
+        }
 
-        //    return max / (goal - max) - max / (amount - max);
-        //}
-        //else if (amount < goal)
-        //{
-        //    // Use graph for < goal:
-        //    // y = (min/(x-min)) - (min/(goal-min))
-        //    // Constant second term calculated with a similar boundary condition.
-
-        //    return min / (amount - min) - min / (goal - min);
-        //}
-
-        //return 0;
-
-        float tolerance = MathF.Max(goal - min, max - goal);
-        float steepness = 0.0001f;
+        float steepness = 0.01f;
 
         float f_a = -MathF.Pow(goal / tolerance, 2) / steepness;
         float f_b_num = -MathF.Pow(goal, 2);
         float f_b_denom = steepness * (amount - (goal - tolerance)) * (amount - (goal + tolerance));
+
+        // If amount has reached the limit, return Infinity. Removing this leads to -Infinity possibility.
+        if (MathfTools.Approx(f_b_denom, 0)) return float.PositiveInfinity;
 
         return f_a + f_b_num / f_b_denom;
     }

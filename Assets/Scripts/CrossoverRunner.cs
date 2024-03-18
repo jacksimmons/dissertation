@@ -5,9 +5,6 @@ using System.Collections.Generic;
 /// <summary>
 /// Runs crossover from the point that the parents' genes have been
 /// combined into one list.
-/// 
-/// Note: The crossover is applied to a random-element-iteration over a HashSet.
-/// But order of portions does not matter, and this is a performance gain.
 /// </summary>
 public class CrossoverRunner
 {
@@ -42,20 +39,18 @@ public class CrossoverRunner
     private bool m_addToLeftChild;
 
 
-    public CrossoverRunner(Tuple<Day, Day> parents)
+    public CrossoverRunner(Tuple<Day, Day> parents, Algorithm alg)
     {
         m_parents = parents;
-        m_children = new(new(), new());
+        m_children = new(new(alg), new(alg));
 
         m_massSum = 0;
 
         m_cutoffMasses = GetCutoffMasses(N);
 
-        m_parentPortions = new(m_parents.Item1.portions);
-        foreach (Portion portion in parents.Item2.portions)
-        {
-            m_parentPortions.Add(portion);
-        }
+        m_parentPortions = new();
+        m_parentPortions.AddRange(parents.Item1.portions);
+        m_parentPortions.AddRange(parents.Item2.portions);
 
         m_addToLeftChild = true;
     }
@@ -156,6 +151,11 @@ public class CrossoverRunner
             }
         }
 
+
+        if (m_children.Item2.Mass == 0)
+            Logger.Error("Mass was 0");
+
+
         return m_children;
     }
 
@@ -174,10 +174,9 @@ public class CrossoverRunner
     /// 
     /// </summary>
     /// <param name="portion">The portion to check if it needs to be split.</param>
-    /// <param name="cutoffMass">The cutoff mass to handle crossovers for.</param>
     private void HandleAllCrossoversWithinPortion(Portion portion)
     {
-        // If the new portion has not surpassed the next cutoff point (or there is no next cutoff point), add the portion to the child to be added to.
+        // If the sub-portion has not surpassed the next cutoff point (or there is no next cutoff point), add the portion to the child to be added to.
         if (m_cutoffMasses.Count <= 0 || m_massSum + portion.Mass < m_cutoffMasses[0])
         {
             AddPortionToChild(portion);
@@ -190,7 +189,7 @@ public class CrossoverRunner
         Portion rightSub = HandleSplitPortion(portion, exactCrossoverPt);
         
         // Add the left subportion's mass to the mass sum, as it was added to the current child being added to.
-        m_massSum += portion.Mass - rightSub.Mass;
+        m_massSum += exactCrossoverPt;
 
         // Remove the current cutoff mass; it has been handled.
         m_cutoffMasses.RemoveAt(0);

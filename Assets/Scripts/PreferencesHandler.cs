@@ -27,19 +27,8 @@ public class PreferencesHandler : MonoBehaviour
 
     private void Awake()
     {
-        //
-        // Add UI element event listeners for all input fields (buttons are done in Unity editor).
-        //
-        m_weightGoalDropdown.onValueChanged.AddListener((int value) => OnWeightGoalChanged(value));
-
-        // When the user finishes (whether it be enter, or mouse click out)
-        // onEndEdit unifies onSubmit and onDeselect.
-        m_weightInputField.onEndEdit.AddListener((string value) => OnWeightInputChanged(value));
-        m_heightInputField.onEndEdit.AddListener((string value) => OnHeightInputChanged(value));
-
         // For each setting UI element, fill in the user's current settings.
         UpdateDietPreferenceButtons();
-        UpdateBodyPreferenceButtons();
     }
 
 
@@ -87,52 +76,6 @@ public class PreferencesHandler : MonoBehaviour
     public void OnToggleLactosePreference()
     {
         OnToggleFoodPreference(ref Preferences.Instance.eatsLactose);
-    }
-
-
-    public void UpdateBodyPreferenceButtons()
-    {
-        Preferences p = Preferences.Instance;
-
-        m_weightGoalDropdown.value = (int)p.weightGoal;
-        m_weightInputField.text = $"{p.weightInKG}";
-        m_heightInputField.text = $"{p.heightInCM}";
-        m_assignedSexText.text = $"Assigned Sex: {p.assignedSex}";
-    }
-
-
-    private void OnBodyPreferenceChanged()
-    {
-        UpdateBodyPreferenceButtons();
-        Saving.SavePreferences();
-    }
-
-
-    private void OnWeightGoalChanged(int value)
-    {
-        Preferences.Instance.weightGoal = (EWeightGoal)value;
-        OnBodyPreferenceChanged();
-    }
-
-
-    private void OnWeightInputChanged(string value)
-    {
-        Preferences.Instance.weightInKG = float.Parse(value);
-        Saving.SavePreferences();
-    }
-
-
-    private void OnHeightInputChanged(string value)
-    {
-        Preferences.Instance.heightInCM = float.Parse(value);
-        Saving.SavePreferences();
-    }
-
-
-    public void OnCycleAssignedSex()
-    {
-        Preferences.Instance.assignedSex = (EAssignedSex)(1 - (int)Preferences.Instance.assignedSex);
-        OnBodyPreferenceChanged();
     }
 
 

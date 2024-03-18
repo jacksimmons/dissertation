@@ -17,13 +17,11 @@ public class Test_Food : AlgSFGA
 
     public Test_Food() : base()
     {
-        Instance = this;
+        m_minConstraints = new Constraint[Nutrient.Count];
+        m_convConstraints = new Constraint[Nutrient.Count];
+        m_rangeConstraints = new Constraint[Nutrient.Count];
 
-        m_minConstraints = new Constraint[Nutrients.Count];
-        m_convConstraints = new Constraint[Nutrients.Count];
-        m_rangeConstraints = new Constraint[Nutrients.Count];
-
-        for (int i = 0; i < Nutrients.Count; i++)
+        for (int i = 0; i < Nutrient.Count; i++)
         {
             m_minConstraints[i] = new MinimiseConstraint(10_000);
             m_convConstraints[i] = new ConvergeConstraint(10_000, 0.001f, 10_000);
@@ -36,29 +34,29 @@ public class Test_Food : AlgSFGA
     public void FoodErrorTest()
     {
         // Assertation to ensure the next test works
-        Assert.IsTrue(Nutrients.Count < int.MaxValue);
+        Assert.IsTrue(Nutrient.Count < int.MaxValue);
 
         // Ensure GetProximateUnit throws an exception when given an out-of-range input.
         // This error is impossible to achieve unless casting an int to a ProximateType.
         Assert.Throws(
             typeof(ArgumentOutOfRangeException),
-            new(() => Nutrients.GetUnit((Nutrient)int.MaxValue)));
+            new(() => Nutrient.GetUnit((ENutrient)int.MaxValue)));
     }
 
 
     [Test]
     public void FitnessTest()
     {
-        foreach (var kvp in Population)
+        foreach (var kvp in m_population.DayFitnesses)
         {
             float fitness = kvp.Value;
 
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
 
-            for (int i = 0; i < Nutrients.Count; i++)
+            for (int i = 0; i < Nutrient.Count; i++)
             {
-                float proxFitness = Constraints[i].GetFitness(kvp.Key.GetNutrientAmount((Nutrient)i));
+                float proxFitness = Constraints[i].GetFitness(kvp.Key.GetNutrientAmount((ENutrient)i));
                 // Fitness for each proximate can only be positive or 0.
                 Assert.IsTrue(proxFitness >= 0);
             }
@@ -73,15 +71,16 @@ public class Test_Food : AlgSFGA
     public void ParetoComparisonTest()
     {
         // Create a best Day (this will dominate any Day object)
-        Day bestDay = new();
-        float[] bestNutrients = new float[Nutrients.Count];
-        bestDay.AddPortion(new(new("", "", "", "", bestNutrients), 100));
+        Day bestDay = new(this);
+        float[] bestNutrients = new float[Nutrient.Count];
+
+        bestDay.AddPortion(new Portion(new Food(new FoodData())));
 
         // Create the worst Day (will be dominated by any Day object which doesn't
         // have a fitness of PositiveInfinity).
-        Day worstDay = new();
-        float[] worstNutrients = new float[Nutrients.Count];
-        worstDay.AddPortion(new(new("", "", "", "", worstNutrients), 100));
+        Day worstDay = new(this);
+        float[] worstNutrients = new float[Nutrient.Count];
+        worstDay.AddPortion(new(new(new())));
 
 
         List<Constraint[]> constraintsLists = new() { m_minConstraints, m_convConstraints, m_rangeConstraints };
@@ -98,24 +97,24 @@ public class Test_Food : AlgSFGA
     {
         // Set the nutrients attribs for both worst and best days (bestNutrients and worstNutrients are
         // references to these attribs)
-        for (int i = 0; i < Nutrients.Count; i++)
+        for (int i = 0; i < Nutrient.Count; i++)
         {
             bestNutrients[i] = constraints[i].BestValue;
             worstNutrients[i] = constraints[i].WorstValue;
         }
 
         ReadOnlyCollection<Constraint> roConstraints = new(constraints);
-        foreach (var kvp in Population)
+        foreach (var kvp in m_population.DayFitnesses)
         {
             // Test that the best day is always at least as good as any randomly selected day.
-            Assert.IsFalse(Pareto.DominatesOrMND(Day.Compare(bestDay, kvp.Key, roConstraints)));
+            Assert.IsFalse(Pareto.DominatesOrMND(bestDay.CompareTo(kvp.Key, roConstraints)));
 
             // Test that the worst day is always at least as bad as any randomly selected day.
-            Assert.IsFalse(Pareto.DominatedOrMND(Day.Compare(worstDay, kvp.Key, roConstraints)));
+            Assert.IsFalse(Pareto.DominatedOrMND(worstDay.CompareTo(kvp.Key, roConstraints)));
 
             // Test that the best day STRICTLY dominates the worst day
-            Assert.IsTrue(Day.Compare(bestDay, worstDay) == ParetoComparison.StrictlyDominates);
-            Assert.IsTrue(Day.Compare(worstDay, bestDay) == ParetoComparison.StrictlyDominated);
+            Assert.IsTrue(bestDay.CompareTo(worstDay) == ParetoComparison.StrictlyDominates);
+            Assert.IsTrue(worstDay.CompareTo(bestDay) == ParetoComparison.StrictlyDominated);
         }
     }
 }

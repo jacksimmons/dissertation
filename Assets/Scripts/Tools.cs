@@ -2,9 +2,11 @@
 
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 #if UNITY_64
 using UnityEngine;
+using Random = System.Random;
 #endif
 
 
@@ -39,8 +41,7 @@ public static class Logger
                 Debug.LogWarning(message);
                 break;
             case Severity.Error:
-                Debug.LogError(message);
-                break;
+                throw new Exception($"{memName} ERROR: {message}");
         }
 #else
         switch (severity)
@@ -56,6 +57,10 @@ public static class Logger
         }
 #endif
     }
+
+
+    public static void Warn(object message) => Log(message, Severity.Warning);
+    public static void Error(object message) => Log(message, Severity.Error);
 }
 
 
@@ -146,6 +151,7 @@ public static class MathfTools
 {
     // For grams stored as a float, gives precision of up to 1mg.
     public const float EPSILON = 1e-3f;
+    private static readonly Random m_rand = new();
 
 
     /// <summary>
@@ -156,6 +162,47 @@ public static class MathfTools
     {
         if (MathF.Abs(x - y) < EPSILON) return true;
         return false;
+    }
+
+
+    /// <summary>
+    /// if `value` < `min` => `min`
+    /// if `value` > `max` => `max`
+    /// else => `value`
+    /// </summary>
+    public static float MinMax(float min, float value, float max)
+    {
+        return MathF.Min(MathF.Max(min, value), max);
+    }
+
+
+    /// <summary>
+    /// Returns the first index of a probability array to be surpassed by a random 0-EPSILON value when summing over all
+    /// elements in the array.
+    /// </summary>
+    public static int GetFirstSurpassedProbability(float[] probabilities)
+    {
+        int length = probabilities.Length;
+        if (length < 1)
+            Logger.Error("Invalid probability array had a length of < 1");
+
+        // Clamp the probability to the range [EPSILON, 1 - EPSILON]
+        float probability = MathF.Max(MathF.Min((float)m_rand.NextDouble(), 1 - EPSILON), EPSILON);
+
+        // Calculate which vertex was selected, through
+        // a sum-of-probabilities check.
+        float sum = 0;
+        int index = -1;
+        for (int i = 0; i < length; i++)
+        {
+            sum += probabilities[i];
+            if (sum > probability)
+            {
+                index = i;
+                break;
+            }
+        }
+        return index;
     }
 }
 
