@@ -153,9 +153,9 @@ public class Preferences : ICached
         CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max,  ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
         CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
 
-        SetConstraint(ENutrient.Protein,  typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, goal: proteinData.Goal);
-        SetConstraint(ENutrient.Fat,      typeof(ConvergeConstraint), max: fatData.Max,     weight: 2, goal: fatData.Goal);
-        SetConstraint(ENutrient.Carbs,    typeof(ConvergeConstraint), max: carbsData.Max,   weight: 2, goal: carbsData.Goal);
+        SetConstraint(ENutrient.Protein, typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, goal: proteinData.Goal);
+        SetConstraint(ENutrient.Fat,     typeof(ConvergeConstraint), max: fatData.Max,     weight: 2, goal: fatData.Goal);
+        SetConstraint(ENutrient.Carbs,   typeof(ConvergeConstraint), max: carbsData.Max,   weight: 2, goal: carbsData.Goal);
 
         // Default weight: 1 (Beneficial)
         // For these, set the goal to be the recommended amount from the NHS.

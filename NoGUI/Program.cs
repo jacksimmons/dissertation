@@ -37,7 +37,7 @@ namespace NoGUI
 
             Stopwatch sw = Stopwatch.StartNew();
             //Experiment.RunPreferenceExperiment(ref Preferences.Instance.maxPortionMass, 500, 5000);
-            RunAlgorithm(true);
+            RunAlgorithmSet();
             sw.Stop();
 
             Console.WriteLine($"Program execution time: {(float)sw.ElapsedMilliseconds / 1000}s.");
@@ -148,6 +148,7 @@ namespace NoGUI
             float avgBestFitness = bestFitnessSum / NUM_ALGORITHMS;
             Console.WriteLine($"Algorithm set: Average best fitness: {avgBestFitness}");
             Console.WriteLine($"Algorithm set: Overall best fitness: {bestAlg.BestFitness}");
+            Console.WriteLine($"Algorithm set: Overall best manhattan: {bestAlg.BestDay.GetManhattanDistanceToPerfect()}");
 
             if (verbose)
             {

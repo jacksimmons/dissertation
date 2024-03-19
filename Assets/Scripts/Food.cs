@@ -270,6 +270,18 @@ public class Day
     }
 
 
+    public float GetManhattanDistanceToPerfect()
+    {
+        float manhattan = 0;
+        for (int i = 0; i < Nutrient.Count; i++)
+        {
+            float amount = m_nutrientAmounts[i];
+            manhattan += MathF.Abs(amount - m_algorithm.Constraints[i].BestValue);
+        }
+        return manhattan;
+    }
+
+
     public float GetDistance(Day day)
     {
         // Square root of all differences squared = Pythagorean Distance
