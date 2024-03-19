@@ -172,7 +172,7 @@ public static class CalorieMassConverter
         float ratioCalories = 4 * proteinG + 9 * fatG + 4 * carbsG;
 
         // Div by zero case - assign recommended macro ratios from the given kcal.
-        if (MathfTools.Approx(ratioCalories, 0))
+        if (MathTools.Approx(ratioCalories, 0))
         {
             float proteinCalories = 0.2f * calories;
             float fatCalories = 0.35f * calories;
@@ -196,7 +196,7 @@ public static class CalorieMassConverter
 }
 
 
-public static class MathfTools
+public static class MathTools
 {
     // For grams stored as a float, gives precision of up to 1mg.
     public const float EPSILON = 1e-3f;
@@ -211,6 +211,16 @@ public static class MathfTools
     {
         if (MathF.Abs(x - y) < EPSILON) return true;
         return false;
+    }
+
+
+    /// <summary>
+    /// Calculates whether x is strictly less than y, ensuring that x and y are not
+    /// even approximately equal.
+    /// </summary>
+    public static bool ApproxLessThan(float x, float y)
+    {
+        return x < y && !Approx(x, y);
     }
 
 

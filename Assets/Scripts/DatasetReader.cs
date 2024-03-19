@@ -51,7 +51,7 @@ public class FoodData
             for (int i = 0; i < Nutrient.Count; i++)
             {
                 // If not initialised in this nutrients, take it from the other nutrients.
-                if (MathfTools.Approx(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
+                if (MathTools.Approx(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
             }
             return this;
         }

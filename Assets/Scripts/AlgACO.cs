@@ -179,7 +179,7 @@ public class AlgACO : Algorithm
         public void RunAnt(int recursion = 0)
         {
             float[] probabilities = GetAllVertexProbabilities(LastIndex);
-            int nextVertex = MathfTools.GetFirstSurpassedProbability(probabilities);
+            int nextVertex = MathTools.GetFirstSurpassedProbability(probabilities);
 
             // If the next vertex was selected, then add the
             // new portion and continue.
@@ -251,7 +251,7 @@ public class AlgACO : Algorithm
             for (int j = 0; j < NUM_PORTIONS; j++)
             {
                 //J[j] == 0 implies the edge is invalid(visited, a self-edge, or Infinity fitness)
-                if (MathfTools.Approx(J[j], 0))
+                if (MathTools.Approx(J[j], 0))
                 {
                     probs[j] = 0;
                     continue;

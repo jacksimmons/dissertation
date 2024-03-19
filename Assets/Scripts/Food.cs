@@ -239,7 +239,11 @@ public class Day
             fitness += m_algorithm.Constraints[i].GetFitness(amount);
 
             // Quick exit for infinity fitness
-            if (fitness == float.PositiveInfinity) return fitness;
+            if (fitness == float.PositiveInfinity)
+            {
+                //Logger.Log($"{Nutrient.Values[i]} : {Preferences.Instance.constraints[i].Type} {((HardConstraint)m_algorithm.Constraints[i]).min} {amount} {((HardConstraint)m_algorithm.Constraints[i]).max} gave finf");
+                return fitness;
+            }
         }
 
         if (Preferences.Instance.addFitnessForMass)

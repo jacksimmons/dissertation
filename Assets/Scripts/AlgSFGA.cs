@@ -166,7 +166,7 @@ public class AlgSFGA : AlgGA
         }
 
         // Select a rank with weighted random. This rank will correspond to an element in both population and `included`.
-        int selectedRank = MathfTools.GetFirstSurpassedProbability(rankProbs);
+        int selectedRank = MathTools.GetFirstSurpassedProbability(rankProbs);
         return sortedIncluded[selectedRank];
     }
 

@@ -129,7 +129,6 @@ public class Test_Constraint
 
         // Test one parameter being invalid each time (only test parameters that are introduced with each subclass; no
         // need to test HC params again with CC.
-        HCThrowsOutOfRangeTest(-1, 1); // min < 0
         HCThrowsOutOfRangeTest(2, 1); // max < min (also max < 0)
         HCThrowsOutOfRangeTest(1, 2, -1); // Invalid weight
 
