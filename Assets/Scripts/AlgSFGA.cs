@@ -7,26 +7,6 @@ public class AlgSFGA : AlgGA
 {
     private Func<List<Day>, bool, Day> m_selectionMethod;
 
-    // Increase selection pressure as fitness decreases
-    private float SP
-    {
-        get
-        {
-            //if (BestFitness >= Preferences.MAX_FITNESS)
-            //    return 1;
-            //if (BestFitness <= Preferences.CRITICAL_FITNESS)
-            //    return 2;
-
-            //// Graph 1 + (1/M)(M-x)
-            //float p = 1f + (1f / Preferences.MAX_FITNESS) * (Preferences.MAX_FITNESS - BestFitness);
-            //return p;
-
-            // 500k iterations => Max pressure
-            return 1.5f;
-            return 2 - (1/IterNum);
-        }
-    }
-
 
     public override void Init()
     {
@@ -162,12 +142,18 @@ public class AlgSFGA : AlgGA
         // Get probability of each rank getting selected
         for (int i = 0; i < rankProbs.Length; i++)
         {
-            rankProbs[i] = (1.0f / n) * (SP - (2 * SP - 2) * (i - 1.0f) / (n - 1.0f));
+            rankProbs[i] = (1.0f / n) * (Prefs.selectionPressure - (2 * Prefs.selectionPressure - 2) * (i - 1.0f) / (n - 1.0f));
         }
 
         // Select a rank with weighted random. This rank will correspond to an element in both population and `included`.
         int selectedRank = MathTools.GetFirstSurpassedProbability(rankProbs);
         return sortedIncluded[selectedRank];
+    }
+
+
+    public Day RandomSelection(List<Day> included, bool selectBest)
+    {
+        return included[Rand.Next(included.Count)];
     }
 
 

@@ -22,8 +22,8 @@ public enum ENutrient
 
     // Inorganics
     Calcium,
-    Iron,
     Iodine,
+    Iron,
 
     // Vitamins
     VitA,

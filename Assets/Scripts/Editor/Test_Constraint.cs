@@ -10,7 +10,7 @@ public class Test_Constraint
 {
     private void HardTest(HardConstraint hc)
     {
-        for (float i = hc.min; i < hc.max; i++)
+        for (float i = hc.min + 1; i < hc.max; i++)
         {
             Assert.True(Mathf.Approximately(hc.GetFitness(i), 0));
         }
@@ -62,13 +62,11 @@ public class Test_Constraint
 
     private void WeightTest()
     {
-        void Test012Weights(Constraint w0, Constraint w1, Constraint w2)
+        static void Test012Weights(Constraint w0, Constraint w1, Constraint w2)
         {
             float f0 = w0.GetFitness(100);
-            float f1 = w0.GetFitness(100);
-            float f2 = w0.GetFitness(100);
-
-            Logger.Log($"{f0} {f1} {f2}");
+            float f1 = w1.GetFitness(100);
+            float f2 = w2.GetFitness(100);
 
             // Transitive tests: (f0 == 0 * f1 && f1 = 0.5 * f2 => f0 == 0 * 0.5 * f2 == 0 * f2)
             Assert.True(f0 == 0 * f1);

@@ -72,4 +72,13 @@ public class AlgorithmBehaviour : MonoBehaviour
         float ms = m_core.RunIterations(numIters);
         UpdateAlgorithmUI(ms, numIters);
     }
+
+
+    /// <summary>
+    /// Plots a graph of Iteration against Best Fitness for the given iteration.
+    /// </summary>
+    public void PlotGraph()
+    {
+        PlotTools.PlotGraph(m_core.Plot.ToArray(), Algorithm.IterNum);
+    }
 }

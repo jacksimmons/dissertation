@@ -1,16 +1,10 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class PreferencesHandler : MonoBehaviour
+public class PreferencesHandler : SetupBehaviour
 {
-    [SerializeField]
-    private TextMeshProUGUI m_landMeatPrefBtnTxt;
-    [SerializeField]
-    private TextMeshProUGUI m_seafoodPrefBtnTxt;
-    [SerializeField]
-    private TextMeshProUGUI m_animalProductsPrefBtnTxt;
-    [SerializeField]
-    private TextMeshProUGUI m_lactosePrefBtnTxt;
     [SerializeField]
     private TMP_Dropdown m_weightGoalDropdown;
     [SerializeField]
@@ -19,16 +13,112 @@ public class PreferencesHandler : MonoBehaviour
     private TMP_InputField m_heightInputField;
     [SerializeField]
     private TextMeshProUGUI m_assignedSexText;
+    [SerializeField]
+    private TextMeshProUGUI m_isPregnantText;
+    [SerializeField]
+    private TextMeshProUGUI m_needsVitDText;
+
+    [SerializeField]
+    private TextMeshProUGUI m_landMeatPrefBtnTxt;
+    [SerializeField]
+    private TextMeshProUGUI m_seafoodPrefBtnTxt;
+    [SerializeField]
+    private TextMeshProUGUI m_animalProductsPrefBtnTxt;
+    [SerializeField]
+    private TextMeshProUGUI m_lactosePrefBtnTxt;
 
     [SerializeField]
     private GameObject[] m_preferenceCategoryPanels;
     private int m_currentPanelIndex = 0;
 
+    private List<Food> m_allFoods = new();
+    [SerializeField]
+    private GameObject m_enabledFoodsContent;
+    [SerializeField]
+    private GameObject m_btnPropertyTemplate;
+    [SerializeField]
+    private TMP_Text m_enabledFoodsCountTxt;
+
+    [SerializeField]
+    private GameObject m_missingNutrientsContent;
+
 
     private void Awake()
     {
-        // For each setting UI element, fill in the user's current settings.
-        UpdateDietPreferenceButtons();
+        // For each UI element, display existing user preferences.
+        SetDietPreferenceUI();
+        SetBodyPreferenceUI();
+        SetMissingDataUI();
+
+        m_weightInputField.onEndEdit.AddListener((string val) => OnFloatInputChanged(ref Preferences.Instance.weightKg, val));
+        m_heightInputField.onEndEdit.AddListener((string val) => OnFloatInputChanged(ref Preferences.Instance.heightCm, val));
+
+        SetEnabledFoodsUI();
+    }
+
+
+    /// <summary>
+    /// Handles navigation between menus, specifically for the Preferences menu.
+    /// </summary>
+    /// <param name="right">`true` if navigating right, `false` if navigating left.</param>
+    public void OnPreferencesNavBtnPressed(bool right)
+    {
+        UITools.OnNavBtnPressed(right, m_preferenceCategoryPanels, ref m_currentPanelIndex);
+    }
+
+
+    /// <summary>
+    /// Set the labels corresponding to body preferences to the values saved in preferences.
+    /// </summary>
+    private void SetBodyPreferenceUI()
+    {
+        m_assignedSexText.text = "Assigned sex: " + (Preferences.Instance.isMale ? "Male" : "Female");
+        m_isPregnantText.text = "Pregnancy: " + (Preferences.Instance.isPregnant ? "True" : "False");
+        m_needsVitDText.text = "Vit D: " + (Preferences.Instance.needsVitD ? "True" : "False");
+        m_weightInputField.text = Preferences.Instance.weightKg.ToString();
+        m_heightInputField.text = Preferences.Instance.heightCm.ToString();
+    }
+
+
+    //
+    // Body button listener methods
+    //
+    public void OnAssignedSexBtnPressed()
+    {
+        OnBoolInputChanged(ref Preferences.Instance.isMale);
+
+        // Ensure conflicting parameters are set to correct values
+        if (Preferences.Instance.isMale) OnBoolInputChanged(ref Preferences.Instance.isPregnant, false);
+
+        SetBodyPreferenceUI();
+    }
+
+
+    public void OnIsPregnantBtnPressed()
+    {
+        // Changing this parameter causes conflicts; don't change
+        if (Preferences.Instance.isMale) return;
+
+        OnBoolInputChanged(ref Preferences.Instance.isPregnant);
+
+        SetBodyPreferenceUI();
+    }
+
+
+    public void OnToggleVitDBtnPressed()
+    {
+        OnBoolInputChanged(ref Preferences.Instance.needsVitD);
+        SetBodyPreferenceUI();
+    }
+
+
+    /// <summary>
+    /// Calculates algorithm constraints based on your preferences (male/female, weight, height, etc.)
+    /// </summary>
+    public void CalculateConstraints()
+    {
+        Preferences.Instance.CalculateDefaultConstraints();
+        Saving.SavePreferences();
     }
 
 
@@ -36,7 +126,7 @@ public class PreferencesHandler : MonoBehaviour
     /// Update the button labels from the Saved preferences so that the enabled
     /// settings are labelled "x" and the disabled settings "".
     /// </summary>
-    public void UpdateDietPreferenceButtons()
+    private void SetDietPreferenceUI()
     {
         Preferences p = Preferences.Instance;
 
@@ -47,14 +137,20 @@ public class PreferencesHandler : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Method for handling a diet preference change.
+    /// </summary>
+    /// <param name="pref">A reference to the diet preference to flip.</param>
     private void OnToggleFoodPreference(ref bool pref)
     {
-        pref = !pref;
-        UpdateDietPreferenceButtons();
-        Saving.SavePreferences();
+        OnBoolInputChanged(ref pref);
+        SetDietPreferenceUI();
     }
 
 
+    //
+    // Diet button listener methods
+    //
     public void OnToggleMeatPreference()
     {
         OnToggleFoodPreference(ref Preferences.Instance.eatsLandMeat);
@@ -79,8 +175,77 @@ public class PreferencesHandler : MonoBehaviour
     }
 
 
-    public void OnPreferencesNavBtnPressed(bool right)
+    public void SetEnabledFoodsUI()
     {
-        UITools.OnNavBtnPressed(right, m_preferenceCategoryPanels, ref m_currentPanelIndex);
+        // Clear all existing buttons
+        DatasetReader dr = new(Preferences.Instance);
+        m_allFoods = dr.ProcessFoods();
+        m_enabledFoodsCountTxt.text = $"Enabled foods: {m_allFoods.Count}/{DatasetReader.FOOD_ROWS}";
+
+        // Remove any existing buttons
+        UITools.DestroyAllChildren(m_enabledFoodsContent.transform);
+
+        // Readd buttons
+        for (int _i = 0; _i < m_allFoods.Count; _i++)
+        {
+            GameObject go;
+            Food food;
+
+            food = m_allFoods[_i];
+            go = Instantiate(m_btnPropertyTemplate, m_enabledFoodsContent.transform);
+
+            TMP_Text tmpText = go.GetComponentInChildren<TMP_Text>(); // Depth-first search, so it will find OnOffBtn.TMP_Text
+            tmpText.text = Preferences.Instance.bannedFoodKeys.Contains(food.CompositeKey) ? "" : "x";
+
+            go.GetComponentInChildren<Button>().onClick.AddListener(() => OnFoodEnableToggle(food, tmpText));
+
+            go.transform.Find("Text (TMP)").GetComponent<TMP_Text>().text = food.Name;
+        }
+    }
+
+
+    private void OnFoodEnableToggle(Food food, TMP_Text tmpText)
+    {
+        // If food disabled, enable it.
+        if (Preferences.Instance.bannedFoodKeys.Contains(food.CompositeKey))
+        {
+            Preferences.Instance.bannedFoodKeys.Remove(food.CompositeKey);
+            tmpText.text = "x";
+        }
+        else
+        {
+            Preferences.Instance.bannedFoodKeys.Add(food.CompositeKey);
+            tmpText.text = "";
+        }
+        Saving.SavePreferences();
+    }
+
+
+    private void SetMissingDataUI()
+    {
+        // Remove any existing buttons
+        UITools.DestroyAllChildren(m_missingNutrientsContent.transform);
+
+        // Readd all buttons
+        for (int _i = 0; _i < Nutrient.Count; _i++)
+        {
+            ENutrient nutrient = (ENutrient)_i;
+
+            GameObject go = Instantiate(m_btnPropertyTemplate, m_missingNutrientsContent.transform);
+
+            TMP_Text tmpText = go.GetComponentInChildren<TMP_Text>(); // GetComponentInChildren is DFS
+            tmpText.text = Preferences.Instance.acceptMissingNutrientValue[_i] ? "x" : "";
+
+            go.GetComponentInChildren<Button>().onClick.AddListener(() => OnMissingNutrientToggle(nutrient, tmpText));
+
+            go.transform.Find("Text (TMP)").GetComponent<TMP_Text>().text = nutrient.ToString();
+        }
+    }
+
+
+    private void OnMissingNutrientToggle(ENutrient nutrient, TMP_Text tmpText)
+    {
+        OnBoolInputChanged(ref Preferences.Instance.acceptMissingNutrientValue[(int)nutrient]);
+        tmpText.text = Preferences.Instance.acceptMissingNutrientValue[(int)nutrient] ? "x" : "";
     }
 }

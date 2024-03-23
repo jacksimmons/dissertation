@@ -126,7 +126,7 @@ public class AlgACO : Algorithm
                 m_colony.m_population.Remove(m_path);
 
             m_path = new(m_colony);
-            m_pathIndices = new(NUM_PORTIONS);
+            m_pathIndices = new(Prefs.colonyPortions);
 
             if (m_partOfPopulation)
                 m_colony.m_population.Add(m_path);
@@ -190,7 +190,7 @@ public class AlgACO : Algorithm
             {
                 AddIndex(nextVertex);
 
-                if (recursion + 1 < RECURSE_LIMIT)
+                if (recursion + 1 < Prefs.colonyPortions)
                     RunAnt(recursion + 1);
             }
             // If the next vertex wasn't selected, all remaining
@@ -225,10 +225,10 @@ public class AlgACO : Algorithm
         /// by index.</returns>
         public float[] GetAllVertexProbabilities(int prev)
         {
-            float[] probs = new float[NUM_PORTIONS];
+            float[] probs = new float[Prefs.colonyPortions];
 
-            float[] J = new float[NUM_PORTIONS];
-            for (int h = 0; h < NUM_PORTIONS; h++)
+            float[] J = new float[Prefs.colonyPortions];
+            for (int h = 0; h < Prefs.colonyPortions; h++)
             {
                 // Quick-exit default assignment
                 J[h] = 0;
@@ -248,7 +248,7 @@ public class AlgACO : Algorithm
             }
 
             float denom = J.Sum();
-            for (int j = 0; j < NUM_PORTIONS; j++)
+            for (int j = 0; j < Prefs.colonyPortions; j++)
             {
                 //J[j] == 0 implies the edge is invalid(visited, a self-edge, or Infinity fitness)
                 if (MathTools.Approx(J[j], 0))
@@ -262,35 +262,21 @@ public class AlgACO : Algorithm
         }
     }
 
-    // Needs to be greater than the number of portions, otherwise restricts number of portions in each path
-    private const int NUM_PORTIONS = 10;
-    private const int RECURSE_LIMIT = NUM_PORTIONS;
-
-    // Number of iterations before replacing the worst food.
-    // High value => Deeper search (more iterations for evaluation)
-    // Low value => Wider search (more foods)
-    private const int STAGNATION_ITERS = 1000;
-    private const bool USE_THREADS = false; // Saves time on ~100 ants, loses time on 10 ants
-
-    private float[,] m_fitnesses = new float[NUM_PORTIONS, NUM_PORTIONS];
-    private float[,] m_pheromone = new float[NUM_PORTIONS, NUM_PORTIONS];
-    private Portion[] m_vertices = new Portion[NUM_PORTIONS];
-    private Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
+    private readonly float[,] m_fitnesses = new float[Prefs.colonyPortions, Prefs.colonyPortions];
+    private readonly float[,] m_pheromone = new float[Prefs.colonyPortions, Prefs.colonyPortions];
+    private readonly Portion[] m_vertices = new Portion[Prefs.colonyPortions];
+    private readonly Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
 
     //private bool[] m_exploredFoods;
 
 
     public override void Init()
     {
-        if (RECURSE_LIMIT < NUM_PORTIONS)
-            Logger.Log("Recursion limit is less than the number of portions!", Severity.Error);
-
-
         //m_exploredFoods = new bool[Foods.Count];
 
 
         // Create vertices
-        for (int i = 0; i < NUM_PORTIONS; i++)
+        for (int i = 0; i < Prefs.colonyPortions; i++)
         {
             Portion randP = RandomPortion;
             m_vertices[i] = randP;
@@ -309,7 +295,7 @@ public class AlgACO : Algorithm
         for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
             // Ants are split roughly equally between the portions
-            Ant ant = new(this, i % NUM_PORTIONS, true);
+            Ant ant = new(this, i % Prefs.colonyPortions, true);
             m_ants[i] = ant;
         }
     }
@@ -337,13 +323,13 @@ public class AlgACO : Algorithm
 
     /// <summary>
     /// Perform an action on every element in the matrix.
-    /// Matrix must have standard dimensions (NUM_PORTIONS X NUM_PORTIONS)
+    /// Matrix must have standard dimensions (Prefs.colonyPortions X Prefs.colonyPortions)
     /// </summary>
     private static void ActOnMatrix(float[,] mat, Action<int, int, float> act)
     {
-        for (int i = 0; i < NUM_PORTIONS; i++)
+        for (int i = 0; i < Prefs.colonyPortions; i++)
         {
-            for (int j = 0; j < NUM_PORTIONS; j++)
+            for (int j = 0; j < Prefs.colonyPortions; j++)
             {
                 act(i, j, mat[i, j]);
             }
@@ -388,7 +374,7 @@ public class AlgACO : Algorithm
     protected override void NextIteration()
     {
         // Reset the simulation
-        if (IterNum % STAGNATION_ITERS == 0)
+        if (IterNum % Prefs.colonyStagnationIters == 0)
         {
             ReplaceWorstFood();
         }
@@ -401,7 +387,7 @@ public class AlgACO : Algorithm
         // Generate ant solutions
         // https://stackoverflow.com/questions/6529659/wait-for-queueuserworkitem-to-complete
 
-        if (USE_THREADS)
+        if (Prefs.acoUseThreads)
         {
             ManualResetEvent completionEvent = new(false);
             int threadsLeft = Preferences.Instance.populationSize;
@@ -451,10 +437,10 @@ public class AlgACO : Algorithm
     /// </summary>
     private void ReplaceWorstFood()
     {
-        float[] pheroSumIntoEachVert = new float[NUM_PORTIONS];
-        for (int i = 0; i < NUM_PORTIONS; i++)
+        float[] pheroSumIntoEachVert = new float[Prefs.colonyPortions];
+        for (int i = 0; i < Prefs.colonyPortions; i++)
         {
-            for (int j = 0; j < NUM_PORTIONS; j++)
+            for (int j = 0; j < Prefs.colonyPortions; j++)
             {
                 pheroSumIntoEachVert[j] += m_pheromone[i, j];
             }
@@ -466,7 +452,7 @@ public class AlgACO : Algorithm
         m_vertices[worstIndex] = RandomPortion;
 
         // Calculate and assign new fitnesses
-        for (int i = 0; i < NUM_PORTIONS; i++)
+        for (int i = 0; i < Prefs.colonyPortions; i++)
         {
             m_fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
             m_fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);

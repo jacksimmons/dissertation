@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class AlgorithmSetup : MonoBehaviour
+public class AlgorithmSetup : SetupBehaviour
 {
     // ENutrient fields (each object's index represents its ENutrient enum value)
     [SerializeField]
@@ -47,7 +47,7 @@ public class AlgorithmSetup : MonoBehaviour
         // Set up listeners for all UI elements in the menu.
         //
 
-        // Iteration variable should be used sparingly in listener declarations! Hence the variable name.
+        // Iteration variable should be not be used in AddListener calls, hence the variable name.
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
         {
             GameObject go;
@@ -70,6 +70,9 @@ public class AlgorithmSetup : MonoBehaviour
 
             TMP_InputField maxInput = go.transform.Find("MaxInput").GetComponent<TMP_InputField>();
             maxInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Max, value));
+
+            TMP_InputField weightInput = go.transform.Find("WeightInput").GetComponent<TMP_InputField>();
+            weightInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Weight, value));
 
             Button constraintTypeBtn = go.transform.Find("ConstraintTypeBtn").GetComponent<Button>();
             constraintTypeBtn.onClick.AddListener(() => OnCycleConstraintType(nutrient, constraintTypeBtn));
@@ -98,30 +101,7 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// Parses user input, then stores it in the given preference reference.
-    /// </summary>
-    /// <param name="pref">Reference to the relevant preference (to update).</param>
-    /// <param name="value">The unparsed value. Guaranteed to contain a valid float, due to
-    /// Unity's input field sanitation. Hence no need for TryParse.</param>
-    private void OnFloatInputChanged(ref float pref, string value)
-    {
-        pref = float.Parse(value);
-        Saving.SavePreferences();
-    }
-
-
-    /// <summary>
-    /// OnFloatInputChanged, but for an integer preference and input field value.
-    /// </summary>
-    private void OnIntInputChanged(ref int pref, string value)
-    {
-        pref = int.Parse(value);
-        Saving.SavePreferences();
-    }
-
-
-    private void OnGoalChanged(ENutrient nutrient)
+    private static void OnGoalChanged(ENutrient nutrient)
     {
         switch (nutrient)
         {
@@ -136,7 +116,7 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void MacrosToCalories()
+    private static void MacrosToCalories()
     {
         CalorieMassConverter.MacrosToCalories(
             ref Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
@@ -147,7 +127,7 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void CaloriesToMacros()
+    private static void CaloriesToMacros()
     {
         CalorieMassConverter.CaloriesToMacros(
             Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
@@ -158,7 +138,7 @@ public class AlgorithmSetup : MonoBehaviour
     }
 
 
-    private void OnCycleConstraintType(ENutrient nutrient, Button btn)
+    private static void OnCycleConstraintType(ENutrient nutrient, Button btn)
     {
         // Get original type
         string type = Preferences.Instance.constraints[(int)nutrient].Type;
@@ -218,6 +198,7 @@ public class AlgorithmSetup : MonoBehaviour
             go.transform.Find("GoalInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Goal.ToString();
             go.transform.Find("MinInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Min.ToString();
             go.transform.Find("MaxInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Max.ToString();
+            go.transform.Find("WeightInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Weight.ToString();
 
             go.transform.Find("ConstraintTypeBtn").GetComponentInChildren<TMP_Text>().text = constraints[(int)nutrient].Type;
         }

@@ -1,8 +1,6 @@
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
 
 
 /// <summary>
@@ -63,33 +61,25 @@ public class Test_Algorithm
     }
 
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0059:Unnecessary assignment of a value", Justification = "False Positive")]
-    private bool PrefValueThrows<T>(ref T pref, T value)
+    private void AssertPrefValueThrows<T>(ref T pref, T value)
     {
-        bool throws = false;
         // Set pref value to provided value; store old pref value
         T temp = pref;
         pref = value;
 
-        try
-        {
-            NormalTest();
-        }
-        catch (Exception)
-        {
-            throws = true;
-        }
+        // NormalTest can throw both Exception and TargetInvocationException but
+        // just checking that any exception is thrown is sufficient.
+        Assert.That(NormalTest, Throws.Exception);
 
         // Reset old pref value and return
         pref = temp;
-        return throws;
     }
 
 
     private void BoundaryTest()
     {
-        Assert.True(PrefValueThrows(ref Preferences.Instance.populationSize, 1));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.populationSize, 2));
+        AssertPrefValueThrows(ref Preferences.Instance.populationSize, 1);
+        AssertPrefValueThrows(ref Preferences.Instance.populationSize, 2);
     }
 
 
@@ -100,14 +90,14 @@ public class Test_Algorithm
 
 
         // Try to provide invalid Preferences parameters.
-        Assert.True(PrefValueThrows(ref Preferences.Instance.acoAlpha, -1));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.acoBeta, -1));
+        AssertPrefValueThrows(ref Preferences.Instance.acoAlpha, -1);
+        AssertPrefValueThrows(ref Preferences.Instance.acoBeta, -1);
         Assert.Throws(typeof(Exception), () => Algorithm.Build(Type.GetType("Test_Algorithm")));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.minPortionMass, 0));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.maxPortionMass, Preferences.Instance.minPortionMass - 1));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.numStartingPortionsPerDay, 0));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.pheroEvapRate, -1));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.pheroImportance, -1));
-        Assert.True(PrefValueThrows(ref Preferences.Instance.populationSize, 0));
+        AssertPrefValueThrows(ref Preferences.Instance.minPortionMass, 0);
+        AssertPrefValueThrows(ref Preferences.Instance.maxPortionMass, Preferences.Instance.minPortionMass - 1);
+        AssertPrefValueThrows(ref Preferences.Instance.numStartingPortionsPerDay, 0);
+        AssertPrefValueThrows(ref Preferences.Instance.pheroEvapRate, -1);
+        AssertPrefValueThrows(ref Preferences.Instance.pheroImportance, -1);
+        AssertPrefValueThrows(ref Preferences.Instance.populationSize, 0);
     }
 }

@@ -86,7 +86,6 @@ public class Test_Food : AlgSFGA
         List<Constraint[]> constraintsLists = new() { m_minConstraints, m_convConstraints, m_rangeConstraints };
         for (int i = 0; i < constraintsLists.Count; i++)
         {
-            Logger.Log(i);
             WorstVsBestTest(constraintsLists[i], bestNutrients, worstNutrients, bestDay, worstDay);
         }
     }

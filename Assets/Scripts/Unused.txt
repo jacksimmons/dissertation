@@ -343,3 +343,67 @@
 
             return floats;
         }
+
+
+        
+    //public static void PlotGraph(Coordinates[] graph, string name)
+    //{
+    //    Plot plot = MakeLinearPlot(graph.Length, Preferences.MAX_FITNESS, graph);
+    //    plot.SavePng(FileTools.GetProjectDirectory() + $"{name}.png", 1920, 1080);
+    //}
+
+
+    //private static Plot MakeLinearPlot(int xMax, int yMax, Coordinates[] graph)
+    //{
+    //    Plot plot = InitPlot(graph);
+
+    //    plot.Axes.SetLimitsX(0, xMax);
+    //    plot.Axes.SetLimitsY(0, yMax);
+
+    //    return plot;
+    //}
+
+
+    ///// <summary>
+    ///// Adjust the "ticks" (axis jumps) so they match the log/log graph data.
+    ///// Reference: https://scottplot.net/cookbook/5.0/CustomizingTicks/LogScaleTicks/ (ScottPlot docs)
+    ///// </summary>
+    ///// <param name="plot">The plot to apply the custom ticks to.</param>
+    //private static Plot MakeLogPlot(int xMax, int yMax, Coordinates[] graph)
+    //{
+    //    Plot plot = InitPlot(graph);
+
+    //    // Log tick generator
+    //    ScottPlot.TickGenerators.LogMinorTickGenerator minorTickGen = new();
+
+    //    // Numeric tick generator using the log tick generator
+    //    ScottPlot.TickGenerators.NumericAutomatic tickGen = new()
+    //    {
+    //        MinorTickGenerator = minorTickGen,
+
+    //        // Tick formatter, sets label text for each tick
+    //        LabelFormatter = (double y) =>
+    //        {
+    //            return $"{Math.Pow(10, y):N0}";
+    //        },
+
+    //        // tell our major tick generator to only show major ticks that are whole integers
+    //        IntegerTicksOnly = true
+    //    };
+
+    //    // Apply tick generator to axes
+    //    plot.Axes.Left.TickGenerator = tickGen;
+    //    plot.Axes.Bottom.TickGenerator = tickGen;
+
+    //    // Show grid lines for minor ticks
+    //    var grid = plot.GetDefaultGrid();
+    //    grid.MajorLineStyle.Color = Colors.Black.WithOpacity(.15);
+    //    grid.MinorLineStyle.Color = Colors.Black.WithOpacity(.05);
+    //    grid.MinorLineStyle.Width = 1;
+
+    //    // Set axis limits
+    //    plot.Axes.SetLimitsX(0, Math.Log10(xMax));
+    //    plot.Axes.SetLimitsY(0, Math.Log10(yMax));
+
+    //    return plot;
+    //}

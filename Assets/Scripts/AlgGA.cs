@@ -6,23 +6,8 @@ using System.Linq;
 
 public abstract class AlgGA : Algorithm
 {
-    private const int MutationMassChangeMin = 1;
-    private const int MutationMassChangeMax = 10;
-
-    // Chance for any portion to be mutated in an algorithm pass.
-    // Is divided by the number of portions in the calculation.
-    private const float ChanceToMutatePortion = 1f;
-
-    // Impacts determinism. Low value => High determinism, High value => Random chaos
-    // 0 or 1 -> No convergence
-    private const float ChanceToAddOrRemovePortion = 0.1f;
-
-    // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
-    // program as this approaches 1.
-    private const float PROPORTION_PARENTS = 0.5f;
-    protected int m_numParents = (int)(Preferences.Instance.populationSize * (PROPORTION_PARENTS / 2)) * 2; // Cannot be odd
-
-    protected int m_tournamentSize = Math.Min((int)(Preferences.Instance.populationSize * 0.2f), 2);
+    protected int m_numParents = (int)(Prefs.populationSize * (Prefs.proportionParents / 2)) * 2; // Cannot be odd
+    protected int m_tournamentSize = Math.Min((int)(Prefs.populationSize * 0.2f), 2);
 
 
     public override void Init()
@@ -31,20 +16,17 @@ public abstract class AlgGA : Algorithm
 
 
         // Handle erroneous properties
-        if (MutationMassChangeMin < 0 || MutationMassChangeMin > MutationMassChangeMax)
+        if (Prefs.mutationMassChangeMin < 0 || Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
             Logger.Error("Invalid parameter: mutation min < 0 or mutation min > mutation max.");
 
-        if (MutationMassChangeMax < 0 || MutationMassChangeMin > MutationMassChangeMax)
+        if (Prefs.mutationMassChangeMax < 0 || Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
             Logger.Error("Invalid parameter: mutation max < 0 or mutation max < mutation min.");
 
-        if (ChanceToMutatePortion < 0)
+        if (Prefs.chanceToMutatePortion < 0)
             Logger.Error("Invalid parameter: mutation chance was < 0.");
 
         if (m_numParents <= 0)
             Logger.Error("Invalid parameter: numparents was <= 0.");
-
-
-        Logger.Log($"Num parents: {m_numParents}, Tourney size: {m_tournamentSize}");
     }
 
 
@@ -54,11 +36,11 @@ public abstract class AlgGA : Algorithm
     /// <returns>The created population data structure, WITHOUT evaluated fitnesses.</returns>
     private void LoadStartingPopulation()
     {
-        for (int i = 0; i < Preferences.Instance.populationSize; i++)
+        for (int i = 0; i < Prefs.populationSize; i++)
         {
             // Add a number of days to the population (each has random foods)
             Day day = new(this);
-            for (int j = 0; j < Preferences.Instance.numStartingPortionsPerDay; j++)
+            for (int j = 0; j < Prefs.numStartingPortionsPerDay; j++)
             {
                 // Add random foods to the day
                 day.AddPortion(RandomPortion);
@@ -140,7 +122,7 @@ public abstract class AlgGA : Algorithm
         for (int i = 0; i < day.portions.Count; i++)
         {
             // Exit early if the portion is not to be mutated
-            if (Rand.NextDouble() > ChanceToMutatePortion / day.portions.Count)
+            if (Rand.NextDouble() > Prefs.chanceToMutatePortion / day.portions.Count)
                 continue;
 
             Tuple<bool, int> result = MutatePortion(day.portions[i]);
@@ -151,8 +133,8 @@ public abstract class AlgGA : Algorithm
         }
 
         // Add or remove portions entirely (rarely)
-        bool addPortion = Rand.NextDouble() < ChanceToAddOrRemovePortion;
-        bool removePortion = Rand.NextDouble() < ChanceToAddOrRemovePortion;
+        bool addPortion = Rand.NextDouble() < Prefs.chanceToAddOrRemovePortion;
+        bool removePortion = Rand.NextDouble() < Prefs.chanceToAddOrRemovePortion;
 
         if (addPortion)
             day.AddPortion(RandomPortion);
@@ -177,7 +159,7 @@ public abstract class AlgGA : Algorithm
         // The sign of the mass change (1 => add, -1 => subtract)
         int sign = Rand.Next(2) == 1 ? 1 : -1;
         int mass = portion.Mass;
-        int massDiff = Rand.Next(MutationMassChangeMin, MutationMassChangeMax);
+        int massDiff = Rand.Next(Prefs.mutationMassChangeMin, Prefs.mutationMassChangeMax);
 
         // If the new mass is zero or negative, the portion ceases to exist.
         if (mass + sign * massDiff <= 0)

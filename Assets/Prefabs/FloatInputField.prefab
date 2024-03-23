@@ -19,6 +19,10 @@ PrefabInstance:
       propertyPath: m_CharacterValidation
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 7195763551850887233, guid: 1747969b0ce3faa4fbd6acf46550cef5, type: 3}
+      propertyPath: m_fontSize
+      value: 6.45
+      objectReference: {fileID: 0}
     - target: {fileID: 8828192634123481141, guid: 1747969b0ce3faa4fbd6acf46550cef5, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

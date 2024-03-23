@@ -8,8 +8,6 @@ using System.Collections.Generic;
 /// </summary>
 public class CrossoverRunner
 {
-    private const int N = 1;
-
     /// <summary>
     /// The parents to crossover genes from.
     /// </summary>
@@ -46,7 +44,7 @@ public class CrossoverRunner
 
         m_massSum = 0;
 
-        m_cutoffMasses = GetCutoffMasses(N);
+        m_cutoffMasses = GetCutoffMasses(Preferences.Instance.crossoverPoints);
 
         m_parentPortions = new();
         m_parentPortions.AddRange(parents.Item1.portions);
@@ -152,10 +150,11 @@ public class CrossoverRunner
         }
 
 
-        if (m_children.Item2.Mass == 0)
-        {
-            Logger.Error("Crossover was not split correctly.");
-        }
+        // PATCHED: A bug could occur where the second child was given none of the portions.
+        //if (m_children.Item2.Mass == 0 && !(m_parentPortions.Count == 0))
+        //{
+        //    Logger.Error("Crossover was not split correctly.");
+        //}
 
 
         return m_children;
@@ -249,8 +248,8 @@ public class CrossoverRunner
     /// <returns>Two new portions, split from the original.</returns>
     private static Tuple<Portion, Portion> SplitPortion(Portion portion, int cutoffMass)
     {
-        Portion left = new(portion.food, cutoffMass);
-        Portion right = new(portion.food, portion.Mass - cutoffMass);
+        Portion left = new(portion.FoodType, cutoffMass);
+        Portion right = new(portion.FoodType, portion.Mass - cutoffMass);
 
         if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
         {

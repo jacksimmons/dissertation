@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using UnityEngine;
 
@@ -18,12 +19,12 @@ public class Test_Intolerance
     /// </summary>
     private void AssertAllFoodsValid(Preferences prefs)
     {
-        List<Food> foods = new DatasetReader(prefs).ProcessFoods();
-        Logger.Log($"Number of foods permitted: {foods.Count}");
+        DatasetReader dr = new(prefs);
+        List<Food> foods = dr.ProcessFoods();
 
         foreach (Food food in foods)
         {
-            Assert.IsTrue(prefs.IsFoodGroupAllowed(food));
+            Assert.IsTrue(prefs.IsFoodAllowed(food.FoodGroup, food.Name));
         }
     }
 
@@ -76,5 +77,59 @@ public class Test_Intolerance
         Assert.IsFalse(prefs.eatsLandMeat);
 
         AssertAllFoodsValid(prefs);
+    }
+
+
+    [Test]
+    public void BannedFoodsNormalTest()
+    {
+        Preferences.Instance.bannedFoodKeys = new();
+
+        // Get list of foods before banning
+        List<Food> foods = Algorithm.Build(typeof(AlgSFGA)).Foods.ToList();
+        int numFoodsBeforeBan = foods.Count;
+
+        // Ban 2nd and 3rd foods
+        Food bannedA = foods[2];
+        Food bannedB = foods[3];
+        Preferences.Instance.bannedFoodKeys.Add(bannedA.CompositeKey);
+        Preferences.Instance.bannedFoodKeys.Add(bannedB.CompositeKey);
+
+        // Get the foods with bans applied
+        List<Food> newFoods = Algorithm.Build(typeof(AlgSFGA)).Foods.ToList();
+        int numFoodsAfterBan = newFoods.Count;
+
+        // First foods list contains the banned foods
+        Assert.True(FoodsListContainsFoods(foods, bannedA, bannedB));
+
+        // Second foods list doesn't contain the banned foods
+        Assert.False(FoodsListContainsFoods(newFoods, bannedA, bannedB));
+
+        // Also numFoods from 2nd = numFoods from 1st - 2
+        Assert.True(numFoodsAfterBan == numFoodsBeforeBan - 2);
+    }
+
+
+    private bool FoodsListContainsFoods(List<Food> foods, Food a, Food b)
+    {
+        bool containsA = false;
+        bool containsB = false;
+        foreach (Food food in foods)
+        {
+            if (containsA && containsB) break;
+
+            if (food.CompositeKey == a.CompositeKey)
+                containsA = true;
+            if (food.CompositeKey == b.CompositeKey)
+                containsB = true;
+        }
+        return containsA && containsB;
+    }
+
+
+    [Test]
+    public void BannedFoodsErroneousTest()
+    {
+        Assert.False(true);
     }
 }

@@ -1,13 +1,15 @@
 /// A collection of tools (extension classes).
 
-
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Reflection;
-#if UNITY_64
 using UnityEngine;
 using Random = System.Random;
-#endif
+using Debug = UnityEngine.Debug;
+using System.Net.NetworkInformation;
 
 
 public enum Severity
@@ -15,6 +17,16 @@ public enum Severity
     Log,
     Warning,
     Error
+}
+
+
+public interface IVerbose
+{
+    /// <summary>
+    /// Gets a verbose description of this object.
+    /// </summary>
+    /// <returns>The string data.</returns>
+    public string Verbose();
 }
 
 
@@ -142,6 +154,27 @@ public static class UITools
             ArrayTools.CircularNextIndex(activePanelIndex, panels.Length, right);
 
         panels[activePanelIndex].SetActive(true);
+    }
+
+
+    /// <summary>
+    /// Safely destroys all child objects of a transform (without modified collection errors).
+    /// </summary>
+    public static void DestroyAllChildren(Transform transform)
+    {
+        // Getting all children into a new array
+        Transform[] children = new Transform[transform.childCount];
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            children[i] = transform.GetChild(i);
+        }
+
+        // Destroying all children in the new array
+        for (int j = 0; j < children.Length; j++)
+        {
+            UnityEngine.Object.Destroy(children[j].gameObject);
+        }
     }
 }
 #endif
@@ -283,3 +316,78 @@ public static class FileTools
     }
 }
 #endif
+
+
+public static class PlotTools
+{
+    public static void PlotGraph(Coordinates[] graph, int numIters)
+    {
+        // Ignore invalid plot
+        if (graph.Length == 0) return;
+
+
+        // Construct data file
+        string dataFilePath = Application.persistentDataPath + "/plot.dat";
+        if (!File.Exists(dataFilePath))
+            File.Create(dataFilePath).Close();
+
+        string dataFileContent = "";
+        foreach (Coordinates coords in graph)
+        {
+            dataFileContent += $"{coords.X} {coords.Y}\n";
+        }
+        File.WriteAllText(dataFilePath, dataFileContent);
+
+
+        // Construct gnuplot file
+        string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
+        if (!File.Exists(gnuplotFilePath))
+            File.Create(gnuplotFilePath).Close();
+
+        string plotFilePath = $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
+
+        string contents = "set terminal png enhanced\n"
+            + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), plotFilePath).Replace("\\", "/")}\"\n"
+            + $"set xrange [0: {numIters}]\n"
+            + $"set yrange [0: {graph.Max(c => c.Y)}]\n"
+            + $"plot \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), dataFilePath).Replace("\\", "/")}\" with lines\n";
+        File.WriteAllText(gnuplotFilePath, contents);
+
+
+        // Run gnuplot
+        Process p = new()
+        {
+            StartInfo = new(Application.dataPath + "\\gnuplot\\bin\\gnuplot.exe", gnuplotFilePath)
+        };
+        p.StartInfo.UseShellExecute = true;
+        p.StartInfo.CreateNoWindow = true;
+        p.Start();
+
+        Logger.Log($"{ Path.GetRelativePath(Directory.GetCurrentDirectory(), $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png")}");
+    }
+
+
+    //private static Plot InitPlot(Coordinates[] coords)
+    //{
+    //    // Create Plot object
+    //    Plot plot = new();
+
+    //    // Labels
+    //    plot.Title(Preferences.Instance.algorithmType);
+    //    plot.XLabel("Iteration");
+    //    plot.YLabel("Fitness");
+
+    //    // Create scatter graph
+    //    var scatter = plot.Add.Scatter(coords);
+    //    scatter.MarkerStyle = MarkerStyle.None; // Remove dots, as they form a thick line when spaced closely
+
+    //    return plot;
+    //}
+
+
+    //private static void SetPlotLimits(Plot plot, int xMax, double yMax)
+    //{
+    //    plot.Axes.SetLimitsX(0, xMax);
+    //    plot.Axes.SetLimitsY(0, yMax);
+    //}
+}

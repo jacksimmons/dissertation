@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 #if UNITY_64
@@ -20,49 +21,6 @@ public enum DatasetFile
 
 
 /// <summary>
-/// All of the data associated with a food in the dataset.
-/// All nutrients are measured for a 100g portion.
-/// </summary>
-public class FoodData
-{
-    public string code;
-    public string name;
-
-    public string CompositeKey
-    {
-        get { return code + foodGroup; }
-    }
-
-    public string description;
-    public string foodGroup;
-    public float[] nutrients;
-
-
-    public FoodData()
-    {
-        nutrients = new float[Nutrient.Count];
-    }
-
-
-    public FoodData MergeWith(FoodData other)
-    {
-        if (other.CompositeKey == CompositeKey)
-        {
-            for (int i = 0; i < Nutrient.Count; i++)
-            {
-                // If not initialised in this nutrients, take it from the other nutrients.
-                if (MathTools.Approx(nutrients[i], 0)) nutrients[i] = other.nutrients[i];
-            }
-            return this;
-        }
-
-        Logger.Log(other);
-        throw new InvalidOperationException($"Could not merge {code} and {other.code} - they are not compatible!");
-    }
-}
-
-
-/// <summary>
 /// This is a pessimistic class which assumes the different files from the dataset are NOT
 /// lined up perfectly (even though at first glance it appears they are).
 /// 
@@ -72,11 +30,14 @@ public class FoodData
 /// </summary>
 public class DatasetReader
 {
+    public const int FOOD_ROWS = 2_887; // Dataset is 2890 rows, 3 of which are titles; 2890-3=2887
+
     // --- Input Data ---
     private ReadOnlyDictionary<DatasetFile, string> m_files;
     private readonly Preferences m_prefs;
 
     private Dictionary<string, FoodData> m_dataset; // Keys are composite keys representing their corresponding food value uniquely.
+    public ReadOnlyDictionary<string, FoodData> Dataset { get; }
 
     private readonly ENutrient[] m_proximateColumns = new ENutrient[47]; // The number of columns with useful data in starting from col 0.
     private readonly ENutrient[] m_inorganicsColumns = new ENutrient[19];
@@ -120,6 +81,15 @@ public class DatasetReader
         });
         m_prefs = prefs;
         m_dataset = new();
+        Dataset = new(m_dataset);
+
+        static void FillNutrientArray(ENutrient[] array, ENutrient value)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = value;
+            }
+        }
 
         FillNutrientArray(m_proximateColumns, (ENutrient)(-1));
         FillNutrientArray(m_inorganicsColumns, (ENutrient)(-1));
@@ -151,38 +121,54 @@ public class DatasetReader
     }
 
 
-    private void FillNutrientArray(ENutrient[] array, ENutrient value)
-    {
-        for (int i = 0; i < array.Length; i++)
-        {
-            array[i] = value;
-        }
-    }
-
-
     /// <summary>
-    /// This method converts the dataset into a list of Food objects.
+    /// Reads the dataset into C# objects.
     /// </summary>
-    public List<Food> ProcessFoods()
+    private List<FoodData> ReadFoods()
     {
         foreach (DatasetFile file in m_files.Keys)
         {
             ProcessFile(file);
         }
 
+        return m_dataset.Values.ToList();
+    }
+
+
+    /// <summary>
+    /// Converts the dataset into a list of Food objects.
+    /// </summary>
+    public List<Food> ProcessFoods()
+    {
+        List<FoodData> foodDatas = ReadFoods();
         List<Food> foods = new();
-        foreach (FoodData data in m_dataset.Values)
+
+        foreach (FoodData data in foodDatas)
         {
             // Check the food is allowed.
-            if (!m_prefs.IsFoodGroupAllowed(new(data)))
+            if (!m_prefs.IsFoodAllowed(data.FoodGroup, data.Name))
+            {
                 continue;
+            }
 
             // Check the current food isn't missing essential data (due to N, Tr or "")
             // This missing data is given the value -1, as seen in the delimiter ',' case.
+
+            // Missing data is only permitted if the user has set the preference "accept missing nutrient value"
+            // to true for this specific nutrient.
             for (int i = 0; i < Nutrient.Count; i++)
             {
-                if (data.nutrients[i] < 0)
+                if (MathTools.Approx(data.Nutrients[i], -1))
+                {
+                    if (m_prefs.acceptMissingNutrientValue[i])
+                    {
+                        // User has accepted missing values for this type; set it to NaN to remind the user
+                        // that this data point is not to be trusted.
+                        data.Nutrients[i] = float.NaN;
+                        continue;
+                    }
                     goto NextFood;
+                }
             }
 
             Food food = new(data);
@@ -190,6 +176,8 @@ public class DatasetReader
 
             NextFood: continue;
         }
+
+        Logger.Log(Dataset.Count);
 
         return foods;
     }
@@ -199,8 +187,10 @@ public class DatasetReader
     {
         const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
 
-        FoodData currentFood = new();
-        currentFood.nutrients = new float[Nutrient.Count];
+        FoodData currentFood = new()
+        {
+            Nutrients = new float[Nutrient.Count]
+        };
 
         string currentWord = "";
 
@@ -246,7 +236,7 @@ public class DatasetReader
                         if (currentWord == "Tr")
                             floatVal = 0;
 
-                        currentFood = HandleColumnLookup(file, currentFood, currentWord, currentWordIndex, floatVal);
+                        HandleColumnLookup(file, ref currentFood, currentWord, currentWordIndex, floatVal);
 
                         // If the character was a newline, also save and reset the word
                         if (ch == '\n')
@@ -258,8 +248,10 @@ public class DatasetReader
                                 m_dataset.Add(currentFood.CompositeKey, currentFood);
 
                             // Reset
-                            currentFood = new();
-                            currentFood.nutrients = new float[Nutrient.Count];
+                            currentFood = new()
+                            {
+                                Nutrients = new float[Nutrient.Count]
+                            };
                         }
                     }
 
@@ -287,35 +279,47 @@ public class DatasetReader
 
 
     /// <summary>
+    /// Looks up which property the column `wordIndex` corresponds to, and updates currentFood accordingly.
     /// </summary>
-    /// <returns>The updated FoodData.</returns>
-    private FoodData HandleColumnLookup(DatasetFile file, FoodData currentFood, string currentWord, int wordIndex, float floatVal)
+    /// <param name="file">The file being explored.</param>
+    /// <param name="currentFood">Reference to the current food object. Explicitly used 'ref' keyword for clarity.</param>
+    /// <param name="currentWord">The unparsed value of the current column.</param>
+    /// <param name="wordIndex">Thee column index to lookup.</param>
+    /// <param name="floatVal">The parsed value of the current column.</param>
+    private void HandleColumnLookup(DatasetFile file, ref FoodData currentFood, string currentWord, int wordIndex, float floatVal)
     {
         switch (wordIndex)
         {
             case 0:
-                currentFood.code = currentWord;
-                return currentFood;
+                currentFood.Code = currentWord;
+                return;
             case 1:
-                currentFood.name = currentWord;
-                return currentFood;
+                currentFood.Name = currentWord;
+                return;
             case 2:
-                currentFood.description = currentWord;
-                return currentFood;
+                currentFood.Description = currentWord;
+                return;
             case 3:
-                currentFood.foodGroup = currentWord;
-                return currentFood;
-            //case 5:
-            //    currentFood.reference = currentWord;
-            //    return currentFood;
+                currentFood.FoodGroup = currentWord;
+                return;
+            case 5:
+                currentFood.Reference = currentWord;
+                return;
         }
 
-        HandleNutrientLookup(file, wordIndex, currentFood, floatVal);
-        return currentFood;
+        HandleNutrientLookup(file, wordIndex, ref currentFood, floatVal);
     }
 
 
-    private FoodData HandleNutrientLookup(DatasetFile file, int wordIndex, FoodData currentFood, float floatVal)
+    /// <summary>
+    /// Looks up which nutrient the column `wordIndex` corresponds to. The columns depend on the dataset file
+    /// being explored currently.
+    /// </summary>
+    /// <param name="file">The file being explored.</param>
+    /// <param name="wordIndex">The column index to lookup.</param>
+    /// <param name="currentFood">The current object to output into (reference type).</param>
+    /// <param name="floatVal">The parsed float value of the current column.</param>
+    private void HandleNutrientLookup(DatasetFile file, int wordIndex, ref FoodData currentFood, float floatVal)
     {
         ENutrient[] columns;
 
@@ -334,13 +338,13 @@ public class DatasetReader
 
         if (wordIndex >= columns.Length)
         {
-            // The file, for some reason, has trailing empty data commas. So quick exit.
-            return currentFood;
+            // The file has trailing empty data commas. So quick exit.
+            return;
         }
 
         if (columns[wordIndex] != (ENutrient)(-1))
-            currentFood.nutrients[(int)columns[wordIndex]] = floatVal;
+            currentFood.Nutrients[(int)columns[wordIndex]] = floatVal;
 
-        return currentFood;
+        return;
     }
 }

@@ -3,18 +3,10 @@ using System.Collections.Generic;
 using System.Reflection;
 
 
-public enum EWeightGoal
+public enum EFitnessFunc
 {
-    MaintainWeight,
-    LoseWeight,
-    GainWeight
-}
-
-
-public enum EAssignedSex
-{
-    Male,
-    Female
+    Exponential,
+    ManhattanDist,
 }
 
 
@@ -32,7 +24,7 @@ public interface ICached
 /// A class which saves the user's preferences when serialized into a file.
 /// </summary>
 [Serializable]
-public class Preferences : ICached
+public class Preferences : ICached, IVerbose
 {
     private static Preferences m_instance;
     public static Preferences Instance
@@ -74,6 +66,7 @@ public class Preferences : ICached
         typeof(HardConstraint).FullName!,
         typeof(MinimiseConstraint).FullName!,
         typeof(ConvergeConstraint).FullName!,
+        typeof(NullConstraint).FullName!,
     };
 
 
@@ -84,12 +77,25 @@ public class Preferences : ICached
     public bool eatsSeafood = true; // Carnivore, Pescatarian, LI
     public bool eatsAnimalProduce = true; // Vegetarian, LI
     public bool eatsLactose = true; // Vegetarian, i.e. no Milk
+    public List<string> bannedFoodKeys = new(); // The composite keys of banned foods.
+
+
+    //
+    // User Info
+    //
+    public bool isMale = true;
+    public bool isPregnant = false;
+    public bool needsVitD = true;
+    public int ageYears = 20;
+    public float weightKg = 70;
+    public float heightCm = 160;
 
 
     //
     // Constraints
     //
-    public ConstraintData[] constraints;
+    public ConstraintData[] constraints = new ConstraintData[Nutrient.Count];
+    public bool[] acceptMissingNutrientValue = new bool[Nutrient.Count];
 
 
     // ALG SETUP MENU--------------
@@ -103,17 +109,48 @@ public class Preferences : ICached
     public int minPortionMass = 1;
     public int maxPortionMass = 500;
     public bool addFitnessForMass = true;
-    public string algorithmType = typeof(AlgSFGA).FullName!;
+    public string algorithmType = ALG_TYPES[0];
     public bool elitist = true;
+    public EFitnessFunc fitnessFunc = EFitnessFunc.ManhattanDist; // Checked
+
+
+    //
+    // GA-specific settings
+    //
+    public int mutationMassChangeMin = 1;
+    public int mutationMassChangeMax = 10;
+    // Chance for any portion to be mutated in an algorithm pass.
+    // Is divided by the number of portions in the calculation.
+    public float chanceToMutatePortion = 1f;
+    // Impacts determinism. Low value => High determinism, High value => Random chaos
+    // 0 or 1 -> No convergence
+    public float chanceToAddOrRemovePortion = 0.1f;
+    // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
+    // program as this approaches 1.
+    public float proportionParents = 0.5f;
+    // Must be in the range [1, 2]
+    public float selectionPressure = 1.5f;
+    // crossoverPoints-point crossover. Set this to 2 for 2-point crossover, etc.
+    public int crossoverPoints = 1;
+
 
     //
     // ACO-specific settings
     //
-    public float pheroImportance;
-    public float pheroEvapRate;
+    // Needs to be greater than the number of portions in the iteration, otherwise restricts number of portions in each path.
+    public int colonyPortions = 10;
+
+    // Number of iterations before replacing the worst food.
+    // High value => Deeper search (more iterations for evaluation)
+    // Low value => Wider search (more foods)
+    public int colonyStagnationIters = 1000;
+    public bool acoUseThreads = false; // Saves time on ~100 ants, loses time on 10 ants
+
+    public float pheroImportance = 1f;
+    public float pheroEvapRate = 0.1f;
     // Probability calculation variables
-    public float acoAlpha;      // Pheromone exponent
-    public float acoBeta;       // Desirability exponent
+    public float acoAlpha = 1f;      // Pheromone exponent
+    public float acoBeta = 1f;       // Desirability exponent
 
     //
     // Experiment settings
@@ -128,68 +165,60 @@ public class Preferences : ICached
     // best fits the average person.
     public Preferences()
     {
-        constraints = new ConstraintData[Nutrient.Count];
+        CalculateDefaultConstraints();
+    }
 
-        // Defaults for Men
 
-        // Note: Converge constraints have a default minimum value of -1, for good reason.
-        // The graph they represent is essentially two different exponential curves, one with limit at x = min and one at x = max.
-        // Setting min = -1 means a value of 0 gives a non-infinite fitness, and this is common in the dataset.
-
-        // Default weight: 3 (Detrimental)
+    public void CalculateDefaultConstraints()
+    {
+        // Default weight: 3
         SetConstraint(ENutrient.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
-        SetConstraint(ENutrient.SatFat, typeof(MinimiseConstraint), max: 30f, weight: 3);
+        SetConstraint(ENutrient.SatFat, typeof(MinimiseConstraint), max: isMale ? 30f : 20f, weight: 3);
         SetConstraint(ENutrient.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
 
-        // Default weight: 2 (Essential to survival)
-        SetConstraint(ENutrient.Kcal, typeof(ConvergeConstraint), max: 3500f, weight: 2, goal: 3000f);
+        // Default weight: 2
+        SetConstraint(ENutrient.Kcal, typeof(ConvergeConstraint), max: isMale ? 3000 : 2500, weight: 2, goal: isMale ? 2500 : 2000);
 
         // Auto-generate default p/f/c properties based on the above constraint
-        ConstraintData proteinData  = new();
-        ConstraintData fatData      = new();
-        ConstraintData carbsData    = new();
+        ConstraintData proteinData = new();
+        ConstraintData fatData = new();
+        ConstraintData carbsData = new();
 
-        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Min,  ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
-        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max,  ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
+        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Min, ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
+        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max, ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
         CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
 
         SetConstraint(ENutrient.Protein, typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, goal: proteinData.Goal);
-        SetConstraint(ENutrient.Fat,     typeof(ConvergeConstraint), max: fatData.Max,     weight: 2, goal: fatData.Goal);
-        SetConstraint(ENutrient.Carbs,   typeof(ConvergeConstraint), max: carbsData.Max,   weight: 2, goal: carbsData.Goal);
+        SetConstraint(ENutrient.Fat, typeof(ConvergeConstraint), max: fatData.Max, weight: 2, goal: fatData.Goal);
+        SetConstraint(ENutrient.Carbs, typeof(ConvergeConstraint), max: carbsData.Max, weight: 2, goal: carbsData.Goal);
 
         // Default weight: 1 (Beneficial)
         // For these, set the goal to be the recommended amount from the NHS.
         // The maximum is the highest "definitely safe" amount recommended by the NHS.
         SetConstraint(ENutrient.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, min: 0, goal: 700f);
-        SetConstraint(ENutrient.Iron,    typeof(ConvergeConstraint), max: 17f,   weight: 1, min: 0, goal: 8.7f);
-        SetConstraint(ENutrient.Iodine,  typeof(ConvergeConstraint), max: 500f,  weight: 1, min: 0, goal: 140f);
 
-        SetConstraint(ENutrient.VitA,  typeof(ConvergeConstraint), max:1500f, weight: 1, min: 0, goal:700f);
-        SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100f, weight: 1, min: 0, goal: 1f);
-        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f,  weight: 1, min: 0, goal: 1.3f);
-        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f,  weight: 1, min: 0, goal: 16.5f);
-        SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f,  weight: 1, min: 0, goal: 1.4f);
-        SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max:1000f, weight: 1, min: 0, goal: 200f);
-        SetConstraint(ENutrient.VitB12,typeof(ConvergeConstraint), max:2000f, weight: 1, min: 0, goal: 1.5f);
-        SetConstraint(ENutrient.VitC,  typeof(ConvergeConstraint), max:1000f, weight: 1, min: 0, goal: 40f);
-        SetConstraint(ENutrient.VitD,  typeof(ConvergeConstraint), max: 100f, weight: 1, min: 0, goal: 10f); // Not needed if sunny.
-        SetConstraint(ENutrient.VitE,  typeof(ConvergeConstraint), max: 540f, weight: 1, min: 0, goal: 4f);
-        SetConstraint(ENutrient.VitK1, typeof(ConvergeConstraint), max:1000f, weight: 1, min: 0, goal: 70f); // Goal: 1 microgram per kg bodyweight.
+        bool moreIron = !isMale && (19 <= ageYears && ageYears <= 49);
+        SetConstraint(ENutrient.Iodine, typeof(ConvergeConstraint), max: 500f, weight: 1, min: 0, goal: 140f);
+        SetConstraint(ENutrient.Iron, typeof(ConvergeConstraint), max: 17f, weight: 1, min: 0, goal: moreIron ? 14.8f : 8.7f);
 
-        pheroImportance = 1f;
-
-        // Consistent results with this value
-        pheroEvapRate = 0.1f;
-
-        acoAlpha = 1f;
-        acoBeta = 1f;
+        SetConstraint(ENutrient.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, min: 0, goal: isMale ? 700 : 600);
+        SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, min: 0, goal: isMale ? 1 : 0.8f);
+        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, min: 0, goal: isMale ? 1.3f : 1.1f);
+        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, min: 0, goal: isMale ? 16.5f: 13.2f);
+        SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, min: 0, goal: isMale ? 1.4f : 1.2f);
+        SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: isPregnant ? 400f : 200f);
+        SetConstraint(ENutrient.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, min: 0, goal: 1.5f);
+        SetConstraint(ENutrient.VitC, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: 40f);
+        SetConstraint(ENutrient.VitD, typeof(ConvergeConstraint), max: 100f, weight: 1, min: 0, goal: needsVitD ? 10 : 0); // Not needed if sunny.
+        SetConstraint(ENutrient.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, min: 0, goal: isMale ? 4 : 3);
+        SetConstraint(ENutrient.VitK1, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: weightKg); // Goal: 1 microgram per kg bodyweight.
     }
 
 
     private void SetConstraint(ENutrient nut, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
         constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight };
-        Constraint.Build(constraints[(int)nut]); // May throw an error, useful to check if all params are valid
+        Constraint.Build(constraints[(int)nut]); // ! Check if all params are valid. If not, throws an error.
     }
 
 
@@ -215,16 +244,15 @@ public class Preferences : ICached
 
 
     /// <summary>
-    /// A function to eliminate the vast majority of unacceptable foods by food group.
+    /// A function to eliminate the vast majority of unacceptable foods by food group, and/or name.
     /// May still leave some in, for example chicken soup may be under the soup group - WA[A,C,E]
     /// Will exclude all alcohol, as it is not nutritious.
     /// </summary>
-    /// <param name="foodGroup">The food group code to check if allowed.</param>
+    /// <param name="foodGroup">The food group to check, to see if allowed.</param>
+    /// <param name="name">The name to check.</param>
     /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
-    public bool IsFoodGroupAllowed(Food food)
+    public bool IsFoodAllowed(string foodGroup, string name)
     {
-        string foodGroup = food.FoodGroup;
-
         // In case of no food group, say it is not allowed.
         // Safest approach - removes all foods without a proper food group label.
         if (foodGroup.Length == 0) return false;
@@ -262,17 +290,16 @@ public class Preferences : ICached
                 break;
         }
 
+        string lowerName = name.ToLower();
 
         // Unique keywords to catch hybrid items (e.g. Tuna sandwich)
-        string name = food.Name.ToLower();
+        if (lowerName.Contains("salmon") && !eatsSeafood) return false;
+        if (lowerName.Contains("cod") && !eatsSeafood) return false;
+        if (lowerName.Contains("tuna") && !eatsSeafood) return false;
 
-        if (name.Contains("salmon") && !eatsSeafood) return false;
-        if (name.Contains("cod") && !eatsSeafood) return false;
-        if (name.Contains("tuna") && !eatsSeafood) return false;
-
-        if (name.Contains("gelatine") && !eatsLandMeat) return false;
-        if (name.Contains("beef") && !eatsLandMeat) return false;
-        if (name.Contains("pork") && !eatsLandMeat) return false;
+        if (lowerName.Contains("gelatine") && !eatsLandMeat) return false;
+        if (lowerName.Contains("beef") && !eatsLandMeat) return false;
+        if (lowerName.Contains("pork") && !eatsLandMeat) return false;
 
         return true;
     }
@@ -293,7 +320,7 @@ public class Preferences : ICached
         for (int i = 0; i < constraints.Length; i++)
         {
             ConstraintData constraint = constraints[i];
-            str += $"Nutrient: {Nutrient.Values[i], 10} Min: {constraint.Min, 8:F3} Max: {constraint.Max, 8:F3} Goal: {constraint.Goal, 8:F3} Type: {constraint.Type, 20}\n";
+            str += $"Nutrient: {Nutrient.Values[i],10}" + constraint.Verbose();
         }
 
         str += "\n";

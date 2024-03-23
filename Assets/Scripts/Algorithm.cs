@@ -15,8 +15,14 @@ public abstract class Algorithm
     // Random number generator
     public static Random Rand { get; } = new();
 
-    private readonly ReadOnlyCollection<Food> Foods;     // All of the foods that were extracted from the dataset.
-    public ReadOnlyCollection<Constraint> Constraints;   // User-defined constraints, one for each nutrient.
+    // Shorthand for Preferences.Instance
+    protected static Preferences Prefs => Preferences.Instance;
+
+    // All of the foods that were extracted from the dataset, minus banned foods.
+    private readonly List<Food> m_foods;
+    public readonly ReadOnlyCollection<Food> Foods;
+
+    public readonly ReadOnlyCollection<Constraint> Constraints; // User-defined constraints, one for each nutrient.
 
     public int IterNum { get; private set; } = 0;        // The current iteration of the algorithm.
 
@@ -59,32 +65,52 @@ public abstract class Algorithm
 
     protected Algorithm()
     {
-        Preferences prefs = Preferences.Instance;
-
-
         // Load foods from the dataset, and store any errors that occurred.
-        DatasetReader dr = new(prefs);
+        DatasetReader dr = new(Prefs);
         DatasetError = dr.SetupError;
-        if (DatasetError != "") return;
-        Foods = new(dr.ProcessFoods());
+
+        if (DatasetError != "")
+        {
+#if UNITY_64
+            return;
+#else
+            Logger.Error(DatasetError);
+#endif
+        }
+        
+        m_foods = new(dr.ProcessFoods());
+        Foods = new(m_foods);
+
+        // Remove any banned foods from the extracted list
+        List<Food> allFoods = new(m_foods);
+        foreach (Food food in allFoods)
+        {
+            // If the FoodData of `food` from the Dataset is in the banned list...
+            if (Prefs.bannedFoodKeys.Contains(food.CompositeKey))
+            {
+                m_foods.Remove(food);
+            }
+        }
+        // Update the foods list with the unbanned list.
+        m_foods = allFoods;
 
 
         // Generate the search space from these foods
         // MAX - MIN + 1 is the number of elements MIN <= x <= MAX. (E.g. 2 <= x <= 3 => x in {2, 3} (count 2) and 3 - 2 + 1 = 2)
-        int portionsPerFood = Preferences.Instance.maxPortionMass - Preferences.Instance.minPortionMass + 1;
+        int portionsPerFood = Prefs.maxPortionMass - Prefs.minPortionMass + 1;
         m_portions = new Portion[Foods.Count * portionsPerFood];
         for (int i = 0; i < Foods.Count; i++)
         {
             for (int j = 0; j < portionsPerFood; j++)
             {
                 // The mass of the portion can be calculated by just adding the minimum mass to j.
-                m_portions[i * portionsPerFood + j] = new(Foods[i], j + Preferences.Instance.minPortionMass);
+                m_portions[i * portionsPerFood + j] = new(Foods[i], j + Prefs.minPortionMass);
             }
         }
 
 
         // Load constraints from Preferences.
-        Constraints = new(Preferences.Instance.constraints.Select(Constraint.Build).ToList());
+        Constraints = new(Prefs.constraints.Select(Constraint.Build).ToList());
 
 
         // Handle erroneous preference values.

@@ -53,7 +53,7 @@ public class Test_GA
         Day parentA = new(sfga); // No portions
         Day parentB = new(sfga);
         FoodData food = new();
-        food.nutrients[0] = 300;
+        food.Nutrients[0] = 300;
         CrossoverTest(sfga, sfga.PerformPairSelection(new() { parentA, parentB }, true));
     }
 
@@ -104,30 +104,18 @@ public class Test_GA
         // Ensure child mass <= parentMass for good reasons
         if (childMass < parentMass)
         {
-            bool isValid = false;
-            foreach (Portion p in childPortions)
-            {
-                if (p.Mass == Preferences.Instance.maxPortionMass)
-                {
-                    // Explains why childMass < parentMass; the child got too much of this Food type from
-                    // the crossover, and had to be sliced.
-                    isValid = true; break;
-                }
-            }
-
-            Logger.Warn("childMass was less than parentMass.");
-            Assert.True(isValid);
+            Assert.Fail("childMass was less than parentMass.");
         }
 
         List<Portion> parentPortions = new(parents.Item1.portions);
         parentPortions.AddRange(parents.Item2.portions);
 
-        List<Food> parentFoods = parentPortions.Select(x => x.food).ToList();
+        List<Food> parentFoods = parentPortions.Select(x => x.FoodType).ToList();
 
         // Ensure all child portions share a Food with one of the parents
         foreach (Portion p in childPortions)
         {
-            Assert.True(parentFoods.Contains(p.food));
+            Assert.True(parentFoods.Contains(p.FoodType));
         }
     }
 }

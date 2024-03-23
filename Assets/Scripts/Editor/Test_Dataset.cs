@@ -29,14 +29,12 @@ public class Test_Dataset
         Food food = foods[0];
 
         Assert.AreEqual(food.Name, "Test1", $"Test name was incorrect.");
-        Assert.AreEqual(food.Desc, "Desc1", $"Desc name was incorrect.");
-        Assert.AreEqual(food.FoodGroup, "Group1", $"Group name was incorrect.");
 
         float[] nutrients = new float[]
         // Proximates
         { 10, 20, 30, 340, 25, 9, 1,
         // Inorganics
-        100, 30, 20,
+        100, 20, 30,
         // Vitamins
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 

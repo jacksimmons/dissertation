@@ -10,9 +10,6 @@ using UnityEngine;
 /// A static class for saving generic serialisable types.
 /// It serialises/deserialises using a JSON formatter, and stores them at the
 /// persistent data path on your computer (%APPDATA%/../LocalLow/JackSimmons/Dissertation/{FileName})
-/// 
-/// References:
-/// This is a modified version of a Saving class I used in an unpublished project.
 /// </summary>
 public static class Saving
 {
@@ -22,6 +19,7 @@ public static class Saving
     public static void SavePreferences()
     {
         SaveToFile(Preferences.Instance, "Preferences.json");
+        Logger.Log("Saved preferences.");
     }
 
 
