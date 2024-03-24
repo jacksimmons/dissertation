@@ -71,11 +71,8 @@ public abstract class Algorithm
 
         if (DatasetError != "")
         {
-#if UNITY_64
-            return;
-#else
             Logger.Error(DatasetError);
-#endif
+            return;
         }
         
         m_foods = new(dr.ProcessFoods());
