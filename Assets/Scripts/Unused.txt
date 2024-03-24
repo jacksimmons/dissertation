@@ -407,3 +407,22 @@
 
     //    return plot;
     //}
+
+
+    #if !UNITY_64
+public static class FileTools
+{
+    public static string GetProjectDirectory()
+    {
+         E.g. Project/bin/Debug/net8.0/
+        string cwd = Environment.CurrentDirectory;
+
+        
+        DirectoryInfo compileTarget = Directory.GetParent(cwd)!; // E.g. Project/bin/Debug/
+        DirectoryInfo bin = compileTarget.Parent!; // E.g. Project/bin/
+        
+         Now in Project folder
+        return bin.Parent!.FullName + "\\";
+    }
+}
+#endif

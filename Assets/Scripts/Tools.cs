@@ -10,6 +10,8 @@ using UnityEngine;
 using Random = System.Random;
 using Debug = UnityEngine.Debug;
 using System.Net.NetworkInformation;
+using UnityEngine.Experimental.GlobalIllumination;
+using UnityEngine.UIElements;
 
 
 public enum Severity
@@ -299,25 +301,9 @@ public static class MathTools
 }
 
 
-#if !UNITY_64
-public static class FileTools
-{
-    public static string GetProjectDirectory()
-    {
-        // E.g. Project/bin/Debug/net8.0/
-        string cwd = Environment.CurrentDirectory;
-
-        
-        DirectoryInfo compileTarget = Directory.GetParent(cwd)!; // E.g. Project/bin/Debug/
-        DirectoryInfo bin = compileTarget.Parent!; // E.g. Project/bin/
-        
-        // Now in Project folder
-        return bin.Parent!.FullName + "\\";
-    }
-}
-#endif
-
-
+/// <summary>
+/// A static class for plotting graphs using gnuplot.
+/// </summary>
 public static class PlotTools
 {
     public static void PlotGraph(Coordinates[] graph, int numIters)
@@ -345,49 +331,30 @@ public static class PlotTools
             File.Create(gnuplotFilePath).Close();
 
         string plotFilePath = $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
-
-        string contents = "set terminal png enhanced\n"
-            + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), plotFilePath).Replace("\\", "/")}\"\n"
-            + $"set xrange [0: {numIters}]\n"
-            + $"set yrange [0: {graph.Max(c => c.Y)}]\n"
-            + $"plot \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), dataFilePath).Replace("\\", "/")}\" with lines\n";
-        File.WriteAllText(gnuplotFilePath, contents);
+        File.WriteAllText(gnuplotFilePath, GetGnuPlotFile(plotFilePath, dataFilePath, numIters, graph));
 
 
         // Run gnuplot
-        Process p = new()
-        {
-            StartInfo = new(Application.dataPath + "\\gnuplot\\bin\\gnuplot.exe", gnuplotFilePath)
-        };
-        p.StartInfo.UseShellExecute = true;
-        p.StartInfo.CreateNoWindow = true;
+        Process p = new();
+        p.StartInfo = new(Application.dataPath + "\\gnuplot\\bin\\gnuplot.exe", gnuplotFilePath);
+        p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden; // Hide the window
         p.Start();
 
         Logger.Log($"{ Path.GetRelativePath(Directory.GetCurrentDirectory(), $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png")}");
     }
 
 
-    //private static Plot InitPlot(Coordinates[] coords)
-    //{
-    //    // Create Plot object
-    //    Plot plot = new();
-
-    //    // Labels
-    //    plot.Title(Preferences.Instance.algorithmType);
-    //    plot.XLabel("Iteration");
-    //    plot.YLabel("Fitness");
-
-    //    // Create scatter graph
-    //    var scatter = plot.Add.Scatter(coords);
-    //    scatter.MarkerStyle = MarkerStyle.None; // Remove dots, as they form a thick line when spaced closely
-
-    //    return plot;
-    //}
-
-
-    //private static void SetPlotLimits(Plot plot, int xMax, double yMax)
-    //{
-    //    plot.Axes.SetLimitsX(0, xMax);
-    //    plot.Axes.SetLimitsY(0, yMax);
-    //}
+    private static string GetGnuPlotFile(string plotPath, string dataPath, int numIters, Coordinates[] graph)
+    {
+        return 
+        "set terminal png enhanced\n"
+        + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), plotPath).Replace("\\", "/")}\"\n"
+        + $"set xrange [0: {numIters}]\n"
+        + $"set yrange [0: {graph.Max(c => c.Y)}]\n"
+        + "set title \"Graph of Best Fitness against Iteration Number\"\n"
+        + "set xlabel \"Iteration\"\n"
+        + "set ylabel \"Fitness\"\n"
+        + $"set style line 1 pi {numIters / 5}\n"
+        + $"plot \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/")}\" with lines ls 1 title \"Graph (Final Fitness: {graph[^1].Y})\"\n";
+    }
 }

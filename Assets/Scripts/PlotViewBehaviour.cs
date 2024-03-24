@@ -24,6 +24,8 @@ public class PlotViewBehaviour : MonoBehaviour
     // Reload every time this panel is enabled.
     private void OnEnable()
     {
+        // Reset plot index
+        m_activePlotIndex = 0;
         string plotDirectory = Application.persistentDataPath + "/Plots/";
 
         // Ensure plots folder exists
@@ -41,6 +43,7 @@ public class PlotViewBehaviour : MonoBehaviour
 
         // Note: Makes the first plot in the array visible
         m_plots = LoadPlots(m_paths);
+        m_plots[m_activePlotIndex].SetActive(true);
         m_plotNameTxt.text = Path.GetFileName(m_paths[m_activePlotIndex]);
     }
 
@@ -66,6 +69,7 @@ public class PlotViewBehaviour : MonoBehaviour
         GameObject go = Instantiate(m_plotTemplate, m_plotContainer.transform);
         go.transform.Find("Image").GetComponent<Image>().sprite = Sprite.Create(PlotToImage(path), new(0, 0, 640, 480), new());
         go.transform.Find("DeleteBtn").GetComponent<Button>().onClick.AddListener(OnDeletePlotPressed);
+        go.SetActive(false);
 
         return go;
     }
@@ -94,7 +98,6 @@ public class PlotViewBehaviour : MonoBehaviour
 
         // Go to the next plot (if there is one)
         SetNoPlotsRemaining(); // Default text which is overwritten if there are plots remaining.
-        OnPlotNavBtnPressed(true);
 
         // Start with destroying the Unity object
         GameObject go = m_plots[toBeDeleted];
@@ -105,5 +108,8 @@ public class PlotViewBehaviour : MonoBehaviour
         string path = m_paths[toBeDeleted];
         m_paths.RemoveAt(toBeDeleted);
         File.Delete(path);
+
+        // Go to the next plot, if there is one
+        if (m_paths.Count > 0) OnPlotNavBtnPressed(true);
     }
 }

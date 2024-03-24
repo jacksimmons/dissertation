@@ -6,7 +6,7 @@
 //using UnityEngine;
 
 
-public struct Coordinates
+public readonly struct Coordinates
 {
     public float X { get; }
     public float Y { get; }
