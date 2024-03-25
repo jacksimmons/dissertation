@@ -32,9 +32,6 @@ public class AlgorithmBehaviour : MonoBehaviour
 
     private AlgorithmRunner m_core;
 
-    [SerializeField]
-    private TextAsset m_graph;
-
 
     public void Init()
     {
@@ -79,6 +76,6 @@ public class AlgorithmBehaviour : MonoBehaviour
     /// </summary>
     public void PlotGraph()
     {
-        PlotTools.PlotGraph(m_core.Plot.ToArray(), Algorithm.IterNum);
+        PlotTools.PlotLine(m_core.Plot.ToArray(), Algorithm.IterNum);
     }
 }

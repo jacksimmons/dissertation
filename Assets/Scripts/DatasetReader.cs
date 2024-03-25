@@ -6,10 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-
-#if UNITY_64
 using UnityEngine;
-#endif
 
 
 public enum DatasetFile
@@ -30,14 +27,16 @@ public enum DatasetFile
 /// </summary>
 public class DatasetReader
 {
+    private const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
     public const int FOOD_ROWS = 2_887; // Dataset is 2890 rows, 3 of which are titles; 2890-3=2887
+    private const int TOTAL_ROWS = FIRST_ROW + FOOD_ROWS;
 
     // --- Input Data ---
-    private ReadOnlyDictionary<DatasetFile, string> m_files;
+    private ReadOnlyCollection<string> m_files;
     private readonly Preferences m_prefs;
 
-    private Dictionary<string, FoodData> m_dataset; // Keys are composite keys representing their corresponding food value uniquely.
-    public ReadOnlyDictionary<string, FoodData> Dataset { get; }
+    private List<FoodData> m_dataset;
+    public ReadOnlyCollection<FoodData> Dataset { get; }
 
     private readonly ENutrient[] m_proximateColumns = new ENutrient[47]; // The number of columns with useful data in starting from col 0.
     private readonly ENutrient[] m_inorganicsColumns = new ENutrient[19];
@@ -56,15 +55,9 @@ public class DatasetReader
         try
         {
             // Load data files through Unity (this function only works with no file extension)
-#if UNITY_64
             proximatesData = Resources.Load<TextAsset>(proximatesFile).text;
             inorganicsData = Resources.Load<TextAsset>(inorganicsFile).text;
             vitaminsData = Resources.Load<TextAsset>(vitaminsFile).text;
-#else
-            proximatesData = File.ReadAllText(FileTools.GetProjectDirectory() + "Proximates.csv");
-            inorganicsData = File.ReadAllText(FileTools.GetProjectDirectory() + "Inorganics.csv");
-            vitaminsData = File.ReadAllText(FileTools.GetProjectDirectory() + "Vitamins.csv");
-#endif
         }
         // Catch any sharing violation errors, permission errors, etc.
         catch (Exception e)
@@ -73,12 +66,8 @@ public class DatasetReader
             return;
         }
 
-        m_files = new(new Dictionary<DatasetFile, string>
-        {
-            { DatasetFile.Proximates, proximatesData },
-            { DatasetFile.Inorganics, inorganicsData },
-            { DatasetFile.Vitamins,   vitaminsData },
-        });
+        string[] files = new string[] { proximatesData, inorganicsData, vitaminsData };
+        m_files = new(files);
         m_prefs = prefs;
         m_dataset = new();
         Dataset = new(m_dataset);
@@ -121,29 +110,26 @@ public class DatasetReader
     }
 
 
-    /// <summary>
-    /// Reads the dataset into C# objects.
-    /// </summary>
-    private List<FoodData> ReadFoods()
+    private struct DatasetFileStatus
     {
-        foreach (DatasetFile file in m_files.Keys)
-        {
-            ProcessFile(file);
-        }
-
-        return m_dataset.Values.ToList();
+        public DatasetFile file;
+        public int currentChar;
+        public int currentRow;
+        public FoodData currentFood;
     }
 
 
     /// <summary>
-    /// Converts the dataset into a list of Food objects.
+    /// Processes the dataset into a list of Food objects, by checking which foods in the dataset
+    /// are allowed by the user's preferences.
+    /// <param name="fileLength">The length (in rows) of the files (their lengths must be equal).</param>
     /// </summary>
-    public List<Food> ProcessFoods()
+    public List<Food> ProcessFoods(int fileLength = TOTAL_ROWS)
     {
-        List<FoodData> foodDatas = ReadFoods();
+        ProcessFiles(fileLength);
         List<Food> foods = new();
 
-        foreach (FoodData data in foodDatas)
+        foreach (FoodData data in m_dataset)
         {
             // Check the food is allowed.
             if (!m_prefs.IsFoodAllowed(data.FoodGroup, data.Name))
@@ -158,7 +144,7 @@ public class DatasetReader
             // to true for this specific nutrient.
             for (int i = 0; i < Nutrient.Count; i++)
             {
-                if (MathTools.Approx(data.Nutrients[i], -1))
+                if (MathTools.ApproxLessThan(data.Nutrients[i], 0))
                 {
                     if (m_prefs.acceptMissingNutrientValue[i])
                     {
@@ -174,7 +160,7 @@ public class DatasetReader
             Food food = new(data);
             foods.Add(food);
 
-            NextFood: continue;
+        NextFood: continue;
         }
 
         Logger.Log(Dataset.Count);
@@ -183,26 +169,67 @@ public class DatasetReader
     }
 
 
-    private void ProcessFile(DatasetFile file)
+    /// <summary>
+    /// Processes the dataset into a list of FoodData objects.
+    /// </summary>
+    /// <param name="fileLength">Specify the length (in rows) of the 3 files (their length must be equal).</param>
+    private void ProcessFiles(int fileLength = TOTAL_ROWS)
     {
-        const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
+        // Reset the dataset for subsequent processes
+        m_dataset.Clear();
 
-        FoodData currentFood = new()
+        DatasetFileStatus[] statuses = new DatasetFileStatus[3];
+
+        // Initialise first statuses
+        for (int i = 0; i < 3; i++)
         {
-            Nutrients = new float[Nutrient.Count]
-        };
+            statuses[i] = new()
+            {
+                file = (DatasetFile)i,
+                currentChar = 0,
+                currentRow = 0
+            };
+        }
 
-        string currentWord = "";
+        // Process each row in the dataset in parallel across 3 dataset files.
+        // The dataset files will share the same processed row index at all times.
+        for (int i = 0; i < fileLength; i++)
+        {
+            // Process file row
+            FoodData currentFood = new()
+            {
+                Nutrients = new float[Nutrient.Count]
+            };
 
-        int currentWordIndex = 0;
-        int currentRowIndex = 0;
+            // Process the next row in the 3 dataset files, put them into one FoodData object.
+            for (int j = 0; j < 3; j++)
+            {
+                statuses[j].currentFood = currentFood;
+                ProcessFileRow(ref statuses[j]);
+            }
 
+            // Add processed row to the list (if it is a valid food)
+            if (i >= FIRST_ROW)
+                m_dataset.Add(currentFood);
+        }
+    }
+
+
+    /// <summary>
+    /// Processes a dataset file until it reaches the end of the row.
+    /// Allows all dataset files to be concurrently processed.
+    /// </summary>
+    /// <param name="status">Input info, which gets updated in the method.</param>
+    private void ProcessFileRow(ref DatasetFileStatus status)
+    {
         bool speechMarkOpened = false;
+        int currentCol = 0;
+        string currentColVal = "";
 
-
-        for (int i = 0; i < m_files[file].Length; i++)
+        int start = status.currentChar;
+        for (int i = start; i < m_files[(int)status.file].Length; i++) // All files have equal length
         {
-            char ch = m_files[file][i];
+            char ch = m_files[(int)status.file][i];
             switch (ch)
             {
                 case '\"':
@@ -220,94 +247,171 @@ public class DatasetReader
                           // - Newline starts a new word AND new row (new food entirely)
                     if (speechMarkOpened)
                     {
-                        currentWord += ch;
+                        currentColVal += ch;
                         break;
                     }
 
                     // Parses the word into a float, if possible.
                     // Default value - "" or "N" get a value of -1.
-                    if (!float.TryParse(currentWord, out float floatVal))
-                        floatVal = -1;
+                    if (!float.TryParse(currentColVal, out float currentColValParsed))
+                        currentColValParsed = -1;
 
                     // If the word is just a title, ignore it
-                    if (currentRowIndex >= FIRST_ROW)
+                    if (status.currentRow >= FIRST_ROW)
                     {
                         // Trace values are given a value of 0
-                        if (currentWord == "Tr")
-                            floatVal = 0;
+                        if (currentColVal == "Tr")
+                            currentColValParsed = 0;
 
-                        HandleColumnLookup(file, ref currentFood, currentWord, currentWordIndex, floatVal);
-
-                        // If the character was a newline, also save and reset the word
-                        if (ch == '\n')
-                        {
-                            // Save
-                            if (m_dataset.ContainsKey(currentFood.CompositeKey))
-                                m_dataset[currentFood.CompositeKey] = currentFood.MergeWith(m_dataset[currentFood.CompositeKey]);
-                            else
-                                m_dataset.Add(currentFood.CompositeKey, currentFood);
-
-                            // Reset
-                            currentFood = new()
-                            {
-                                Nutrients = new float[Nutrient.Count]
-                            };
-                        }
+                        // Add the column value to the FoodData object (if currentCol corresponds to desired data)
+                        HandleColumnLookup(status, currentCol, currentColVal, currentColValParsed);
                     }
 
+                    // If the character was a newline, update status and return
                     if (ch == '\n')
                     {
-                        // Reset word, word counter and increment row counter if moving to a new row
-                        currentWord = "";
-                        currentWordIndex = 0;
-                        currentRowIndex++;
+                        status.currentChar = i + 1;
+                        status.currentRow++;
+                        return;
                     }
-                    else
+                    // Otherwise, just go to the next column
+                    else if (ch == ',')
                     {
-                        // Reset for the next word
-                        currentWord = "";
-                        currentWordIndex++;
+                        currentCol++;
+                        currentColVal = "";
                     }
                     break;
 
                 default: // Regular character, i.e. part of the next value
-                    currentWord += ch;
+                    currentColVal += ch;
                     break;
             }
         }
+
+        // End of file reached
+        return;
     }
+
+
+
+    //private void ProcessFileRow(DatasetFile file, FoodData data)
+    //{
+    //    FoodData currentFood = new()
+    //    {
+    //        Nutrients = new float[Nutrient.Count]
+    //    };
+
+    //    string currentWord = "";
+
+    //    int currentWordIndex = 0;
+    //    int currentRowIndex = 0;
+
+    //    bool speechMarkOpened = false;
+
+
+    //    for (int i = 0; i < m_files[file].Length; i++)
+    //    {
+    //        char ch = m_files[file][i];
+    //        switch (ch)
+    //        {
+    //            case '\"':
+    //                // Permits any character to be added to the word, even ',' or '\n'.
+    //                // The speech marks themselves will be ignored.
+    //                speechMarkOpened = !speechMarkOpened;
+    //                break;
+    //            case '\r':
+    //                break;
+    //            case '\n':
+    //            case ',': // We have finished the current word.
+    //                      // If in speech marks, we have not yet finished the current word.
+    //                      // Comma and Newline both mark the end of a word; they differ in what happens next.
+    //                      // - Comma just starts a new word (new food property)
+    //                      // - Newline starts a new word AND new row (new food entirely)
+    //                if (speechMarkOpened)
+    //                {
+    //                    currentWord += ch;
+    //                    break;
+    //                }
+
+    //                // Parses the word into a float, if possible.
+    //                // Default value - "" or "N" get a value of -1.
+    //                if (!float.TryParse(currentWord, out float floatVal))
+    //                    floatVal = -1;
+
+    //                // If the word is just a title, ignore it
+    //                if (currentRowIndex >= FIRST_ROW)
+    //                {
+    //                    // Trace values are given a value of 0
+    //                    if (currentWord == "Tr")
+    //                        floatVal = 0;
+
+    //                    HandleColumnLookup(status, col, currentWordIndex, floatVal);
+
+    //                    // If the character was a newline, also save and reset the word
+    //                    if (ch == '\n')
+    //                    {
+    //                        // Save
+    //                        if (m_dataset.ContainsKey(currentFood.CompositeKey))
+    //                            m_dataset[currentFood.CompositeKey] = currentFood.MergeWith(m_dataset[currentFood.CompositeKey]);
+    //                        else
+    //                            m_dataset.Add(currentFood.CompositeKey, currentFood);
+
+    //                        // Reset
+    //                        currentFood = new()
+    //                        {
+    //                            Nutrients = new float[Nutrient.Count]
+    //                        };
+    //                    }
+    //                }
+
+    //                if (ch == '\n')
+    //                {
+    //                    // Reset word, word counter and increment row counter if moving to a new row
+    //                    currentWord = "";
+    //                    currentWordIndex = 0;
+    //                    currentRowIndex++;
+    //                }
+    //                else
+    //                {
+    //                    // Reset for the next word
+    //                    currentWord = "";
+    //                    currentWordIndex++;
+    //                }
+    //                break;
+
+    //            default: // Regular character, i.e. part of the next value
+    //                currentWord += ch;
+    //                break;
+    //        }
+    //    }
+    //}
 
 
     /// <summary>
     /// Looks up which property the column `wordIndex` corresponds to, and updates currentFood accordingly.
     /// </summary>
-    /// <param name="file">The file being explored.</param>
-    /// <param name="currentFood">Reference to the current food object. Explicitly used 'ref' keyword for clarity.</param>
-    /// <param name="currentWord">The unparsed value of the current column.</param>
-    /// <param name="wordIndex">Thee column index to lookup.</param>
-    /// <param name="floatVal">The parsed value of the current column.</param>
-    private void HandleColumnLookup(DatasetFile file, ref FoodData currentFood, string currentWord, int wordIndex, float floatVal)
+    private void HandleColumnLookup(DatasetFileStatus status, int col, string colVal, float colValParsed)
     {
-        switch (wordIndex)
+        switch (col)
         {
             case 0:
-                currentFood.Code = currentWord;
+                status.currentFood.Code = colVal;
                 return;
             case 1:
-                currentFood.Name = currentWord;
+                status.currentFood.Name = colVal;
                 return;
             case 2:
-                currentFood.Description = currentWord;
+                status.currentFood.Description = colVal;
                 return;
             case 3:
-                currentFood.FoodGroup = currentWord;
+                status.currentFood.FoodGroup = colVal;
                 return;
             case 5:
-                currentFood.Reference = currentWord;
+                status.currentFood.Reference = colVal;
                 return;
         }
 
-        HandleNutrientLookup(file, wordIndex, ref currentFood, floatVal);
+        HandleNutrientLookup(status, col, colValParsed);
     }
 
 
@@ -315,15 +419,11 @@ public class DatasetReader
     /// Looks up which nutrient the column `wordIndex` corresponds to. The columns depend on the dataset file
     /// being explored currently.
     /// </summary>
-    /// <param name="file">The file being explored.</param>
-    /// <param name="wordIndex">The column index to lookup.</param>
-    /// <param name="currentFood">The current object to output into (reference type).</param>
-    /// <param name="floatVal">The parsed float value of the current column.</param>
-    private void HandleNutrientLookup(DatasetFile file, int wordIndex, ref FoodData currentFood, float floatVal)
+    private void HandleNutrientLookup(DatasetFileStatus status, int col, float colValParsed)
     {
         ENutrient[] columns;
 
-        switch (file)
+        switch (status.file)
         {
             case DatasetFile.Proximates:
                 columns = m_proximateColumns;
@@ -336,14 +436,14 @@ public class DatasetReader
                 break;
         }
 
-        if (wordIndex >= columns.Length)
+        if (col >= columns.Length)
         {
             // The file has trailing empty data commas. So quick exit.
             return;
         }
 
-        if (columns[wordIndex] != (ENutrient)(-1))
-            currentFood.Nutrients[(int)columns[wordIndex]] = floatVal;
+        if (columns[col] != (ENutrient)(-1))
+            status.currentFood.Nutrients[(int)columns[col]] = colValParsed;
 
         return;
     }

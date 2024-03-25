@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using UnityEngine;
 
 
 public class AlgorithmRunner
 {
     public Algorithm Alg { get; private set; }
 
+    // A plot containing Iteration for x and Best Fitness for y. Goes from Iteration 0 to Iteration NumIters.
     private List<Coordinates> m_plot;
     public ReadOnlyCollection<Coordinates> Plot { get; }
 
@@ -24,8 +26,12 @@ public class AlgorithmRunner
         Alg = Algorithm.Build(Type.GetType(algType)!);
 
 
-        // Perform any work that can't be done in the constructor.
-        Alg.Init();
+        // Handle algorithm initialisation. If it fails, go back to the previous menu. (Which must be AlgorithmSetup)
+        if (!Alg.Init())
+        {
+            GameObject.FindWithTag("MenuStackHandler").GetComponent<MenuStackHandler>().OnBackPressed();
+            return;
+        }
 
 
         // Initialise plot variables
@@ -45,7 +51,7 @@ public class AlgorithmRunner
         for (int i = 0; i < numIters; i++)
         {
             Alg.RunIteration();
-            m_plot.Add(new(Alg.IterNum, Alg.BestFitness));
+            m_plot.Add(new(Alg.IterNum, Alg.BestFitness)); // ith plot addition
         }
 
         sw.Stop();

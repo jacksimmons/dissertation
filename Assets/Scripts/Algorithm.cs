@@ -5,11 +5,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 
 
-#if UNITY_64
-using Random = System.Random;
-#endif
-
-
 public abstract class Algorithm
 {
     // Random number generator
@@ -63,18 +58,30 @@ public abstract class Algorithm
     public readonly string DatasetError = ""; // Stores any errors which occur during the dataset stage, to display to the user instead of running.
 
 
+    // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
+    /// <summary>
+    /// Instantiate an Algorithm subclass instance.
+    /// </summary>
+    /// <param name="algType">A type which is a subclass of Algorithm.</param>
+    /// <returns></returns>
+    public static Algorithm Build(Type algType)
+    {
+        if (!algType.IsSubclassOf(typeof(Algorithm)))
+            Logger.Error($"Invalid Algorithm type: {algType.FullName!}.");
+
+        return (Algorithm)Activator.CreateInstance(algType)!;
+    }
+
+
     protected Algorithm()
     {
         // Load foods from the dataset, and store any errors that occurred.
         DatasetReader dr = new(Prefs);
         DatasetError = dr.SetupError;
 
-        if (DatasetError != "")
-        {
-            Logger.Error(DatasetError);
+        if (DatasetError != "") // Thrown in Init
             return;
-        }
-        
+
         m_foods = new(dr.ProcessFoods());
         Foods = new(m_foods);
 
@@ -108,47 +115,55 @@ public abstract class Algorithm
 
         // Load constraints from Preferences.
         Constraints = new(Prefs.constraints.Select(Constraint.Build).ToList());
-
-
-        // Handle erroneous preference values.
-        if (Preferences.Instance.acoAlpha <= 0)
-            Logger.Error("Invalid parameter: acoAlpha was <= 0.");
-        if (Preferences.Instance.acoBeta <= 0)
-            Logger.Error("Invalid parameter: acoBeta was <= 0.");
-        if (Preferences.Instance.minPortionMass <= 0)
-            Logger.Error("Invalid parameter: minPortionMass was <= 0.");
-        if (Preferences.Instance.maxPortionMass < Preferences.Instance.minPortionMass)
-            Logger.Error("Invalid parameter: maxPortionMass was < minPortionMass.");
-        if (Preferences.Instance.numStartingPortionsPerDay <= 0)
-            Logger.Error("Invalid parameter: numStartingPortionsPerDay was <= 0.");
-        if (Preferences.Instance.pheroEvapRate < 0)
-            Logger.Error("Invalid parameter: pheroEvapRate was < 0.");
-        if (Preferences.Instance.pheroImportance < 0)
-            Logger.Error("Invalid parameter: pheroImportance was < 0.");
-        if (Preferences.Instance.populationSize <= 0)
-            Logger.Error("Invalid parameter: populationSize was <= 0.");
-    }
-
-
-    // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
-    /// <summary>
-    /// Instantiate an Algorithm subclass instance.
-    /// </summary>
-    /// <param name="algType">A type which is a subclass of Algorithm.</param>
-    /// <returns></returns>
-    public static Algorithm Build(Type algType)
-    {
-        if (!algType.IsSubclassOf(typeof(Algorithm)))
-            Logger.Error($"Invalid Algorithm type: {algType.FullName!}.");
-
-        return (Algorithm)Activator.CreateInstance(algType)!;
     }
 
 
     /// <summary>
     /// Handles any initialisation that cannot be done in the constructor.
+    /// Returns true if successful, false if there was an error.
     /// </summary>
-    public abstract void Init();
+    public virtual bool Init()
+    {
+        // Handle potential errors.
+        string errorText = "";
+
+        if (DatasetError != "")
+            errorText = DatasetError;
+
+        if (Preferences.Instance.acoAlpha <= 0)
+            errorText = "Invalid parameter: acoAlpha was <= 0.";
+
+        if (Preferences.Instance.acoBeta <= 0)
+            errorText = "Invalid parameter: acoBeta was <= 0.";
+
+        if (Preferences.Instance.minPortionMass <= 0)
+            errorText = "Invalid parameter: minPortionMass was <= 0.";
+
+        if (Preferences.Instance.maxPortionMass < Preferences.Instance.minPortionMass)
+            errorText = "Invalid parameter: maxPortionMass was < minPortionMass.";
+
+        if (Preferences.Instance.numStartingPortionsPerDay <= 0)
+            errorText = "Invalid parameter: numStartingPortionsPerDay was <= 0.";
+
+        if (Preferences.Instance.pheroEvapRate < 0)
+            errorText = "Invalid parameter: pheroEvapRate was < 0.";
+
+        if (Preferences.Instance.pheroImportance < 0)
+            errorText = "Invalid parameter: pheroImportance was < 0.";
+
+        if (Preferences.Instance.populationSize <= 0)
+            errorText = "Invalid parameter: populationSize was <= 0.";
+
+        // By default, don't show error
+        if (errorText != "")
+        {
+            Logger.Warn(errorText);
+            return false;
+        }
+
+        UpdateBestDay(); // Update best day for iteration 0
+        return true;
+    }
 
 
     /// <summary>
@@ -158,7 +173,7 @@ public abstract class Algorithm
     {
         IterNum++;
         NextIteration();
-        UpdateBestDay();
+        UpdateBestDay(); // Ensures best day is updated for all iterations, even 0
     }
 
 
@@ -190,7 +205,10 @@ public abstract class Algorithm
         }
 
         // Prevent other classes modifying the best day by cloning it
-        SetBestDay(new(BestDay), BestFitness, BestIteration);
+        if (BestDayExists)
+        {
+            SetBestDay(new(BestDay), BestFitness, BestIteration);
+        }
     }
 
 

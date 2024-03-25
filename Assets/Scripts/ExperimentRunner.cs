@@ -14,19 +14,6 @@ using System.Threading;
 using TMPro;
 using UnityEngine;
 
-public readonly struct Coordinates
-{
-    public float X { get; }
-    public float Y { get; }
-
-
-    public Coordinates(float x, float y)
-    {
-        X = x;
-        Y = y;
-    }
-}
-
 
 public enum EExperimentType
 {
@@ -48,10 +35,6 @@ public class ExperimentRunner : MonoBehaviour
     private TMP_Text m_typeCycleTxt;
     private EExperimentType m_type = EExperimentType.AveragePerformance;
 
-    [SerializeField]
-    private TMP_Text m_itersPassedTxt; // A pseudo-progress bar
-    private int m_itersPassed = 0; // A counter variable which is incremented through Interlocked.Increment.
-
 
     private void Start()
     {
@@ -64,12 +47,14 @@ public class ExperimentRunner : MonoBehaviour
     //
     public void OnNumItersInputChanged()
     {
+        if (m_numItersInp.text == "") return;
         m_numIters = int.Parse(m_numItersInp.text);
     }
 
 
     public void OnNumAlgsInputChanged()
     {
+        if (m_numAlgsInp.text == "") return;
         m_numAlgs = int.Parse(m_numAlgsInp.text);
     }
 
@@ -86,42 +71,29 @@ public class ExperimentRunner : MonoBehaviour
     //
     public void Run()
     {
-        if (m_numIters <= 0) Logger.Error("Number of iterations must be > 0");
-        if (m_numAlgs <= 0) Logger.Error("Number of algorithms must be > 0");
-
-        m_itersPassed = 0;
-        StartCoroutine(UpdateIterationCount());
+        if (m_numIters <= 0)
+        {
+            Logger.Warn("Number of iterations must be greater than zero.");
+            return;
+        }
+        if (m_numAlgs <= 0)
+        {
+            Logger.Warn("Number of algorithms must be greater than zero.");
+            return;
+        }
 
         switch (m_type)
         {
             case EExperimentType.AveragePerformance:
                 AlgorithmSetResult result = RunAlgorithmSet(m_numAlgs, m_numIters);
+
                 // Plot the best fitness achieved from the set
-                PlotTools.PlotGraph(result.BestAlgorithm.BestFitnessEachIteration, m_numIters);
+                PlotTools.PlotMultipleLines(result.Results.Select(x => x.BestFitnessEachIteration).ToArray(), m_numIters);
                 break;
             default:
                 Logger.Error("Experiment type was invalid.");
                 break;
         }
-
-        m_itersPassed = -1;
-    }
-
-
-    /// <summary>
-    /// If the iterations passed variable is not -1, refreshes it on display frequently, until
-    /// it is set to -1.
-    /// </summary>
-    private IEnumerator UpdateIterationCount()
-    {
-        while (m_itersPassed != -1)
-        {
-            // Displayed as an average if there are > 1 algorithms.
-            m_itersPassedTxt.text = $"Avg. Iterations: {m_itersPassed / (float)m_numAlgs}/{m_numIters}";
-            yield return new WaitForSeconds(1);
-        }
-        m_itersPassedTxt.text = "All iterations complete.";
-        yield return null;
     }
 
 
@@ -129,26 +101,18 @@ public class ExperimentRunner : MonoBehaviour
     /// Handles the running of a single algorithm, outputting its stats and execution time.
     /// </summary>
     /// <returns>Algorithm stats.</returns>
-    public AlgorithmResult RunAlgorithm(AlgorithmRunner runner, int numIters)
+    public AlgorithmResult RunAlgorithm(AlgorithmRunner runner, int maxIter)
     {
-        // Run the iterations
-        Coordinates[] bestFitnessEachIter = new Coordinates[numIters];
-
         Stopwatch sw = Stopwatch.StartNew();
-        for (int i = 0; i < numIters; i++)
+        for (int i = 1; i <= maxIter; i++)
         {
-            // Iteration 0 (before start) to Iteration {numIters - 1}
-            if (runner.Alg.BestDayExists)
-                bestFitnessEachIter[runner.Alg.IterNum] = new(runner.Alg.IterNum, runner.Alg.BestFitness);
-
             runner.RunIterations(1);
-            Interlocked.Increment(ref m_itersPassed);
         }
         sw.Stop();
 
 
         // Return value
-        AlgorithmResult result = new(runner.Alg, sw.ElapsedMilliseconds / 1000f, bestFitnessEachIter);
+        AlgorithmResult result = new(runner.Alg, sw.ElapsedMilliseconds / 1000f, runner.Plot.ToArray());
         return result;
     }
 
@@ -282,46 +246,53 @@ public readonly struct AlgorithmResult : IVerbose
 
 public readonly struct AlgorithmSetResult : IVerbose
 {
-    public readonly AlgorithmResult BestAlgorithm { get; }
+    public readonly AlgorithmResult[] Results { get; }
+    public readonly int BestIndex { get; }
+    public readonly AlgorithmResult BestResult => Results[BestIndex];
+
     public readonly float AverageBestFitness { get; }
 
     public readonly float TotalExecutionSecs { get; }
     public readonly float AverageExecutionSecs { get; }
 
 
-    public AlgorithmSetResult(AlgorithmResult[] set)
+    public AlgorithmSetResult(AlgorithmResult[] results)
     {
-        if (set.Length < 1)
-            Logger.Error($"Could not construct AlgorithmSetResult from {set.Length} AlgorithmResults.");
+        if (results.Length < 1)
+        {
+            Logger.Warn($"Could not construct AlgorithmSetResult from {results.Length} AlgorithmResults.");
+        }
+
+        Results = results;
 
         // Init sums to 0
         AverageBestFitness = 0;
         TotalExecutionSecs = 0;
 
         // Assign a default best
-        BestAlgorithm = set[0];
-        for (int i = 0; i < set.Length; i++)
+        BestIndex = 0;
+        for (int i = 0; i < results.Length; i++)
         {
             // Check if the result is the best so far
-            if (set[i].BestFitness < BestAlgorithm.BestFitness)
+            if (results[i].BestFitness < Results[BestIndex].BestFitness)
             {
-                BestAlgorithm = set[i];
+                BestIndex = i;
             }
 
             // Perform sum part of averages
-            AverageBestFitness += set[i].BestFitness;
-            TotalExecutionSecs += set[i].ExecutionSecs;
+            AverageBestFitness += Results[i].BestFitness;
+            TotalExecutionSecs += Results[i].ExecutionSecs;
         }
 
         // Finish the average calculations
-        AverageBestFitness /= set.Length;
-        AverageExecutionSecs = TotalExecutionSecs / set.Length;
+        AverageBestFitness /= Results.Length;
+        AverageExecutionSecs = TotalExecutionSecs / Results.Length;
     }
 
 
     public string Verbose()
     {
-        return $"Best algorithm:\n-=-=-=-=-=-\n{BestAlgorithm.Verbose()}\n=-=-=-=-=-\nAverage Best Fitness: {AverageBestFitness}\n"
+        return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\nAverage Best Fitness: {AverageBestFitness}\n"
                 + $"Average Execution Time: {AverageExecutionSecs}s";
     }
 }
@@ -357,7 +328,7 @@ public readonly struct ExperimentResult : IVerbose
         for (int i = 0; i < sets.Length; i++)
         {
             // Check if the result is the best so far
-            if (sets[i].BestAlgorithm.BestFitness < BestSetOverall.BestAlgorithm.BestFitness)
+            if (sets[i].BestResult.BestFitness < BestSetOverall.BestResult.BestFitness)
             {
                 BestSetOverall = sets[i];
                 BestStepOverall = steps[i];

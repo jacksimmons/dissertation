@@ -267,12 +267,10 @@ public class AlgACO : Algorithm
     private readonly Portion[] m_vertices = new Portion[Prefs.colonyPortions];
     private readonly Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
 
-    //private bool[] m_exploredFoods;
 
-
-    public override void Init()
+    public override bool Init()
     {
-        //m_exploredFoods = new bool[Foods.Count];
+        if (!base.Init()) return false;
 
 
         // Create vertices
@@ -298,6 +296,9 @@ public class AlgACO : Algorithm
             Ant ant = new(this, i % Prefs.colonyPortions, true);
             m_ants[i] = ant;
         }
+
+
+        return true;
     }
 
 

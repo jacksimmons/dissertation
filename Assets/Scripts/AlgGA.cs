@@ -10,23 +10,36 @@ public abstract class AlgGA : Algorithm
     protected int m_tournamentSize = Math.Min((int)(Prefs.populationSize * 0.2f), 2);
 
 
-    public override void Init()
+    public override bool Init()
     {
+        if (!base.Init()) return false;
+
+
         LoadStartingPopulation();
 
 
-        // Handle erroneous properties
+        // Handle potential errors
+        string errorText = "";
+
         if (Prefs.mutationMassChangeMin < 0 || Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
-            Logger.Error("Invalid parameter: mutation min < 0 or mutation min > mutation max.");
+            errorText = "Invalid parameter: mutation min < 0 or mutation min > mutation max.";
 
         if (Prefs.mutationMassChangeMax < 0 || Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
-            Logger.Error("Invalid parameter: mutation max < 0 or mutation max < mutation min.");
+            errorText = "Invalid parameter: mutation max < 0 or mutation max < mutation min.";
 
         if (Prefs.chanceToMutatePortion < 0)
-            Logger.Error("Invalid parameter: mutation chance was < 0.");
+            errorText = "Invalid parameter: mutation chance was < 0.";
 
         if (m_numParents <= 0)
-            Logger.Error("Invalid parameter: numparents was <= 0.");
+            errorText = "Invalid parameter: numparents was <= 0.";
+
+        if (errorText != "")
+        {
+            Logger.Warn(errorText);
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -113,10 +126,7 @@ public abstract class AlgGA : Algorithm
     {
         // Only mutate if day has more than 0 portions.
         if (day.portions.Count == 0)
-        { 
-            Logger.Log("Day has no portions", Severity.Error);
-            return;
-        }
+            Logger.Error("Day has no portions");
 
         // Mutate existing portions (add/remove mass)
         for (int i = 0; i < day.portions.Count; i++)

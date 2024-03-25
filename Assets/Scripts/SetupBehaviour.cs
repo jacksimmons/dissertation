@@ -35,7 +35,7 @@ public class SetupBehaviour : MonoBehaviour
         float newPref = float.Parse(value);
         if (newPref < 0)
         {
-            Logger.Error($"Invalid preference value - must be > 0.");
+            PreferenceErrorPopup();
             return;
         }
 
@@ -52,11 +52,14 @@ public class SetupBehaviour : MonoBehaviour
         int newPref = int.Parse(value);
         if (newPref < 0)
         {
-            Logger.Error($"Invalid preference value - must be > 0.");
+            PreferenceErrorPopup();
             return;
         }
 
         pref = newPref;
         Saving.SavePreferences();
     }
+
+
+    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be > 0).");
 }

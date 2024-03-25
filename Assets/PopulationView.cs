@@ -149,7 +149,7 @@ public class PopulationView : MonoBehaviour
     {
         if (portionIndex > day.portions.Count)
         {
-            Logger.Log("Day has no portions (it was unexpectedly modified).", Severity.Warning);
+            Logger.Warn("Day has no portions (it was unexpectedly modified).");
             return;
         }
 

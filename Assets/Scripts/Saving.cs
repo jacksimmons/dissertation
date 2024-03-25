@@ -68,7 +68,7 @@ public static class Saving
         {
             // Restart the function after creating a new T save
             SaveToFile(new T(), filename);
-            Logger.Log("File does NOT exist! Returning empty object", Severity.Warning);
+            Logger.Log("File does not exist! Returning empty object");
             return LoadFromFile<T>(filename);
         }
     }

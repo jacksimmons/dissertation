@@ -118,7 +118,7 @@ public class AlgorithmSetup : SetupBehaviour
 
     private static void MacrosToCalories()
     {
-        CalorieMassConverter.MacrosToCalories(
+        MathTools.MacrosToCalories(
             ref Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
             Preferences.Instance.constraints[(int)ENutrient.Protein].Goal,
             Preferences.Instance.constraints[(int)ENutrient.Fat].Goal,
@@ -129,7 +129,7 @@ public class AlgorithmSetup : SetupBehaviour
 
     private static void CaloriesToMacros()
     {
-        CalorieMassConverter.CaloriesToMacros(
+        MathTools.CaloriesToMacros(
             Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
             ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal,
             ref Preferences.Instance.constraints[(int)ENutrient.Fat].Goal,
@@ -144,7 +144,7 @@ public class AlgorithmSetup : SetupBehaviour
         string type = Preferences.Instance.constraints[(int)nutrient].Type;
 
         int indexOfType = Array.IndexOf(Preferences.CONSTRAINT_TYPES, type);
-        if (indexOfType == -1) Logger.Log($"Provided constraint type ({type}) was not valid.", Severity.Error);
+        if (indexOfType == -1) Logger.Error($"Provided constraint type ({type}) was not valid.");
 
         // Set the new type
         string newType = Preferences.Instance.constraints[(int)nutrient].Type = ArrayTools.CircularNextElement(Preferences.CONSTRAINT_TYPES, indexOfType, true);

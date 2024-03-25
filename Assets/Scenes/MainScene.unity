@@ -2538,7 +2538,6 @@ MonoBehaviour:
   m_iterTimeTakenText: {fileID: 399146378}
   m_iterNumText: {fileID: 1033546729}
   m_populationView: {fileID: 375471627}
-  m_graph: {fileID: 0}
 --- !u!1 &169598178
 GameObject:
   m_ObjectHideFlags: 0
@@ -5495,7 +5494,6 @@ MonoBehaviour:
   m_iterTimeTakenText: {fileID: 399146378}
   m_iterNumText: {fileID: 1033546729}
   m_populationView: {fileID: 375471627}
-  m_graph: {fileID: 4900000, guid: 57cd1a81c16f211418dae369f07c82a8, type: 3}
 --- !u!1 &428406584
 GameObject:
   m_ObjectHideFlags: 0
@@ -18245,7 +18243,7 @@ GameObject:
   - component: {fileID: 1560447284}
   m_Layer: 0
   m_Name: MenuHandler
-  m_TagString: Untagged
+  m_TagString: MenuStackHandler
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -25936,9 +25934,25 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 3263783276880436436, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
+      propertyPath: m_fontSize
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 3263783276880436436, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
+      propertyPath: m_fontSizeMax
+      value: 36
+      objectReference: {fileID: 0}
+    - target: {fileID: 3263783276880436436, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 3263783276880436436, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
+      propertyPath: m_enableAutoSizing
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8790583861819369280, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
       propertyPath: m_Name
-      value: Panel
+      value: ErrorPanel
       objectReference: {fileID: 0}
     - target: {fileID: 8790583861819369280, guid: de228756847822a4fb542dbe85e5cde2, type: 3}
       propertyPath: m_IsActive

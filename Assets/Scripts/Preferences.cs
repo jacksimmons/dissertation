@@ -184,9 +184,9 @@ public class Preferences : ICached, IVerbose
         ConstraintData fatData = new();
         ConstraintData carbsData = new();
 
-        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Min, ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
-        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max, ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
-        CalorieMassConverter.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
+        MathTools.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Min, ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
+        MathTools.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max, ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
+        MathTools.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
 
         SetConstraint(ENutrient.Protein, typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, goal: proteinData.Goal);
         SetConstraint(ENutrient.Fat, typeof(ConvergeConstraint), max: fatData.Max, weight: 2, goal: fatData.Goal);

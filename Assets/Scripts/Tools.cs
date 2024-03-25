@@ -12,14 +12,7 @@ using Debug = UnityEngine.Debug;
 using System.Net.NetworkInformation;
 using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.UIElements;
-
-
-public enum Severity
-{
-    Log,
-    Warning,
-    Error
-}
+using Unity.VisualScripting;
 
 
 public interface IVerbose
@@ -32,52 +25,53 @@ public interface IVerbose
 }
 
 
-/// <summary>
-/// A generic logging class which supports Unity.Debug and System.Console output.
-/// </summary>
-public static class Logger
+
+public enum ELogSeverity
 {
-    /// <summary>
-    /// Handles logging for both Unity and NoGUI projects.
-    /// </summary>
-    /// <param name="message">The message to log.</param>
-    /// <param name="severity">Severity of the log, affecting the output stream
-    /// or message. Default is Log.</param>
-    public static void Log(object message, Severity severity = Severity.Log, [System.Runtime.CompilerServices.CallerMemberName] string memName = "")
-    {
-#if UNITY_64
-        switch (severity)
-        {
-            case Severity.Log:
-                Debug.Log(message);
-                break;
-            case Severity.Warning:
-                Debug.LogWarning(message);
-                break;
-            case Severity.Error:
-                throw new Exception($"{memName} ERROR: {message}");
-        }
-#else
-        switch (severity)
-        {
-            case Severity.Log:
-                Console.WriteLine($"{memName}: {message}");
-                break;
-            case Severity.Warning:
-                Console.WriteLine($"{memName} WARN: {message}");
-                break;
-            case Severity.Error:
-                throw new Exception($"{memName} ERROR: {message}");
-        }
-#endif
-    }
-
-
-    public static void Warn(object message) => Log(message, Severity.Warning);
-    public static void Error(object message) => Log(message, Severity.Error);
+    Log,
+    Warning,
+    Error
 }
 
 
+/// <summary>
+/// An extension class for logging methods.
+/// </summary>
+public static class Logger
+{
+    private static MenuStackHandler Menu => GameObject.FindWithTag("MenuStackHandler").GetComponent<MenuStackHandler>();
+
+
+    /// <summary>
+    /// Handles logging to console, warning user and throwing errors in critical situations.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    /// <param name="severity">Severity of the log, affecting the output method
+    /// or message. Default is Log.</param>
+    public static void Log(object message, ELogSeverity severity = ELogSeverity.Log)
+    {
+        switch (severity)
+        {
+            case ELogSeverity.Log:
+                Debug.Log(message);
+                break;
+            case ELogSeverity.Warning:
+                Menu.ShowPopup("Warning", $"{message}", Color.red);
+                break;
+            case ELogSeverity.Error:
+                throw new Exception($"{message}");
+        }
+    }
+
+
+    public static void Warn(object message) => Log(message, ELogSeverity.Warning);
+    public static void Error(object message) => Log(message, ELogSeverity.Error);
+}
+
+
+/// <summary>
+/// An extension class for arrays.
+/// </summary>
 public static class ArrayTools
 {
     /// <summary>
@@ -134,7 +128,9 @@ public static class ArrayTools
 }
 
 
-#if UNITY_64
+/// <summary>
+/// An extension class for Unity UI operations.
+/// </summary>
 public static class UITools
 {
     /// <summary>
@@ -179,58 +175,11 @@ public static class UITools
         }
     }
 }
-#endif
 
 
-public static class CalorieMassConverter
-{
-    /// <summary>
-    /// Sets calories to the sum of the caloric values of provided macros.
-    /// [Citation needed] 1g of protein, fat or carbohydrate has 4, 9 or 4 kcal caloric value respectively.
-    /// </summary>
-    /// <param name="calories">The calories to update.</param>
-    public static void MacrosToCalories(ref float calories, float proteinG, float fatG, float carbsG)
-    {
-        calories = proteinG * 4 + fatG * 8 + carbsG * 4;
-    }
-
-    
-    /// <summary>
-    /// If macros existed before, multiplies them by a ratio to ensure the macro calorie value equals the preferences calorie value.
-    /// Otherwise, generates macros according to a sensible ratio of p/f/c: 20/35/45
-    /// [Citation needed]
-    /// </summary>
-    /// <param name="calories">The calories to generate sensible macros for.</param>
-    public static void CaloriesToMacros(float calories, ref float proteinG, ref float fatG, ref float carbsG)
-    {
-        // Calories calculated from the macros (not necessarily correct, goal is to correct it).
-        float ratioCalories = 4 * proteinG + 9 * fatG + 4 * carbsG;
-
-        // Div by zero case - assign recommended macro ratios from the given kcal.
-        if (MathTools.Approx(ratioCalories, 0))
-        {
-            float proteinCalories = 0.2f * calories;
-            float fatCalories = 0.35f * calories;
-            float carbCalories = 0.45f * calories;
-
-            // Convert calories to grams by dividing by each macro's respective ratio
-            proteinG = proteinCalories / 4;
-            fatG = fatCalories / 9;
-            carbsG = carbCalories / 4;
-
-            return;
-        }
-
-        // Default case - multiply macros so they satisfy the ratio kcal = 9fat + 4protein + 4carbs
-        float multiplier = calories / ratioCalories;
-
-        proteinG *= multiplier;
-        fatG *= multiplier;
-        carbsG *= multiplier;
-    }
-}
-
-
+/// <summary>
+/// An extension class for math operations required in this project.
+/// </summary>
 public static class MathTools
 {
     // For grams stored as a float, gives precision of up to 1mg.
@@ -298,63 +247,226 @@ public static class MathTools
         }
         return index;
     }
+
+
+    /// <summary>
+    /// Sets calories to the sum of the caloric values of provided macros.
+    /// [Citation needed] 1g of protein, fat or carbohydrate has 4, 9 or 4 kcal caloric value respectively.
+    /// </summary>
+    /// <param name="calories">The calories to update.</param>
+    public static void MacrosToCalories(ref float calories, float proteinG, float fatG, float carbsG)
+    {
+        calories = proteinG * 4 + fatG * 8 + carbsG * 4;
+    }
+
+
+    /// <summary>
+    /// If macros existed before, multiplies them by a ratio to ensure the macro calorie value equals the preferences calorie value.
+    /// Otherwise, generates macros according to a sensible ratio of p/f/c: 20/35/45
+    /// [Citation needed]
+    /// </summary>
+    /// <param name="calories">The calories to generate sensible macros for.</param>
+    public static void CaloriesToMacros(float calories, ref float proteinG, ref float fatG, ref float carbsG)
+    {
+        // Calories calculated from the macros (not necessarily correct, goal is to correct it).
+        float ratioCalories = 4 * proteinG + 9 * fatG + 4 * carbsG;
+
+        // Div by zero case - assign recommended macro ratios from the given kcal.
+        if (MathTools.Approx(ratioCalories, 0))
+        {
+            float proteinCalories = 0.2f * calories;
+            float fatCalories = 0.35f * calories;
+            float carbCalories = 0.45f * calories;
+
+            // Convert calories to grams by dividing by each macro's respective ratio
+            proteinG = proteinCalories / 4;
+            fatG = fatCalories / 9;
+            carbsG = carbCalories / 4;
+
+            return;
+        }
+
+        // Default case - multiply macros so they satisfy the ratio kcal = 9fat + 4protein + 4carbs
+        float multiplier = calories / ratioCalories;
+
+        proteinG *= multiplier;
+        fatG *= multiplier;
+        carbsG *= multiplier;
+    }
 }
 
 
 /// <summary>
-/// A static class for plotting graphs using gnuplot.
+/// An extension class for plotting graphs using gnuplot.
 /// </summary>
 public static class PlotTools
 {
-    public static void PlotGraph(Coordinates[] graph, int numIters)
+    public static void PlotLine(Coordinates[] line, int numIters)
     {
-        // Ignore invalid plot
-        if (graph.Length == 0) return;
-
-
-        // Construct data file
-        string dataFilePath = Application.persistentDataPath + "/plot.dat";
-        if (!File.Exists(dataFilePath))
-            File.Create(dataFilePath).Close();
-
-        string dataFileContent = "";
-        foreach (Coordinates coords in graph)
-        {
-            dataFileContent += $"{coords.X} {coords.Y}\n";
-        }
-        File.WriteAllText(dataFilePath, dataFileContent);
-
-
-        // Construct gnuplot file
-        string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
-        if (!File.Exists(gnuplotFilePath))
-            File.Create(gnuplotFilePath).Close();
-
-        string plotFilePath = $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
-        File.WriteAllText(gnuplotFilePath, GetGnuPlotFile(plotFilePath, dataFilePath, numIters, graph));
-
-
-        // Run gnuplot
-        Process p = new();
-        p.StartInfo = new(Application.dataPath + "\\gnuplot\\bin\\gnuplot.exe", gnuplotFilePath);
-        p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden; // Hide the window
-        p.Start();
-
-        Logger.Log($"{ Path.GetRelativePath(Directory.GetCurrentDirectory(), $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png")}");
+        PlotMultipleLines(new Coordinates[][] { line }, numIters);
     }
 
 
-    private static string GetGnuPlotFile(string plotPath, string dataPath, int numIters, Coordinates[] graph)
+    public static void PlotMultipleLines(Coordinates[][] lines, int numIters)
     {
-        return 
-        "set terminal png enhanced\n"
-        + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), plotPath).Replace("\\", "/")}\"\n"
+        // Make an Nx1 array by converting each Coordinates object into a Coordinates[] of len 1
+        Coordinates[,] graph = new Coordinates[numIters, lines.Length];
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            for (int j = 0; j < numIters; j++)
+            {
+                graph[j, i] = lines[i][j];
+            }
+        }
+
+        PlotGraph(graph, numIters, lines.Length);
+    }
+
+
+    public static void PlotGraph(Coordinates[,] graph, int numIters, int numLines)
+    {
+        // Check dimensions provided
+        if (graph.GetLength(0) != numIters || graph.GetLength(1) != numLines)
+        {
+            Logger.Warn($"Provided dimensions ({numIters}x{numLines}) don't match with actual dimensions ({graph.GetLength(0)}x{graph.GetLength(1)}).");
+            return;
+        }
+
+        // Check for all infinite values
+        for (int i = 0; i < numIters; i++)
+        {
+            for (int j = 0; j < numLines; j++)
+            {
+                if (float.IsFinite(graph[i, j].Y)) goto valid;
+            }
+
+            Logger.Warn("All values in one of the algorithms were non-finite. Try more iterations or having less restrictive constraints.");
+        valid:
+            continue;
+        }
+
+        string dataFilePath = Application.persistentDataPath + "/plot.dat";
+        string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
+        string graphFilePath = $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
+
+        ConstructDataFile(graph, numIters, numLines, dataFilePath);
+        ConstructGnuplotFile(graph, numIters, numLines, graphFilePath, gnuplotFilePath, dataFilePath);
+        RunGnuplot(gnuplotFilePath);
+    }
+
+
+    /// <summary>
+    /// Constructs the .dat file which the gnuplot file will extract a png graph from.
+    /// </summary>
+    private static void ConstructDataFile(Coordinates[,] graph, int numIters, int numLines, string dataFilePath)
+    {
+        // Create data file
+        if (!File.Exists(dataFilePath))
+            File.Create(dataFilePath).Close();
+
+        // Only add best fitness changes to the file (and a point for the last iteration)
+        string dataFileContent = "";
+
+        float[] bestFitnessesSoFar = new float[numLines];
+        for (int i = 0; i < numLines; i++)
+        {
+            bestFitnessesSoFar[i] = float.PositiveInfinity;
+        }
+
+        // Iterate over iteration
+        // ith iteration for all lines
+        for (int i = 0; i < numIters; i++)
+        {
+            string dataFileLine = $"{i + 1}";
+
+            // Iterate over line num
+            // jth line for the ith iteration
+            int numLinesNotImproved = 0;
+            for (int j = 0; j < numLines; j++)
+            {
+                float fitness = graph[i, j].Y;
+                dataFileLine += float.IsPositiveInfinity(fitness) ? " inf" : $" {graph[i, j].Y}";
+
+                if (fitness < bestFitnessesSoFar[j] || graph[i, j].X == numIters)
+                {
+                    bestFitnessesSoFar[j] = fitness;
+                }
+                else
+                {
+                    numLinesNotImproved++;
+                }
+            }
+
+            dataFileLine += '\n';
+
+            // Only write the line if at least one of the lines has improved on its best fitness
+            if (numLinesNotImproved < numLines)
+            {
+                dataFileContent += dataFileLine;
+            }
+        }
+
+        // Write .dat data file
+        File.WriteAllText(dataFilePath, dataFileContent);
+    }
+
+
+    /// <summary>
+    /// Constructs the gnuplot script file which will create the graph using gnuplot, and output it as png.
+    /// </summary>
+    private static void ConstructGnuplotFile(Coordinates[,] graph, int numIters, int numLines, string graphPath, string gnuplotScriptPath, string dataPath)
+    {
+        // Create gnuplot script file
+        if (!File.Exists(gnuplotScriptPath))
+            File.Create(gnuplotScriptPath).Close();
+
+        // Find the maximum finite fitness of the graph (checked earlier that not all points are infinity)
+        float maxFitness = 0;
+
+        for (int i = 0; i < numIters; i++)
+        {
+            for (int j = 0; j < numLines; j++)
+            {
+                float fitness = graph[i, j].Y;
+                if (fitness > maxFitness && float.IsFinite(fitness))
+                {
+                    maxFitness = fitness;
+                }
+            }
+        }
+
+        string gnuplotFile
+        = "set terminal png enhanced\n"
+        + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), graphPath).Replace("\\", "/")}\"\n"
         + $"set xrange [0: {numIters}]\n"
-        + $"set yrange [0: {graph.Max(c => c.Y)}]\n"
+        + $"set yrange [0: {maxFitness}]\n"
         + "set title \"Graph of Best Fitness against Iteration Number\"\n"
         + "set xlabel \"Iteration\"\n"
-        + "set ylabel \"Fitness\"\n"
-        + $"set style line 1 pi {numIters / 5}\n"
-        + $"plot \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/")}\" with lines ls 1 title \"Graph (Final Fitness: {graph[^1].Y})\"\n";
+        + "set ylabel \"Best Fitness\"\n"
+        + "plot ";
+
+        string dataRelativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/");
+        for (int l = 0; l < numLines; l++)
+        {
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{l+2} with lines title \"Algorithm {l} (Final Best Fitness: {graph[numIters - 1, l].Y})\",\\\n";
+        }
+
+        // Write .gnuplot script file
+        File.WriteAllText(gnuplotScriptPath, gnuplotFile);
+    }
+
+
+    /// <summary>
+    /// Runs a gnuplot script as a hidden process.
+    /// </summary>
+    /// <param name="gnuplotScriptPath">The gnuplot script to run.</param>
+    private static void RunGnuplot(string gnuplotScriptPath)
+    {
+        // Run gnuplot
+        Process p = new();
+        p.StartInfo = new(Application.dataPath + "\\gnuplot\\bin\\gnuplot.exe", gnuplotScriptPath);
+        p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden; // Hide the window
+        p.Start();
     }
 }

@@ -71,7 +71,10 @@ public abstract class Constraint
     {
         Type type = Type.GetType(data.Type)!;
         if (!type.IsSubclassOf(typeof(Constraint)))
+        {
             Logger.Error($"Invalid Constraint type: {data.Type}.");
+            return new NullConstraint();
+        }
 
         return (Constraint)Activator.CreateInstance(Type.GetType(data.Type)!, data)!;
     }
@@ -142,7 +145,7 @@ public class HardConstraint : Constraint, IVerbose
     protected void Init()
     {
         if (max < min)
-            Logger.Log($"Argument max ({max}) was less than argument min ({min}).", Severity.Error);
+            Logger.Error($"Argument max ({max}) was less than argument min ({min}).");
         if (weight < 0)
             Logger.Error($"Argument weight ({weight}) was < 0.");
 
@@ -255,7 +258,7 @@ public class ConvergeConstraint : HardConstraint, IVerbose
         base.Init();
 
         if (goal < 0 || goal < min || goal > max)
-            Logger.Log($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).", Severity.Error);
+            Logger.Error($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).");
     }
 
 

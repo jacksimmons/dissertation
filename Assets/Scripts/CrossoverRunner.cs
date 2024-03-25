@@ -252,9 +252,7 @@ public class CrossoverRunner
         Portion right = new(portion.FoodType, portion.Mass - cutoffMass);
 
         if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
-        {
-            Logger.Log($"Mass: {portion.Mass}, cutoff pt: {cutoffMass}", Severity.Error);
-        }
+            Logger.Error($"Invalid cutoff mass: Portion mass: {portion.Mass}, Cutoff mass: {cutoffMass}");
 
         return new(left, right);
     }

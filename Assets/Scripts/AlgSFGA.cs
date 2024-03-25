@@ -8,11 +8,13 @@ public class AlgSFGA : AlgGA
     private Func<List<Day>, bool, Day> m_selectionMethod;
 
 
-    public override void Init()
+    public override bool Init()
     {
-        base.Init();
+        if (!base.Init()) return false;
 
         m_selectionMethod = RankSelection;
+
+        return true;
     }
 
 
