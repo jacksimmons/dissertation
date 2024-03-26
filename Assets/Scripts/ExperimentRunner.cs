@@ -18,6 +18,7 @@ using UnityEngine;
 public enum EExperimentType
 {
     AveragePerformance,
+    PopSize,
 }
 
 
@@ -85,10 +86,10 @@ public class ExperimentRunner : MonoBehaviour
         switch (m_type)
         {
             case EExperimentType.AveragePerformance:
-                AlgorithmSetResult result = RunAlgorithmSet(m_numAlgs, m_numIters);
-
-                // Plot the best fitness achieved from the set
-                PlotTools.PlotMultipleLines(result.Results.Select(x => x.BestFitnessEachIteration).ToArray(), m_numIters);
+                PlotTools.PlotLines(RunAlgorithmSet(m_numAlgs, m_numIters));
+                break;
+            case EExperimentType.PopSize:
+                PlotTools.PlotExperiment(RunIntExperiment(m_numAlgs, m_numIters, ref Preferences.Instance.populationSize, 10, 100, 10, "PopSize"));
                 break;
             default:
                 Logger.Error("Experiment type was invalid.");
@@ -188,7 +189,7 @@ public class ExperimentRunner : MonoBehaviour
             pref += step;
         }
 
-        return new(results, steps, name);
+        return new(results, steps.Select(x => (object)x).ToArray(), name);
     }
 
 
@@ -215,7 +216,7 @@ public class ExperimentRunner : MonoBehaviour
         results[1] = RunAlgorithmSet(numAlgs, numIters);
         steps[1] = 1;
 
-        return new(results, steps, name);
+        return new(results, steps.Select(x => (object)x).ToArray(), name);
     }
 }
 
@@ -250,7 +251,7 @@ public readonly struct AlgorithmSetResult : IVerbose
     public readonly int BestIndex { get; }
     public readonly AlgorithmResult BestResult => Results[BestIndex];
 
-    public readonly float AverageBestFitness { get; }
+    public readonly Coordinates[] AverageBestFitnessEachIteration { get; }
 
     public readonly float TotalExecutionSecs { get; }
     public readonly float AverageExecutionSecs { get; }
@@ -263,36 +264,40 @@ public readonly struct AlgorithmSetResult : IVerbose
             Logger.Warn($"Could not construct AlgorithmSetResult from {results.Length} AlgorithmResults.");
         }
 
-        Results = results;
+        int numIters = results[0].BestFitnessEachIteration.Length;
+        int numAlgs = results.Length;
 
-        // Init sums to 0
-        AverageBestFitness = 0;
+        Results = results;
+        AverageBestFitnessEachIteration = new Coordinates[numIters];
+
         TotalExecutionSecs = 0;
+        AverageExecutionSecs = 0;
 
         // Assign a default best
         BestIndex = 0;
         for (int i = 0; i < results.Length; i++)
         {
             // Check if the result is the best so far
-            if (results[i].BestFitness < Results[BestIndex].BestFitness)
+            if (results[i].BestFitness < results[BestIndex].BestFitness)
             {
                 BestIndex = i;
             }
 
-            // Perform sum part of averages
-            AverageBestFitness += Results[i].BestFitness;
-            TotalExecutionSecs += Results[i].ExecutionSecs;
-        }
+            for (int j = 0; j < numIters; j++)
+            {
+                AverageBestFitnessEachIteration[j].Y += results[i].BestFitnessEachIteration[j].Y / numAlgs;
+            }
 
-        // Finish the average calculations
-        AverageBestFitness /= Results.Length;
-        AverageExecutionSecs = TotalExecutionSecs / Results.Length;
+            // Perform sum part of averages
+            TotalExecutionSecs += results[i].ExecutionSecs;
+            AverageExecutionSecs += results[i].ExecutionSecs / numAlgs;
+        }
     }
 
 
     public string Verbose()
     {
-        return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\nAverage Best Fitness: {AverageBestFitness}\n"
+        return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\n"
                 + $"Average Execution Time: {AverageExecutionSecs}s";
     }
 }
@@ -300,61 +305,65 @@ public readonly struct AlgorithmSetResult : IVerbose
 
 public readonly struct ExperimentResult : IVerbose
 {
-    public readonly AlgorithmSetResult BestSetOverall { get; }
-    public readonly AlgorithmSetResult BestSetOnAverage { get; }
-    public readonly object BestStepOverall { get; }
-    public readonly object BestStepOnAverage { get; }
-    public readonly Coordinates[] AverageBestFitnessEachStep { get; }
+    public readonly AlgorithmSetResult[] Sets { get; }
+    public readonly object[] Steps { get; }
 
-    // For graph output
-    public readonly Coordinates Min { get; }
-    public readonly Coordinates Max { get; }
+    public readonly AlgorithmSetResult BestSet { get; }
+    public readonly object BestStep { get; }
+
+    // The average of the (average best fitness each iteration)s from each set.
+    public readonly Coordinates[] Avg2BestFitnessEachIteration { get; }
     public readonly string Name { get; }
 
 
-    public ExperimentResult(AlgorithmSetResult[] sets, float[] steps, string name)
+    public ExperimentResult(AlgorithmSetResult[] sets, object[] steps, string name)
     {
         if (sets.Length < 1)
             Logger.Error($"Could not construct ExperimentResult from {sets.Length} AlgorithmSetResults.");
 
-        // Init graph
-        AverageBestFitnessEachStep = new Coordinates[sets.Length];
+        Sets = sets;
+        Steps = steps;
+
+        int numIters = sets[0].AverageBestFitnessEachIteration.Length;
+        int numSets = sets.Length;
+
+        Avg2BestFitnessEachIteration = new Coordinates[numIters];
 
         // Set default best
-        BestSetOverall = sets[0];
-        BestStepOverall = steps[0];
-        BestSetOnAverage = sets[0];
-        BestStepOnAverage = steps[0];
+        BestSet = sets[0];
+        BestStep = steps[0];
+
         for (int i = 0; i < sets.Length; i++)
         {
             // Check if the result is the best so far
-            if (sets[i].BestResult.BestFitness < BestSetOverall.BestResult.BestFitness)
+            if (sets[i].BestResult.BestFitness < BestSet.BestResult.BestFitness)
             {
-                BestSetOverall = sets[i];
-                BestStepOverall = steps[i];
+                BestSet = sets[i];
+                BestStep = steps[i];
+            }
+
+            for (int j = 0; j < numIters; j++)
+            {
+                Avg2BestFitnessEachIteration[j].Y += sets[i].AverageBestFitnessEachIteration[j].Y / numSets;
             }
 
             // Check if the average result is the best average so far
-            if (sets[i].AverageBestFitness < BestSetOnAverage.AverageBestFitness)
-            {
-                BestSetOnAverage = sets[i];
-                BestStepOnAverage = steps[i];
-            }
+            //if (sets[i].AverageBestFitness < BestSetOnAverage.AverageBestFitness)
+            //{
+            //    BestSetOnAverage = sets[i];
+            //    BestStepOnAverage = steps[i];
+            //}
 
             // Add points to graph
-            AverageBestFitnessEachStep[i] = new(steps[i], sets[i].AverageBestFitness);
+            //AverageBestFitnessEachStep[i] = new(steps[i], sets[i].AverageBestFitness);
         }
-
-        // Set graph params
-        Min = new Coordinates(steps[0], 0);
-        Max = new Coordinates(steps[^1], AverageBestFitnessEachStep.Max(f => f.Y));
         Name = name;
     }
 
 
     public string Verbose()
     {
-        return $"Best overall set:   \n==========\nStep: {BestStepOverall}\nSet:\n{BestSetOverall.Verbose()}    \n==========\n\n"
-                + $"Best set on average:\n==========\nStep: {BestStepOnAverage}\nSet:\n{BestSetOnAverage.Verbose()}\n==========\n";
+        return $"Best overall set:   \n==========\nStep: {BestStep}\nSet:\n{BestSet.Verbose()}    \n==========\n\n";
+                /*+ $"Best set on average:\n==========\nStep: {BestStepOnAverage}\nSet:\n{BestSetOnAverage.Verbose()}\n==========\n*/
     }
 }

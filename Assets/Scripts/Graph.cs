@@ -1,9 +1,9 @@
 
 
-public readonly struct Coordinates
+public struct Coordinates
 {
-    public float X { get; }
-    public float Y { get; }
+    public float X { get; set; }
+    public float Y { get; set; }
 
 
     public Coordinates(float x, float y)

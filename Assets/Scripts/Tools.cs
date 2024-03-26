@@ -301,57 +301,146 @@ public static class MathTools
 /// </summary>
 public static class PlotTools
 {
-    public static void PlotLine(Coordinates[] line, int numIters)
+    private struct Graph
     {
-        PlotMultipleLines(new Coordinates[][] { line }, numIters);
-    }
+        public int NumLines { get; }
+        public int NumIters { get; }
+
+        public string[] LineNames { get; }
+        public Iteration[] Iterations { get; }
+        public Coordinates[] Average { get; }
 
 
-    public static void PlotMultipleLines(Coordinates[][] lines, int numIters)
-    {
-        // Make an Nx1 array by converting each Coordinates object into a Coordinates[] of len 1
-        Coordinates[,] graph = new Coordinates[numIters, lines.Length];
-
-        for (int i = 0; i < lines.Length; i++)
+        public Graph(int numLines, int numIters, Coordinates[] average)
         {
-            for (int j = 0; j < numIters; j++)
+            NumLines = numLines;
+            NumIters = numIters;
+
+            LineNames = new string[numLines];
+            Iterations = new Iteration[numIters];
+            Average = average;
+
+            for (int i = 0; i < numIters; i++)
             {
-                graph[j, i] = lines[i][j];
+                Iterations[i] = new(numLines);
             }
-        }
 
-        PlotGraph(graph, numIters, lines.Length);
-    }
-
-
-    public static void PlotGraph(Coordinates[,] graph, int numIters, int numLines)
-    {
-        // Check dimensions provided
-        if (graph.GetLength(0) != numIters || graph.GetLength(1) != numLines)
-        {
-            Logger.Warn($"Provided dimensions ({numIters}x{numLines}) don't match with actual dimensions ({graph.GetLength(0)}x{graph.GetLength(1)}).");
-            return;
-        }
-
-        // Check for all infinite values
-        for (int i = 0; i < numIters; i++)
-        {
             for (int j = 0; j < numLines; j++)
             {
-                if (float.IsFinite(graph[i, j].Y)) goto valid;
+                LineNames[j] = $"Algorithm {j} (Final Value: {Iterations[numIters - 1].Points[j]}";
             }
+        }
 
-            Logger.Warn("All values in one of the algorithms were non-finite. Try more iterations or having less restrictive constraints.");
-        valid:
-            continue;
+
+        public void PopulateGraph(Coordinates[][] coords)
+        {
+            // Populate graph
+            for (int i = 0; i < NumIters; i++)
+            {
+                for (int j = 0; j < NumLines; j++)
+                {
+                    Iterations[i].Points[j] = coords[j][i].Y;
+                }
+            }
+        }
+    }
+
+
+    private struct Iteration
+    {
+        public float[] Points { get; }
+
+
+        public Iteration(int numLines)
+        {
+            Points = new float[numLines];
+        }
+    }
+
+
+    public static void PlotLine(AlgorithmResult alg)
+    {
+        PlotLines(new(new AlgorithmResult[] { alg }));
+    }
+
+
+    public static void PlotLines(AlgorithmSetResult algs)
+    {
+        int numIters = algs.Results[0].BestFitnessEachIteration.Length;
+        int numAlgs = algs.Results.Length;
+
+        // Init graph datastructure
+        Graph graph = new(numAlgs, numIters, algs.AverageBestFitnessEachIteration);
+        graph.PopulateGraph(algs.Results.Select(x => x.BestFitnessEachIteration).ToArray());
+
+        PlotGraph(graph);
+    }
+
+
+    /// <summary>
+    /// Plots a graph where each line corresponds to the average best fitness each iteration for a given AlgorithmSetResult.
+    /// It also plots an "average" line which is the average of the averages.
+    /// </summary>
+    /// <param name="exp">The result to plot.</param>
+    public static void PlotExperiment(ExperimentResult exp)
+    {
+        int numIters = exp.Sets[0].AverageBestFitnessEachIteration.Length;
+        int numSets = exp.Sets.Length;
+
+        Graph graph = new(numSets, numIters, exp.Avg2BestFitnessEachIteration);
+        graph.PopulateGraph(exp.Sets.Select(x => x.AverageBestFitnessEachIteration).ToArray());
+
+        for (int i = 0; i < graph.NumLines; i++)
+        {
+            graph.LineNames[i] = $"Step {i} [{exp.Steps[i]}] Average Best (Final Value: {graph.Iterations[numIters - 1].Points[i]})";
+        }
+
+        PlotGraph(graph);
+    }
+
+
+    private static void PlotGraph(Graph graph)
+    {
+        // Check dimensions provided
+        //if (graph.GetLength(0) != numIters || graph.GetLength(1) != numLines)
+        //{
+        //    Logger.Warn($"Provided dimensions ({numIters}x{numLines}) don't match with actual dimensions ({graph.GetLength(0)}x{graph.GetLength(1)}).");
+        //    return;
+        //}
+
+        // Check for all infinite values
+        bool[] isLineFinite = new bool[graph.NumLines]; // Defaults to all false
+        for (int i = 0; i < graph.NumIters; i++)
+        {
+            for (int j = 0; j < graph.NumLines; j++)
+            {
+                // Line already had a finite value
+                if (isLineFinite[j]) continue;
+                
+                // Check if iteration i has finite best fitness on line j
+                if (float.IsFinite(graph.Iterations[i].Points[j]))
+                {
+                    isLineFinite[j] = true;
+                    continue;
+                }
+            }
+        }
+
+        for (int i = 0; i < isLineFinite.Length; i++)
+        {
+            if (!isLineFinite[i])
+            {
+                Logger.Warn("All values in one of the algorithms were non-finite. Try more iterations or having less restrictive constraints.");
+                return;
+            }
         }
 
         string dataFilePath = Application.persistentDataPath + "/plot.dat";
         string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
         string graphFilePath = $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
 
-        ConstructDataFile(graph, numIters, numLines, dataFilePath);
-        ConstructGnuplotFile(graph, numIters, numLines, graphFilePath, gnuplotFilePath, dataFilePath);
+        ConstructDataFile(graph, dataFilePath);
+        ConstructGnuplotFile(graph, graphFilePath, gnuplotFilePath, dataFilePath);
         RunGnuplot(gnuplotFilePath);
     }
 
@@ -359,7 +448,7 @@ public static class PlotTools
     /// <summary>
     /// Constructs the .dat file which the gnuplot file will extract a png graph from.
     /// </summary>
-    private static void ConstructDataFile(Coordinates[,] graph, int numIters, int numLines, string dataFilePath)
+    private static void ConstructDataFile(Graph graph, string dataFilePath)
     {
         // Create data file
         if (!File.Exists(dataFilePath))
@@ -368,27 +457,27 @@ public static class PlotTools
         // Only add best fitness changes to the file (and a point for the last iteration)
         string dataFileContent = "";
 
-        float[] bestFitnessesSoFar = new float[numLines];
-        for (int i = 0; i < numLines; i++)
+        float[] bestFitnessesSoFar = new float[graph.NumLines];
+        for (int i = 0; i < graph.NumLines; i++)
         {
             bestFitnessesSoFar[i] = float.PositiveInfinity;
         }
 
         // Iterate over iteration
         // ith iteration for all lines
-        for (int i = 0; i < numIters; i++)
+        for (int i = 0; i < graph.NumIters; i++)
         {
             string dataFileLine = $"{i + 1}";
 
             // Iterate over line num
             // jth line for the ith iteration
             int numLinesNotImproved = 0;
-            for (int j = 0; j < numLines; j++)
+            for (int j = 0; j < graph.NumLines; j++)
             {
-                float fitness = graph[i, j].Y;
-                dataFileLine += float.IsPositiveInfinity(fitness) ? " inf" : $" {graph[i, j].Y}";
+                float fitness = graph.Iterations[i].Points[j];
+                dataFileLine += float.IsPositiveInfinity(fitness) ? " inf" : $" {graph.Iterations[i].Points[j]}";
 
-                if (fitness < bestFitnessesSoFar[j] || graph[i, j].X == numIters)
+                if (fitness < bestFitnessesSoFar[j] || i+1 == graph.NumIters)
                 {
                     bestFitnessesSoFar[j] = fitness;
                 }
@@ -398,10 +487,15 @@ public static class PlotTools
                 }
             }
 
+            if (graph.Average != null)
+            {
+                dataFileLine += $" {graph.Average[i].Y}";
+            }
+
             dataFileLine += '\n';
 
             // Only write the line if at least one of the lines has improved on its best fitness
-            if (numLinesNotImproved < numLines)
+            if (numLinesNotImproved < graph.NumLines)
             {
                 dataFileContent += dataFileLine;
             }
@@ -415,7 +509,7 @@ public static class PlotTools
     /// <summary>
     /// Constructs the gnuplot script file which will create the graph using gnuplot, and output it as png.
     /// </summary>
-    private static void ConstructGnuplotFile(Coordinates[,] graph, int numIters, int numLines, string graphPath, string gnuplotScriptPath, string dataPath)
+    private static void ConstructGnuplotFile(Graph graph, string graphPath, string gnuplotScriptPath, string dataPath)
     {
         // Create gnuplot script file
         if (!File.Exists(gnuplotScriptPath))
@@ -424,11 +518,11 @@ public static class PlotTools
         // Find the maximum finite fitness of the graph (checked earlier that not all points are infinity)
         float maxFitness = 0;
 
-        for (int i = 0; i < numIters; i++)
+        for (int i = 0; i < graph.NumIters; i++)
         {
-            for (int j = 0; j < numLines; j++)
+            for (int j = 0; j < graph.NumLines; j++)
             {
-                float fitness = graph[i, j].Y;
+                float fitness = graph.Iterations[i].Points[j];
                 if (fitness > maxFitness && float.IsFinite(fitness))
                 {
                     maxFitness = fitness;
@@ -439,17 +533,22 @@ public static class PlotTools
         string gnuplotFile
         = "set terminal png enhanced\n"
         + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), graphPath).Replace("\\", "/")}\"\n"
-        + $"set xrange [0: {numIters}]\n"
+        + $"set xrange [0: {graph.NumIters}]\n"
         + $"set yrange [0: {maxFitness}]\n"
         + "set title \"Graph of Best Fitness against Iteration Number\"\n"
         + "set xlabel \"Iteration\"\n"
         + "set ylabel \"Best Fitness\"\n"
+        + "set style line 1 lc \"red\"\n"
         + "plot ";
 
         string dataRelativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/");
-        for (int l = 0; l < numLines; l++)
+        for (int l = 0; l < graph.NumLines; l++)
         {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{l+2} with lines title \"Algorithm {l} (Final Best Fitness: {graph[numIters - 1, l].Y})\",\\\n";
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{l+2} with lines title \"{graph.LineNames[l]}\",\\\n";
+        }
+        if (graph.Average != null)
+        {
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{graph.NumLines + 2} with lines ls 1 title \"Average (Final Best Fitness: {graph.Average[graph.NumIters - 1].Y})\",\\\n";
         }
 
         // Write .gnuplot script file
