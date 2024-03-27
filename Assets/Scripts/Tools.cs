@@ -308,10 +308,10 @@ public static class PlotTools
 
         public string[] LineNames { get; }
         public Iteration[] Iterations { get; }
-        public Coordinates[] Average { get; }
+        public float[] Average { get; }
 
 
-        public Graph(int numLines, int numIters, Coordinates[] average)
+        public Graph(int numLines, int numIters, float[] average)
         {
             NumLines = numLines;
             NumIters = numIters;
@@ -327,19 +327,22 @@ public static class PlotTools
 
             for (int j = 0; j < numLines; j++)
             {
-                LineNames[j] = $"Algorithm {j} (Final Value: {Iterations[numIters - 1].Points[j]}";
+                LineNames[j] = $"Algorithm {j}";
             }
         }
 
 
-        public void PopulateGraph(Coordinates[][] coords)
+        public void PopulateGraph(float[][] coords)
         {
             // Populate graph
             for (int i = 0; i < NumIters; i++)
             {
                 for (int j = 0; j < NumLines; j++)
                 {
-                    Iterations[i].Points[j] = coords[j][i].Y;
+                    Iterations[i].Points[j] = coords[j][i];
+
+                    if (i == NumIters - 1)
+                        LineNames[j] = $"Algorithm {j} (Final Value: {Iterations[i].Points[j]})";
                 }
             }
         }
@@ -382,7 +385,7 @@ public static class PlotTools
     /// It also plots an "average" line which is the average of the averages.
     /// </summary>
     /// <param name="exp">The result to plot.</param>
-    public static void PlotExperiment(ExperimentResult exp)
+    public static void PlotExperiment(ExperimentResult exp, string preference)
     {
         int numIters = exp.Sets[0].AverageBestFitnessEachIteration.Length;
         int numSets = exp.Sets.Length;
@@ -395,11 +398,11 @@ public static class PlotTools
             graph.LineNames[i] = $"Step {i} [{exp.Steps[i]}] Average Best (Final Value: {graph.Iterations[numIters - 1].Points[i]})";
         }
 
-        PlotGraph(graph);
+        PlotGraph(graph, preference);
     }
 
 
-    private static void PlotGraph(Graph graph)
+    private static void PlotGraph(Graph graph, string title = "")
     {
         // Check dimensions provided
         //if (graph.GetLength(0) != numIters || graph.GetLength(1) != numLines)
@@ -408,36 +411,9 @@ public static class PlotTools
         //    return;
         //}
 
-        // Check for all infinite values
-        bool[] isLineFinite = new bool[graph.NumLines]; // Defaults to all false
-        for (int i = 0; i < graph.NumIters; i++)
-        {
-            for (int j = 0; j < graph.NumLines; j++)
-            {
-                // Line already had a finite value
-                if (isLineFinite[j]) continue;
-                
-                // Check if iteration i has finite best fitness on line j
-                if (float.IsFinite(graph.Iterations[i].Points[j]))
-                {
-                    isLineFinite[j] = true;
-                    continue;
-                }
-            }
-        }
-
-        for (int i = 0; i < isLineFinite.Length; i++)
-        {
-            if (!isLineFinite[i])
-            {
-                Logger.Warn("All values in one of the algorithms were non-finite. Try more iterations or having less restrictive constraints.");
-                return;
-            }
-        }
-
         string dataFilePath = Application.persistentDataPath + "/plot.dat";
         string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
-        string graphFilePath = $"{Application.persistentDataPath}/Plots/{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
+        string graphFilePath = $"{Application.persistentDataPath}/Plots/{title}{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
 
         ConstructDataFile(graph, dataFilePath);
         ConstructGnuplotFile(graph, graphFilePath, gnuplotFilePath, dataFilePath);
@@ -489,7 +465,7 @@ public static class PlotTools
 
             if (graph.Average != null)
             {
-                dataFileLine += $" {graph.Average[i].Y}";
+                dataFileLine += float.IsPositiveInfinity(graph.Average[i]) ? " inf" : $" {graph.Average[i]}";
             }
 
             dataFileLine += '\n';
@@ -548,7 +524,7 @@ public static class PlotTools
         }
         if (graph.Average != null)
         {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{graph.NumLines + 2} with lines ls 1 title \"Average (Final Best Fitness: {graph.Average[graph.NumIters - 1].Y})\",\\\n";
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{graph.NumLines + 2} with lines ls 1 title \"Average (Final Best Fitness: {graph.Average[graph.NumIters - 1]})\",\\\n";
         }
 
         // Write .gnuplot script file

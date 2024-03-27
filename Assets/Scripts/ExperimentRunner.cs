@@ -8,21 +8,18 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
-public enum EExperimentType
-{
-    AveragePerformance,
-    PopSize,
-}
 
-
-public class ExperimentRunner : MonoBehaviour
+public class ExperimentRunner : SetupBehaviour
 {
     [SerializeField]
     private TMP_InputField m_numItersInp;
@@ -33,13 +30,52 @@ public class ExperimentRunner : MonoBehaviour
     private int m_numAlgs = 0;
 
     [SerializeField]
-    private TMP_Text m_typeCycleTxt;
-    private EExperimentType m_type = EExperimentType.AveragePerformance;
+    private TMP_Text m_preferenceCycleTxt;
+    private FieldInfo[] m_preferenceFields;
+    private int m_selectedPreferenceFieldIndex = -1;
+
+    [SerializeField]
+    private TMP_InputField m_minInp;
+    private float m_min = -1;
+
+    [SerializeField]
+    private TMP_InputField m_maxInp;
+    private float m_max = -1;
+
+    [SerializeField]
+    private TMP_InputField m_stepInp;
+    private float m_step = -1;
+
+    private readonly Type[] SUPPORTED_TYPES =
+    {
+        typeof(int),
+        typeof(float),
+        typeof(bool),
+    };
 
 
     private void Start()
     {
-        m_typeCycleTxt.text = $"Experiment Type: {m_type}";
+        BindingFlags flags = BindingFlags.Instance | BindingFlags.Public;
+        List<FieldInfo> fields = Type.GetType("Preferences").GetFields(flags).ToList();
+
+
+        // Only accept types that can be experimented on (no arrays, for example)
+        List<FieldInfo> validFields = new();
+        foreach (FieldInfo field in fields)
+        {
+            if (SUPPORTED_TYPES.Contains(field.FieldType))
+            {
+                validFields.Add(field);
+            }
+        }
+
+        m_preferenceFields = validFields.ToArray();
+        OnPreferenceCycleBtnPressed(true); // Go from -1 to first element
+
+        m_minInp.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref m_min, value));
+        m_maxInp.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref m_max, value));
+        m_stepInp.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref m_step, value));
     }
 
 
@@ -60,41 +96,97 @@ public class ExperimentRunner : MonoBehaviour
     }
 
 
-    public void OnTypeCycleBtnPressed()
+    public void OnPreferenceCycleBtnPressed(bool right)
     {
-        m_type = ArrayTools.CircularNextElement((EExperimentType[])Enum.GetValues(typeof(EExperimentType)), (int)m_type, true);
-        m_typeCycleTxt.text = $"Experiment Type: {m_type}";
+        m_selectedPreferenceFieldIndex = ArrayTools.CircularNextIndex(m_selectedPreferenceFieldIndex, m_preferenceFields.Length, right);
+        m_preferenceCycleTxt.text = $"{m_preferenceFields[m_selectedPreferenceFieldIndex].Name}";
+    }
+
+
+    public void OnMinInputChanged(string value)
+    {
+    }
+
+
+    public void OnMaxInputChanged(float max)
+    {
+        if (max < m_min)
+        {
+            Logger.Warn("Max cannot be less than Min!");
+            return;
+        }
+
+        m_max = max;
     }
 
 
     //
     // Backend Methods
     //
+    public void RunNoStep()
+    {
+        if (!CheckParams()) return;
+
+        PlotTools.PlotLines(RunAlgorithmSet(m_numAlgs, m_numIters));
+    }
+
+
     public void Run()
+    {
+        if (!CheckParams()) return;
+
+        FieldInfo field = m_preferenceFields[m_selectedPreferenceFieldIndex];
+
+        ExperimentResult result;
+        if (field.FieldType == typeof(int) || field.FieldType == typeof(float))
+        {
+            if (m_step <= 0)
+            {
+                Logger.Warn("Step must be greater than zero.");
+                return;
+            }
+            if (m_min < 0)
+            {
+                Logger.Warn("Min must be greater than zero.");
+                return;
+            }
+            if (m_max < 0)
+            {
+                Logger.Warn("Max must be greater than zero.");
+                return;
+            }
+
+            result = RunNumericalExperiment(m_numAlgs, m_numIters, field, 10, 100, 10, field.Name);
+        }
+        else
+        {
+            result = RunBoolExperiment(m_numAlgs, m_numIters, field, field.Name);
+        }
+
+        // (*) Preserve the value of the field after the experiment
+        Saving.LoadPreferences();
+
+        PlotTools.PlotExperiment(result, field.Name);
+    }
+
+
+    /// <summary>
+    /// Returns whether the params were valid or not.
+    /// </summary>
+    private bool CheckParams()
     {
         if (m_numIters <= 0)
         {
             Logger.Warn("Number of iterations must be greater than zero.");
-            return;
+            return false;
         }
         if (m_numAlgs <= 0)
         {
             Logger.Warn("Number of algorithms must be greater than zero.");
-            return;
+            return false;
         }
 
-        switch (m_type)
-        {
-            case EExperimentType.AveragePerformance:
-                PlotTools.PlotLines(RunAlgorithmSet(m_numAlgs, m_numIters));
-                break;
-            case EExperimentType.PopSize:
-                PlotTools.PlotExperiment(RunIntExperiment(m_numAlgs, m_numIters, ref Preferences.Instance.populationSize, 10, 100, 10, "PopSize"));
-                break;
-            default:
-                Logger.Error("Experiment type was invalid.");
-                break;
-        }
+        return true;
     }
 
 
@@ -104,16 +196,14 @@ public class ExperimentRunner : MonoBehaviour
     /// <returns>Algorithm stats.</returns>
     public AlgorithmResult RunAlgorithm(AlgorithmRunner runner, int maxIter)
     {
-        Stopwatch sw = Stopwatch.StartNew();
         for (int i = 1; i <= maxIter; i++)
         {
             runner.RunIterations(1);
         }
-        sw.Stop();
 
 
         // Return value
-        AlgorithmResult result = new(runner.Alg, sw.ElapsedMilliseconds / 1000f, runner.Plot.ToArray());
+        AlgorithmResult result = new(runner.Alg, runner.Plot.ToArray());
         return result;
     }
 
@@ -166,57 +256,66 @@ public class ExperimentRunner : MonoBehaviour
     /// 
     /// Sets the preference to `min` and increases the preference by a step until `max` is reached.
     /// </summary>
-    /// <param name="pref">A reference to the preference.</param>
+    /// <param name="pref">A reference to the preference field type.</param>
     /// <param name="min">The minimum value assigned initially.</param>
     /// <param name="max">The maximum value to be tested.</param>
     /// </summary>
     /// <returns>Data from the experiment.</returns>
-    public ExperimentResult RunFloatExperiment(int numAlgs, int numIters, ref float pref, float min, float max, float step, string name)
+    private ExperimentResult RunNumericalExperiment(int numAlgs, int numIters, FieldInfo pref, float min, float max, float step, string name)
     {
-        pref = min;
+        if (pref.FieldType == typeof(int))
+        {
+            pref.SetValue(Preferences.Instance, Mathf.RoundToInt(min));
+        }
+        else
+        {
+            pref.SetValue(Preferences.Instance, min);
+        }
         int numSteps = 1 + (int)((max - min) / step);
 
         AlgorithmSetResult[] results = new AlgorithmSetResult[numSteps];
-        float[] steps = new float[numSteps];
+        object[] steps = new object[numSteps];
 
         for (int i = 0; i < numSteps; i++)
         {
-            Logger.Log($"Running step {i}: {pref}.");
+            if (pref.FieldType == typeof(int))
+            {
+                int intVal = (int)pref.GetValue(Preferences.Instance);
 
-            // Run algorithm set then increment the preference
-            results[i] = RunAlgorithmSet(numAlgs, numIters);
-            steps[i] = pref;
-            pref += step;
+                // Run algorithm set then increment the preference
+                results[i] = RunAlgorithmSet(numAlgs, numIters);
+                steps[i] = intVal;
+                pref.SetValue(Preferences.Instance, intVal + Mathf.RoundToInt(step));
+            }
+            else
+            {
+                float floatVal = (float)pref.GetValue(Preferences.Instance);
+
+                // Run algorithm set then increment the preference
+                results[i] = RunAlgorithmSet(numAlgs, numIters);
+                steps[i] = floatVal;
+                pref.SetValue(Preferences.Instance, floatVal + step);
+            }
         }
 
-        return new(results, steps.Select(x => (object)x).ToArray(), name);
+        return new(results, steps, name);
     }
 
 
-    public ExperimentResult RunIntExperiment(int numAlgs, int numIters, ref int pref, float min, float max, float step, string name)
-    {
-        float floatPref = pref;
-        ExperimentResult result = RunFloatExperiment(numAlgs, numIters, ref floatPref, min, max, step, name);
-        pref = (int)floatPref;
-
-        return result;
-    }
-
-
-    public ExperimentResult RunBoolExperiment(int numAlgs, int numIters, ref bool pref, string name)
+    public ExperimentResult RunBoolExperiment(int numAlgs, int numIters, FieldInfo pref, string name)
     {
         AlgorithmSetResult[] results = new AlgorithmSetResult[2];
-        float[] steps = new float[2];
+        object[] steps = new object[2];
 
-        pref = false;
+        pref.SetValue(Preferences.Instance, false);
         results[0] = RunAlgorithmSet(numAlgs, numIters);
-        steps[0] = 0;
+        steps[0] = false;
 
-        pref = true;
+        pref.SetValue(Preferences.Instance, true);
         results[1] = RunAlgorithmSet(numAlgs, numIters);
-        steps[1] = 1;
+        steps[1] = true;
 
-        return new(results, steps.Select(x => (object)x).ToArray(), name);
+        return new(results, steps, name);
     }
 }
 
@@ -225,22 +324,20 @@ public readonly struct AlgorithmResult : IVerbose
 {
     public readonly Day BestDay { get; }
     public readonly float BestFitness { get; }
-    public readonly float ExecutionSecs { get; }
-    public readonly Coordinates[] BestFitnessEachIteration { get; }
+    public readonly float[] BestFitnessEachIteration { get; }
 
 
-    public AlgorithmResult(Algorithm alg, float executionSecs, Coordinates[] bestFitnessEachIteration)
+    public AlgorithmResult(Algorithm alg, float[] bestFitnessEachIteration)
     {
         BestDay = alg.BestDay;
         BestFitness = alg.BestFitness;
-        ExecutionSecs = executionSecs;
         BestFitnessEachIteration = bestFitnessEachIteration;
     }
 
 
     public string Verbose()
     {
-        return $"Best day:\n----------\nFitness: {BestFitness}\n{BestDay.Verbose()}\n----------\nExecution time: {ExecutionSecs}s";
+        return $"Best day:\n----------\nFitness: {BestFitness}\n{BestDay.Verbose()}\n";
     }
 }
 
@@ -251,10 +348,7 @@ public readonly struct AlgorithmSetResult : IVerbose
     public readonly int BestIndex { get; }
     public readonly AlgorithmResult BestResult => Results[BestIndex];
 
-    public readonly Coordinates[] AverageBestFitnessEachIteration { get; }
-
-    public readonly float TotalExecutionSecs { get; }
-    public readonly float AverageExecutionSecs { get; }
+    public readonly float[] AverageBestFitnessEachIteration { get; }
 
 
     public AlgorithmSetResult(AlgorithmResult[] results)
@@ -268,10 +362,7 @@ public readonly struct AlgorithmSetResult : IVerbose
         int numAlgs = results.Length;
 
         Results = results;
-        AverageBestFitnessEachIteration = new Coordinates[numIters];
-
-        TotalExecutionSecs = 0;
-        AverageExecutionSecs = 0;
+        AverageBestFitnessEachIteration = new float[numIters];
 
         // Assign a default best
         BestIndex = 0;
@@ -285,20 +376,15 @@ public readonly struct AlgorithmSetResult : IVerbose
 
             for (int j = 0; j < numIters; j++)
             {
-                AverageBestFitnessEachIteration[j].Y += results[i].BestFitnessEachIteration[j].Y / numAlgs;
+                AverageBestFitnessEachIteration[j] += results[i].BestFitnessEachIteration[j] / numAlgs;
             }
-
-            // Perform sum part of averages
-            TotalExecutionSecs += results[i].ExecutionSecs;
-            AverageExecutionSecs += results[i].ExecutionSecs / numAlgs;
         }
     }
 
 
     public string Verbose()
     {
-        return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\n"
-                + $"Average Execution Time: {AverageExecutionSecs}s";
+        return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\n";
     }
 }
 
@@ -312,7 +398,7 @@ public readonly struct ExperimentResult : IVerbose
     public readonly object BestStep { get; }
 
     // The average of the (average best fitness each iteration)s from each set.
-    public readonly Coordinates[] Avg2BestFitnessEachIteration { get; }
+    public readonly float[] Avg2BestFitnessEachIteration { get; }
     public readonly string Name { get; }
 
 
@@ -327,7 +413,7 @@ public readonly struct ExperimentResult : IVerbose
         int numIters = sets[0].AverageBestFitnessEachIteration.Length;
         int numSets = sets.Length;
 
-        Avg2BestFitnessEachIteration = new Coordinates[numIters];
+        Avg2BestFitnessEachIteration = new float[numIters];
 
         // Set default best
         BestSet = sets[0];
@@ -344,7 +430,7 @@ public readonly struct ExperimentResult : IVerbose
 
             for (int j = 0; j < numIters; j++)
             {
-                Avg2BestFitnessEachIteration[j].Y += sets[i].AverageBestFitnessEachIteration[j].Y / numSets;
+                Avg2BestFitnessEachIteration[j] += sets[i].AverageBestFitnessEachIteration[j] / numSets;
             }
 
             // Check if the average result is the best average so far

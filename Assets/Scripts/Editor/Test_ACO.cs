@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-public class Test_ACO : AlgACO
+public class Test_ACO : AlgACODynamic
 {
     [Test]
     public void RunTests()

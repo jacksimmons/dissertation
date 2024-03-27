@@ -24,6 +24,16 @@ public static class Saving
 
 
     /// <summary>
+    /// Loads preferences from disk into the static Preferences instance.
+    /// </summary>
+    public static void LoadPreferences()
+    {
+        LoadFromFile<Preferences>("Preferences.json");
+        Logger.Log("Loaded preferences.");
+    }
+
+
+    /// <summary>
     /// Serialises objects and saves them to a given file location.
     /// Also calls .Cache() on the object beforehand if it : ICached.
     /// </summary>

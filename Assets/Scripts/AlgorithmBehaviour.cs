@@ -76,6 +76,6 @@ public class AlgorithmBehaviour : MonoBehaviour
     /// </summary>
     public void PlotGraph()
     {
-        PlotTools.PlotLine(new(Algorithm, 0, m_core.Plot.ToArray()));
+        PlotTools.PlotLine(new(Algorithm, m_core.Plot.ToArray()));
     }
 }

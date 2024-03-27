@@ -57,7 +57,7 @@ public class Preferences : ICached, IVerbose
     public static readonly string[] ALG_TYPES =
     {
         typeof(AlgSFGA).FullName!,
-        typeof(AlgACO).FullName!,
+        typeof(AlgACODynamic).FullName!,
     };
 
 
@@ -110,7 +110,7 @@ public class Preferences : ICached, IVerbose
     public int maxPortionMass = 500;
     public bool addFitnessForMass = true;
     public string algorithmType = ALG_TYPES[0];
-    public bool elitist = true;
+    public bool elitist = false;
     public EFitnessFunc fitnessFunc = EFitnessFunc.ManhattanDist; // Checked
 
 
@@ -137,20 +137,18 @@ public class Preferences : ICached, IVerbose
     //
     // ACO-specific settings
     //
-    // Needs to be greater than the number of portions in the iteration, otherwise restricts number of portions in each path.
-    public int colonyPortions = 10;
-
     // Number of iterations before replacing the worst food.
     // High value => Deeper search (more iterations for evaluation)
     // Low value => Wider search (more foods)
+    public int colonyPortions = 10;
     public int colonyStagnationIters = 1000;
-    public bool acoUseThreads = false; // Saves time on ~100 ants, loses time on 10 ants
 
     public float pheroImportance = 1f;
     public float pheroEvapRate = 0.1f;
     // Probability calculation variables
     public float acoAlpha = 1f;      // Pheromone exponent
     public float acoBeta = 1f;       // Desirability exponent
+    public float defaultPheromone = 1f;
 
     //
     // Experiment settings

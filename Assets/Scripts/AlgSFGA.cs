@@ -157,15 +157,4 @@ public class AlgSFGA : AlgGA
     {
         return included[Rand.Next(included.Count)];
     }
-
-
-    ///// <summary>
-    ///// In a summed fitness algorithm, just randomly pick the tiebreak winner.
-    ///// </summary>
-    //protected Day Tiebreak(Day a, Day b)
-    //{
-    //    if (Rand.Next(0, 2) == 1)
-    //        return a;
-    //    return b;
-    //}
 }

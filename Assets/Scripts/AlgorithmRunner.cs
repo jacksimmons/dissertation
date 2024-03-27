@@ -12,8 +12,8 @@ public class AlgorithmRunner
     public Algorithm Alg { get; private set; }
 
     // A plot containing Iteration for x and Best Fitness for y. Goes from Iteration 0 to Iteration NumIters.
-    private List<Coordinates> m_plot;
-    public ReadOnlyCollection<Coordinates> Plot { get; }
+    private List<float> m_plot;
+    public ReadOnlyCollection<float> Plot { get; }
 
 
     // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
@@ -51,7 +51,7 @@ public class AlgorithmRunner
         for (int i = 0; i < numIters; i++)
         {
             Alg.RunIteration();
-            m_plot.Add(new(Alg.IterNum, Alg.BestFitness)); // ith plot addition
+            m_plot.Add(Alg.BestFitness); // ith plot addition
         }
 
         sw.Stop();

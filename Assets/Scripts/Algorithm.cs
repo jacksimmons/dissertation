@@ -28,7 +28,7 @@ public abstract class Algorithm
     // A huge data structure storing all possible portions from the dataset in non-random order.
     // Preferences.Instance.minPortionMass and Preferences.Instance.maxPortionMass can drastically change the
     // size of this in memory. (By default, it is about 3M elements, or at least 3MB)
-    private Portion[] m_portions = Array.Empty<Portion>();
+    protected Portion[] m_portions = Array.Empty<Portion>();
     protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
 
     private readonly Dictionary<ENutrient, float> m_prevAvgPopStats = new(); // Stores the average nutrient amount for the whole population from last iteration.

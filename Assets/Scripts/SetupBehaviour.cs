@@ -32,6 +32,9 @@ public class SetupBehaviour : MonoBehaviour
     /// Unity's input field sanitation. Hence no need for TryParse.</param>
     protected static void OnFloatInputChanged(ref float pref, string value)
     {
+        if (value == "")
+            return;
+
         float newPref = float.Parse(value);
         if (newPref < 0)
         {
@@ -49,6 +52,9 @@ public class SetupBehaviour : MonoBehaviour
     /// </summary>
     protected static void OnIntInputChanged(ref int pref, string value)
     {
+        if (value == "")
+            return;
+
         int newPref = int.Parse(value);
         if (newPref < 0)
         {
@@ -61,5 +67,5 @@ public class SetupBehaviour : MonoBehaviour
     }
 
 
-    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be > 0).");
+    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be >= 0).");
 }
