@@ -103,23 +103,6 @@ public class ExperimentRunner : SetupBehaviour
     }
 
 
-    public void OnMinInputChanged(string value)
-    {
-    }
-
-
-    public void OnMaxInputChanged(float max)
-    {
-        if (max < m_min)
-        {
-            Logger.Warn("Max cannot be less than Min!");
-            return;
-        }
-
-        m_max = max;
-    }
-
-
     //
     // Backend Methods
     //
