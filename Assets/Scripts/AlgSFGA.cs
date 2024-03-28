@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Random = UnityEngine.Random;
 
 
 public class AlgSFGA : AlgGA
@@ -12,7 +12,7 @@ public class AlgSFGA : AlgGA
     {
         if (!base.Init()) return false;
 
-        m_selectionMethod = RankSelection;
+        m_selectionMethod = TournamentSelection;
 
         return true;
     }
@@ -91,7 +91,11 @@ public class AlgSFGA : AlgGA
 
     private Day PerformSelection(List<Day> included, bool selectBest)
     {
-        if (included.Count == 0) Logger.Error("Included cannot be empty when performing selection.");
+        if (included.Count == 0)
+        {
+            Logger.Error("Included cannot be empty when performing selection.");
+            return null;
+        }
         if (included.Count == 1) return included[0];
 
         return m_selectionMethod(included, selectBest);

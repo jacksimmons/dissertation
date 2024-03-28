@@ -28,12 +28,7 @@
 
 // The Top n days are then added to the population for display in the GUI.
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using Random = System.Random;
+using Random = UnityEngine.Random;
 
 
 // Limitation: Can only have one 100g portion for each food type.

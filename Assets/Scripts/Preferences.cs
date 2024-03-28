@@ -33,20 +33,9 @@ public class Preferences : ICached, IVerbose
         {
             if (m_instance != null) return m_instance;
 
-#if UNITY_64
             // This will automatically Cache() the preferences, so no need to update m_instance.
             return Saving.LoadFromFile<Preferences>("Preferences.json");
-#else
-            throw new NullReferenceException("Preferences was not defined.");
-#endif
         }
-
-#if !UNITY_64
-        set
-        {
-            m_instance = value;
-        }
-#endif
     }
     public void Cache() { m_instance = this; }
 
@@ -202,7 +191,7 @@ public class Preferences : ICached, IVerbose
         SetConstraint(ENutrient.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, min: 0, goal: isMale ? 700 : 600);
         SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, min: 0, goal: isMale ? 1 : 0.8f);
         SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, min: 0, goal: isMale ? 1.3f : 1.1f);
-        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, min: 0, goal: isMale ? 16.5f: 13.2f);
+        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, min: 0, goal: isMale ? 16.5f : 13.2f);
         SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, min: 0, goal: isMale ? 1.4f : 1.2f);
         SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: isPregnant ? 400f : 200f);
         SetConstraint(ENutrient.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, min: 0, goal: 1.5f);
@@ -216,7 +205,7 @@ public class Preferences : ICached, IVerbose
     private void SetConstraint(ENutrient nut, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
         constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight };
-        Constraint.Build(constraints[(int)nut]); // ! Check if all params are valid. If not, throws an error.
+        Constraint.Build(constraints[(int)nut]); // Checks if all params are valid. If not, throws an error.
     }
 
 

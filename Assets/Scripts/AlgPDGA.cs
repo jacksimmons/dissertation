@@ -3,9 +3,7 @@
 //using System.Collections.ObjectModel;
 
 
-//#if UNITY_64
 //using Random = System.Random;
-//#endif
 
 
 //public class AlgPDGA : AlgGA
@@ -25,7 +23,7 @@
 //    {
 //        m_sets = new();
 //        Sets = new(m_sets);
-     
+
 //        base.Init();
 //    }
 
@@ -35,9 +33,9 @@
 //    ///// </summary>
 //    //protected override Day Selection(List<Day> candidates, bool selectBest = true)
 //    //{
-//    //    int indexA = Random.Range(0, candidates.Count);
+//    //    int indexA = Rand.Next(candidates.Count);
 //    //    // Ensure B is different to A by adding an amount less than the list size, then %-ing it.
-//    //    int indexB = (indexA + Random.Range(1, candidates.Count - 1)) % candidates.Count;
+//    //    int indexB = (indexA + Rand.Next(1, candidates.Count - 1)) % candidates.Count;
 
 //    //    // If one dominates the other, the selection is simple.
 //    //    // Don't make use of PopHierarchy, because this method is sometimes called before PopHierarchy

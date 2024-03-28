@@ -1,15 +1,27 @@
 using UnityEngine;
 
+
+/// <summary>
+/// A Unity script for handling preference changes in a more generic way.
+/// </summary>
 public class SetupBehaviour : MonoBehaviour
 {
+    /// <summary>
+    /// Whether this class should save preferences when one of its input fields is changed.
+    /// </summary>
+    protected bool m_saveOnInputChange = true;
+
+
     /// <summary>
     /// Swaps the boolean value of a preference.
     /// </summary>
     /// <param name="pref">Reference to the preference to set.</param>
-    protected static void OnBoolInputChanged(ref bool pref)
+    protected void OnBoolInputChanged(ref bool pref)
     {
         pref = !pref;
-        Saving.SavePreferences();
+
+        if (m_saveOnInputChange)
+            Saving.SavePreferences();
     }
 
 
@@ -17,10 +29,12 @@ public class SetupBehaviour : MonoBehaviour
     /// Sets the boolean value of a preference.
     /// </summary>
     /// <param name="pref">Reference to the preference to set.</param>
-    protected static void OnBoolInputChanged(ref bool pref, bool newValue)
+    protected void OnBoolInputChanged(ref bool pref, bool newValue)
     {
         pref = newValue;
-        Saving.SavePreferences();
+
+        if (m_saveOnInputChange)
+            Saving.SavePreferences();
     }
 
 
@@ -30,7 +44,7 @@ public class SetupBehaviour : MonoBehaviour
     /// <param name="pref">Reference to the relevant preference (to update).</param>
     /// <param name="value">The unparsed value. Guaranteed to contain a valid float, due to
     /// Unity's input field sanitation. Hence no need for TryParse.</param>
-    protected static void OnFloatInputChanged(ref float pref, string value)
+    protected void OnFloatInputChanged(ref float pref, string value)
     {
         if (value == "")
             return;
@@ -43,14 +57,16 @@ public class SetupBehaviour : MonoBehaviour
         }
 
         pref = newPref;
-        Saving.SavePreferences();
+
+        if (m_saveOnInputChange)
+            Saving.SavePreferences();
     }
 
 
     /// <summary>
     /// OnFloatInputChanged, but for an integer preference and input field value.
     /// </summary>
-    protected static void OnIntInputChanged(ref int pref, string value)
+    protected void OnIntInputChanged(ref int pref, string value)
     {
         if (value == "")
             return;
@@ -63,7 +79,9 @@ public class SetupBehaviour : MonoBehaviour
         }
 
         pref = newPref;
-        Saving.SavePreferences();
+
+        if (m_saveOnInputChange)
+            Saving.SavePreferences();
     }
 
 

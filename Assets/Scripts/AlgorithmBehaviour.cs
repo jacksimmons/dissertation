@@ -1,13 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using TMPro;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
 
 
@@ -54,7 +46,7 @@ public class AlgorithmBehaviour : MonoBehaviour
 
 
     private void UpdateAlgorithmUI(float time_ms, int iters)
-    {       
+    {
         m_populationView.UpdatePopView();
         m_iterNumText.text = $"Iteration: {Algorithm.IterNum}";
         m_iterTimeTakenText.text = $"Execution Time ({iters} iters): {time_ms}ms";

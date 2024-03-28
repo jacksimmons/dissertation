@@ -18,9 +18,7 @@ using System;
 /// Stores parameters for any constraint. Note these are not Properties, to allow each parameter
 /// to be changed by ref.
 /// </summary>
-#if UNITY_64
 [Serializable]
-#endif
 public class ConstraintData : IVerbose
 {
     /// <summary>
@@ -166,7 +164,7 @@ public class HardConstraint : Constraint, IVerbose
         // Use approx less than to ensure the minimum and maximum values can be used in the range.
         // Using standard < and > doesn't account for floating point inaccuracies, which can make
         // Approx(amount, min) or Approx(amount, max) yield fitness == Infinity.
-        if (amount < min || MathTools.Approx(amount, min) || MathTools.Approx(amount, max) || amount > max)
+        if (MathTools.ApproxLessThan(amount, min) || MathTools.ApproxLessThan(max, amount))
         {
             return float.PositiveInfinity;
         }

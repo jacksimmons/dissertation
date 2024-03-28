@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -75,7 +74,7 @@ public class PlotViewBehaviour : MonoBehaviour
         m_plotNameTxt.text = Path.GetFileName(m_paths[m_activePlotIndex]);
     }
 
-    
+
     /// <summary>
     /// Handles the UI changes necessary to reflect that no plots are left.
     /// </summary>
@@ -172,6 +171,6 @@ public class PlotViewBehaviour : MonoBehaviour
         // Go to the next plot, if there is one
         if (m_paths.Count > 0) OnPlotNavBtnPressed(true);
         // Otherwise, show on UI that no plots remain
-        else                   SetNoPlotsRemaining();
+        else SetNoPlotsRemaining();
     }
 }

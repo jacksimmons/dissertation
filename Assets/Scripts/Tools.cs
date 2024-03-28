@@ -1,18 +1,12 @@
 /// A collection of tools (extension classes).
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
-using Random = System.Random;
 using Debug = UnityEngine.Debug;
-using System.Net.NetworkInformation;
-using UnityEngine.Experimental.GlobalIllumination;
-using UnityEngine.UIElements;
-using Unity.VisualScripting;
+using Random = System.Random;
 
 
 public interface IVerbose
@@ -272,7 +266,7 @@ public static class MathTools
         float ratioCalories = 4 * proteinG + 9 * fatG + 4 * carbsG;
 
         // Div by zero case - assign recommended macro ratios from the given kcal.
-        if (MathTools.Approx(ratioCalories, 0))
+        if (Approx(ratioCalories, 0))
         {
             float proteinCalories = 0.2f * calories;
             float fatCalories = 0.35f * calories;
@@ -404,13 +398,6 @@ public static class PlotTools
 
     private static void PlotGraph(Graph graph, string title = "")
     {
-        // Check dimensions provided
-        //if (graph.GetLength(0) != numIters || graph.GetLength(1) != numLines)
-        //{
-        //    Logger.Warn($"Provided dimensions ({numIters}x{numLines}) don't match with actual dimensions ({graph.GetLength(0)}x{graph.GetLength(1)}).");
-        //    return;
-        //}
-
         string dataFilePath = Application.persistentDataPath + "/plot.dat";
         string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
         string graphFilePath = $"{Application.persistentDataPath}/Plots/{title}{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
@@ -453,7 +440,7 @@ public static class PlotTools
                 float fitness = graph.Iterations[i].Points[j];
                 dataFileLine += float.IsPositiveInfinity(fitness) ? " inf" : $" {graph.Iterations[i].Points[j]}";
 
-                if (fitness < bestFitnessesSoFar[j] || i+1 == graph.NumIters)
+                if (fitness < bestFitnessesSoFar[j] || i + 1 == graph.NumIters)
                 {
                     bestFitnessesSoFar[j] = fitness;
                 }
@@ -520,7 +507,7 @@ public static class PlotTools
         string dataRelativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/");
         for (int l = 0; l < graph.NumLines; l++)
         {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{l+2} with lines title \"{graph.LineNames[l]}\",\\\n";
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{l + 2} with lines title \"{graph.LineNames[l]}\",\\\n";
         }
         if (graph.Average != null)
         {

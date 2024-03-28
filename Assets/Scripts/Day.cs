@@ -1,8 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-
-using System;
 
 /// <summary>
 /// A data structure representing a meal plan for one day.

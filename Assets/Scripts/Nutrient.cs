@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 
 /// <summary>
@@ -58,7 +56,7 @@ public static class Nutrient
 
             ENutrient.Iodine or
             ENutrient.VitA or ENutrient.VitD or ENutrient.VitK1 or ENutrient.VitB12 or ENutrient.VitB9 => "µg",
-            
+
             ENutrient.Kcal => "kcal",
             _ => throw new ArgumentOutOfRangeException(nameof(nutrient)),
         };

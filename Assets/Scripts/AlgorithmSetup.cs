@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -105,7 +103,9 @@ public class AlgorithmSetup : SetupBehaviour
     {
         switch (nutrient)
         {
-            case ENutrient.Protein: case ENutrient.Fat: case ENutrient.Carbs:
+            case ENutrient.Protein:
+            case ENutrient.Fat:
+            case ENutrient.Carbs:
                 MacrosToCalories();
                 break;
             case ENutrient.Kcal:

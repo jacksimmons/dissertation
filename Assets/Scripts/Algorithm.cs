@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -7,8 +6,7 @@ using System.Linq;
 
 public abstract class Algorithm
 {
-    // Random number generator
-    public static Random Rand { get; } = new();
+    protected static Random Rand { get; } = new();
 
     // Shorthand for Preferences.Instance
     protected static Preferences Prefs => Preferences.Instance;
@@ -47,7 +45,7 @@ public abstract class Algorithm
         get => m_bestDay != null;
     }
     public float BestFitness { get; private set; } = float.PositiveInfinity; // The fitness of the Best Day.
-    
+
     // The iteration number of the best day.
     public int BestIteration { get; private set; } = 0;
 
