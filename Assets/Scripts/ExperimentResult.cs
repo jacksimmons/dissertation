@@ -11,7 +11,7 @@ public readonly struct AlgorithmResult : IVerbose
     public AlgorithmResult(Algorithm alg, float[] bestFitnessEachIteration)
     {
         BestDay = alg.BestDay;
-        BestFitness = alg.BestFitness;
+        BestFitness = new Day.SummedFitness(BestDay).Value;
         BestFitnessEachIteration = bestFitnessEachIteration;
     }
 

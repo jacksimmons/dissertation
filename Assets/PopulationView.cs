@@ -67,12 +67,12 @@ public class PopulationView : MonoBehaviour
             bestDayBtn.GetComponent<Button>().onClick.RemoveAllListeners();
             bestDayBtn.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(bestDay));
 
-            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {m_algRunner.Algorithm.BestFitness})";
+            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {m_algRunner.Algorithm.BestDay.FitnessVerbose()})";
         }
 
 
         // Display days in the population
-        List<Day> days = m_algRunner.Algorithm.DayFitnesses.Keys.ToList();
+        var days = m_algRunner.Algorithm.Population;
         foreach (Day day in days)
         {
             GameObject obj = Instantiate(m_dayItem, m_popContent.transform);
@@ -88,7 +88,7 @@ public class PopulationView : MonoBehaviour
         // Refresh the current day UI if still in the population, or is the best day
         if (m_currentlyDisplayedDay != null && m_algRunner.Algorithm.BestDay != null)
         {
-            if (m_algRunner.Algorithm.BestDay.IsEqualTo(m_currentlyDisplayedDay) || m_algRunner.Algorithm.DayFitnesses.Keys.Contains(m_currentlyDisplayedDay))
+            if (m_algRunner.Algorithm.BestDay.IsEqualTo(m_currentlyDisplayedDay) || m_algRunner.Algorithm.Population.Contains(m_currentlyDisplayedDay))
             {
                 UpdatePortionUI(m_currentlyDisplayedDay, 0);
                 UpdateDayUI(m_currentlyDisplayedDay);

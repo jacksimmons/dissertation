@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Xml;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -185,7 +186,21 @@ public class PreferencesHandler : SetupBehaviour
         // Remove any existing buttons
         UITools.DestroyAllChildren(m_enabledFoodsContent.transform);
 
-        // Readd buttons
+        // Add disabled food buttons at the top
+        for (int _i = 0; _i < Preferences.Instance.bannedFoodKeys.Count; _i++)
+        {
+            GameObject go = Instantiate(m_btnPropertyTemplate, m_enabledFoodsContent.transform);
+            string key = Preferences.Instance.bannedFoodKeys[_i];
+
+            TMP_Text tmpText = go.GetComponentInChildren<TMP_Text>(); // Depth-first search, so it will find OnOffBtn.TMP_Text
+            tmpText.text = "";
+
+            go.GetComponentInChildren<Button>().onClick.AddListener(() => OnFoodEnableToggle(key, tmpText));
+
+            go.transform.Find("Text (TMP)").GetComponent<TMP_Text>().text = key;
+        }
+
+        // Add enabled food buttons underneath
         for (int _i = 0; _i < m_allFoods.Count; _i++)
         {
             GameObject go;
@@ -195,26 +210,26 @@ public class PreferencesHandler : SetupBehaviour
             go = Instantiate(m_btnPropertyTemplate, m_enabledFoodsContent.transform);
 
             TMP_Text tmpText = go.GetComponentInChildren<TMP_Text>(); // Depth-first search, so it will find OnOffBtn.TMP_Text
-            tmpText.text = Preferences.Instance.bannedFoodKeys.Contains(food.CompositeKey) ? "" : "x";
+            tmpText.text = "x";
 
-            go.GetComponentInChildren<Button>().onClick.AddListener(() => OnFoodEnableToggle(food, tmpText));
+            go.GetComponentInChildren<Button>().onClick.AddListener(() => OnFoodEnableToggle(food.CompositeKey, tmpText));
 
             go.transform.Find("Text (TMP)").GetComponent<TMP_Text>().text = food.Name;
         }
     }
 
 
-    private void OnFoodEnableToggle(Food food, TMP_Text tmpText)
+    private void OnFoodEnableToggle(string foodKey, TMP_Text tmpText)
     {
         // If food disabled, enable it.
-        if (Preferences.Instance.bannedFoodKeys.Contains(food.CompositeKey))
+        if (Preferences.Instance.bannedFoodKeys.Contains(foodKey))
         {
-            Preferences.Instance.bannedFoodKeys.Remove(food.CompositeKey);
+            Preferences.Instance.bannedFoodKeys.Remove(foodKey);
             tmpText.text = "x";
         }
         else
         {
-            Preferences.Instance.bannedFoodKeys.Add(food.CompositeKey);
+            Preferences.Instance.bannedFoodKeys.Add(foodKey);
             tmpText.text = "";
         }
         Saving.SavePreferences();

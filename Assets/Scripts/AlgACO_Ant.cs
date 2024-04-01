@@ -2,8 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+
 partial class AlgACO
 {
+    /// <summary>
+    /// A nested class of AlgACO, which navigates around a matrix of portion vertices,
+    /// trying to find the fittest route through each.
+    /// </summary>
     protected class Ant
     {
         private static int s_numAnts;
@@ -12,14 +17,14 @@ partial class AlgACO
 
         private readonly int m_startIndex;
 
-        private Day m_path;
-        public int PathLength => m_path.portions.Count;
+        public Day Path;
+        public int PathLength => Path.portions.Count;
         public float Fitness
         {
             get
             {
-                if (m_partOfPopulation) return m_colony.m_population.GetFitness(m_path);
-                return m_path.GetFitness();
+                if (m_partOfPopulation) return Path.TotalFitness.Value;
+                return Path.TotalFitness.Value;
             }
         }
 
@@ -34,13 +39,13 @@ partial class AlgACO
             m_colony = colony;
 
             m_partOfPopulation = partOfPopulation;
-            m_path = new(m_colony);
+            Path = new(m_colony);
             if (partOfPopulation)
             {
                 // 0, 1, 2, ...
                 id = s_numAnts;
                 s_numAnts++;
-                m_colony.m_population.Add(m_path);
+                m_colony.AddToPopulation(Path);
             }
             else
             {
@@ -60,14 +65,14 @@ partial class AlgACO
         public void ResetPath()
         {
             if (m_partOfPopulation)
-                m_colony.m_population.Remove(m_path);
+                m_colony.RemoveFromPopulation(Path);
 
-            m_path = new(m_colony);
-            m_pathIndices = new(Prefs.colonyPortions);
+            Path = new(m_colony);
 
             if (m_partOfPopulation)
-                m_colony.m_population.Add(m_path);
+                m_colony.AddToPopulation(Path);
 
+            m_pathIndices = new(Prefs.colonyPortions);
             AddIndex(m_startIndex);
         }
 
@@ -77,7 +82,7 @@ partial class AlgACO
         /// </summary>
         public void AddIndex(int index)
         {
-            m_path.AddPortion(m_colony.m_vertices[index]);
+            Path.AddPortion(m_colony.m_vertices[index]);
             m_pathIndices.Add(index);
             LastIndex = index;
         }
@@ -89,23 +94,17 @@ partial class AlgACO
         }
 
 
-        public Day ClonePath()
-        {
-            return new(m_path);
-        }
-
-
         public void DepositPheromone()
         {
-            if (m_path.portions.Count <= 1) return;
+            if (Path.portions.Count <= 1) return;
 
-            float increment = Preferences.Instance.pheroImportance / m_colony.m_population.GetFitness(m_path);
-            for (int j = 1; j < m_path.portions.Count; j++)
+            float increment = Preferences.Instance.pheroImportance / Path.TotalFitness.Value;
+            for (int j = 1; j < Path.portions.Count; j++)
             {
                 m_colony.m_pheromone[j - 1, j] += increment;
             }
 
-            m_colony.m_pheromone[m_path.portions.Count - 1, 0] += increment;
+            m_colony.m_pheromone[Path.portions.Count - 1, 0] += increment;
         }
 
 
@@ -113,7 +112,7 @@ partial class AlgACO
         /// Gets an ant (empty Day) to traverse its whole path,
         /// based on a pheromone/desirability probability calculation.
         /// </summary>
-        public void RunAnt(int recursion = 0)
+        public void RunAnt()
         {
             float[] probabilities = GetAllVertexProbabilities(LastIndex);
             int nextVertex = MathTools.GetFirstSurpassedProbability(probabilities);
@@ -126,75 +125,70 @@ partial class AlgACO
             if (nextVertex != -1)
             {
                 AddIndex(nextVertex);
-
-                if (recursion + 1 < Prefs.colonyPortions)
-                    RunAnt(recursion + 1);
+                // Located the goal portion
+                if (nextVertex == Preferences.Instance.colonyPortions - 1)
+                    return;
+                RunAnt();
             }
-            // If the next vertex wasn't selected, all remaining
-            // untraversed edges have Infinity fitness.
-            // For now, ignore these. There are plenty of foods
-            // in the dataset that it is extremely unlikely that
-            // any of these Infinity edges are necessary.
-
-            // So end recursion.
+            else if (m_pathIndices.Count < Preferences.Instance.colonyPortions)
+            {
+                // Infinity edge encountered.
+                Logger.Warn("Infinity edge encountered in Ant.");
+            }
+            
+            // Otherwise, all vertices were added to the path, so exit.
         }
 
 
         /// <summary>
-        /// In this form of ACO, the "probability" of vertex selection translates into
-        /// the mass of the portion selected.
-        /// 
-        /// ALL portions in the initial population are added to each ant, except the
-        /// really bad ones will have an infinitessimal mass.
-        /// 
         /// Applies for movement from `prev`. A multiplier of -1 indicates the ant
         /// cannot go there.
         /// 
         /// (tau[i,j]^(alpha) * eta[i,j]^(beta)) /
         /// (sum_h(tau[i,h]^(alpha) * eta[i,h]^(beta))
         /// 
-        /// Not stored in a data structure (this would minimise calculations in case
-        /// ants go from the same previous node) because this would have to be serially
-        /// calculated, slowing the more-demanding threaded program down.
+        /// Equiv. to:
+        /// i = prev, known value
+        /// probObjs[j] / sum_h(probObjs[h])
+        /// 
         /// </summary>
         /// <param name="prev">Last selected portion index.</param>
         /// <returns>An array containing the "probability" value for each vertex
         /// by index.</returns>
         public float[] GetAllVertexProbabilities(int prev)
         {
-            float[] probs = new float[Prefs.colonyPortions];
+            float[] probObjs = new float[Prefs.colonyPortions];
 
-            float[] J = new float[Prefs.colonyPortions];
+            // Iterate over every h in the portions still to be visited
             for (int h = 0; h < Prefs.colonyPortions; h++)
             {
-                // Quick-exit default assignment
-                J[h] = 0;
-
+                // If the portion is not yet to be visited, leave it as 0.
                 if (h == prev) continue;
                 if (PathContains(h)) continue;
 
+                // Get fitness and pheromone values
                 float f = m_colony.m_fitnesses[prev, h];
-                // Probability of selection is 0 for an Infinity fitness edge.
                 if (float.IsPositiveInfinity(f)) continue;
-
                 float p = m_colony.m_pheromone[prev, h];
 
-
-                J[h] = MathF.Pow(p, Preferences.Instance.acoAlpha)
-                        * MathF.Pow(f, Preferences.Instance.acoBeta);
+                // Calculate the value based on alpha and beta
+                probObjs[h] = MathF.Pow(p, Preferences.Instance.acoAlpha)
+                            * MathF.Pow(f, Preferences.Instance.acoBeta);
             }
 
-            float denom = J.Sum();
+            float denom = probObjs.Sum();
+
+            float[] probs = new float[Prefs.colonyPortions];
+
+            // If denom is 0, can quick exit with all values set by default to 0.
+            if (denom == 0) return probs;
+
+            // denom is not 0 in this loop.
             for (int j = 0; j < Prefs.colonyPortions; j++)
             {
-                //J[j] == 0 implies the edge is invalid(visited, a self-edge, or Infinity fitness)
-                if (MathTools.Approx(J[j], 0))
-                {
-                    probs[j] = 0;
-                    continue;
-                }
-                probs[j] = J[j] / denom;
+                probs[j] = probObjs[j] / denom;
             }
+
             return probs;
         }
     }

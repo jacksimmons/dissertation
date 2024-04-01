@@ -1,3 +1,5 @@
+using System;
+using TMPro;
 using UnityEngine;
 
 
@@ -82,6 +84,57 @@ public class SetupBehaviour : MonoBehaviour
 
         if (m_saveOnInputChange)
             Saving.SavePreferences();
+    }
+
+
+    /// <summary>
+    /// Handles cycling of an array element to the next or previous element in the array.
+    /// </summary>
+    /// <typeparam name="T">The type of the preference.</typeparam>
+    /// <param name="pref">The preference to cycle.</param>
+    /// <param name="arr">The array to cycle through.</param>
+    /// <param name="right">`true` if going right, `false` if going left.</param>
+    protected void OnCycleArray<T>(ref T pref, T[] arr, bool right) 
+    {
+        pref = ArrayTools.CircularNextElement(arr, Array.IndexOf(arr, pref), right);
+
+        if (m_saveOnInputChange)
+            Saving.SavePreferences();
+    }
+
+
+    /// <summary>
+    /// Handles cycling of an Enum value to the next or previous value in the
+    /// array of possible values of that Enum.
+    /// </summary>
+    /// <typeparam name="T">The type of Enum.</typeparam>
+    /// <param name="pref">The enum preference to cycle.</param>
+    /// <param name="right">`true` if going right, `false` if going left.</param>
+    protected void OnCycleEnum<T>(ref T pref, bool right) where T : Enum
+    {
+        OnCycleArray(ref pref, (T[])Enum.GetValues(typeof(T)), right);
+    }
+
+
+    /// <summary>
+    /// Calls OnCycleArray, then updates `textToUpdate` with the resulting preference value.
+    /// </summary>
+    /// <param name="textToUpdate">The text component to update.</param>
+    protected void OnCycleArrayWithLabel<T>(ref T pref, T[] arr, bool right, TMP_Text textToUpdate)
+    {
+        OnCycleArray(ref pref, arr, right);
+        textToUpdate.text = pref.ToString();
+    }
+
+
+    /// <summary>
+    /// Calls OnCycleEnum, then updates `textToUpdate` with the resulting preference value.
+    /// </summary>
+    /// <param name="textToUpdate">The text component to update.</param>
+    protected void OnCycleEnumWithLabel<T>(ref T pref, bool right, TMP_Text textToUpdate) where T : Enum
+    {
+        OnCycleEnum(ref pref, right);
+        textToUpdate.text = pref.ToString();
     }
 
 

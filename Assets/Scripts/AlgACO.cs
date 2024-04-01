@@ -28,27 +28,25 @@
 
 // The Top n days are then added to the population for display in the GUI.
 using System;
+using System.Linq;
 using Random = UnityEngine.Random;
 
 
 // Limitation: Can only have one 100g portion for each food type.
-
-
+    
 // Warning: You'll want to use no hard constraints for this algorithm, as then all
 // edge fitnesses will likely be infinity, due to each individual portion forming
 // a very sub-optimal day.
 
+
 /// <summary>
-/// An ACO algorithm for meal planning.
+/// Ant colony optimisation algorithm, which has tunable parameters. (See Preferences class)
 /// 
 /// This algorithm models ants in real-life, where the ants are placed in a grid of
 /// equally-spaced food portions. (The assumption is made, that every portion is always
 /// equidistant to every other portion, which would be hard to achieve in real-life.)
 /// 
-/// The ants will each begin at different portions to maximise search space exploration.
-/// If there are more ants than portions, some will share start points.
-/// 
-/// (*) The ants will find the shortest path around all of the foods. The ants are given some time
+/// (*) The ants will find the shortest path from one food to another. The ants are given some time
 /// to traverse these foods and lay down enough pheromone to decide the clear worst food.
 /// Then the worst food is removed and replaced with a new one. (Avoid stagnation)
 /// 
@@ -59,7 +57,7 @@ using Random = UnityEngine.Random;
 /// foods. Given that the first food was eaten, how beneficial would it be to eat the second?
 /// E.g. Having eaten 400g of nuts, it would not be beneficial to have more nuts, or fat/protein! 
 /// </summary>
-public abstract partial class AlgACO : Algorithm
+public partial class AlgACO : Algorithm
 {
     private readonly float[,] m_fitnesses = new float[Prefs.colonyPortions, Prefs.colonyPortions];
     private readonly float[,] m_pheromone = new float[Prefs.colonyPortions, Prefs.colonyPortions];
@@ -71,14 +69,12 @@ public abstract partial class AlgACO : Algorithm
     {
         if (!base.Init()) return false;
 
-
         // Create vertices
         for (int i = 0; i < Prefs.colonyPortions; i++)
         {
             Portion randP = RandomPortion;
             m_vertices[i] = randP;
         }
-
 
         // Calculate and assign edge fitnesses and pheromone
         ActOnMatrix(m_fitnesses, (int i, int j, float _) =>
@@ -87,15 +83,13 @@ public abstract partial class AlgACO : Algorithm
             m_pheromone[i, j] = (float)Rand.NextDouble();
         });
 
-
         // Create ants
         for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
-            // Ants are split roughly equally between the portions
-            Ant ant = new(this, i % Prefs.colonyPortions, true);
+            // Ants all start at the same portion
+            Ant ant = new(this, 0, true);
             m_ants[i] = ant;
         }
-
 
         return true;
     }
@@ -117,7 +111,10 @@ public abstract partial class AlgACO : Algorithm
         fitnessTester.AddIndex(j);
         float fitnessAfter = fitnessTester.Fitness;
 
-        return MathF.Abs(fitnessAfter - fitnessBefore);
+        // Return a finite diff, if it is finite & not NaN. Otherwise return +Infinity.
+        float diff = MathF.Abs(fitnessAfter - fitnessBefore);
+        if (float.IsFinite(diff) && !float.IsNaN(diff)) return diff;
+        return float.PositiveInfinity;
     }
 
 
@@ -179,9 +176,14 @@ public abstract partial class AlgACO : Algorithm
             UpdateSearchSpace(m_fitnesses, m_pheromone, m_vertices);
         }
 
-
         // Reset all ants
         ResetAnts();
+
+        // Run all ants
+        for (int i = 0; i < Prefs.populationSize; i++)
+        {
+            m_ants[i].RunAnt();
+        }
 
 
         // Generate ant solutions
@@ -224,9 +226,6 @@ public abstract partial class AlgACO : Algorithm
         // Update pheromone
         UpdatePheromone();
     }
-
-
-    protected abstract void UpdateSearchSpace(float[,] fitnesses, float[,] pheromone, Portion[] vertices);
 
 
     private void ResetAnts()
@@ -272,23 +271,43 @@ public abstract partial class AlgACO : Algorithm
     }
 
 
-    // Edge i from a to b costs (Fitness A && B - Fitness A)
     /// <summary>
-    /// Calculates the fitness of a Day from edge costs (as a tour).
+    /// Remove the worst food in the experiment, and replace it with a new random
+    /// one from the dataset.
+    /// 
+    /// The "worst" is calculated by selecting the vertex with the lowest total
+    /// pheromone incoming from all other vertices.
+    /// 
+    /// Generally improves algorithm performance.
     /// </summary>
-    /// <param name="day">The day (tour).</param>
-    /// <returns>The fitness.</returns>
-    //private float TourFitness(Ant ant)
-    //{
-    //    if (day.portions.Count <= 1) return float.PositiveInfinity;
+    private void UpdateSearchSpace(float[,] fitnesses, float[,] pheromone, Portion[] vertices)
+    {
+        float[] pheroSumIntoEachVert = new float[Prefs.colonyPortions];
+        for (int i = 0; i < Prefs.colonyPortions; i++)
+        {
+            for (int j = 0; j < Prefs.colonyPortions; j++)
+            {
+                pheroSumIntoEachVert[j] += pheromone[i, j];
+            }
+        }
 
-    //    float fitness = 0;
-    //    for (int i = 0; i < day.portions.Count - 1; i++)
-    //    {
-    //        fitness += EdgeFitness(day.portions[i], day.portions[i + 1]);
-    //    }
-    //    fitness += EdgeFitness(day.portions[^1], day.portions[0]);
+        int worstIndex = Array.IndexOf(pheroSumIntoEachVert, pheroSumIntoEachVert.Min());
 
-    //    return fitness;
-    //}
+        // Replace the worst index with a random portion
+        vertices[worstIndex] = RandomPortion;
+
+        // Calculate and assign new fitnesses
+        for (int i = 0; i < Prefs.colonyPortions; i++)
+        {
+            fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
+            fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);
+
+            pheromone[i, worstIndex] = (float)Rand.NextDouble();
+            pheromone[worstIndex, i] = (float)Rand.NextDouble();
+        }
+
+
+        // Reset pheromone
+        ActOnMatrix(pheromone, (int i, int j, float _) => pheromone[i, j] = (float)Rand.NextDouble());
+    }
 }

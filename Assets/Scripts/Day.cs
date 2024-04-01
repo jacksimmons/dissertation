@@ -6,7 +6,7 @@ using System.Linq;
 /// <summary>
 /// A data structure representing a meal plan for one day.
 /// </summary>
-public class Day : IVerbose
+public partial class Day : IVerbose, IComparable<Day>
 {
     private readonly List<Portion> _portions;
     public readonly ReadOnlyCollection<Portion> portions;
@@ -14,20 +14,42 @@ public class Day : IVerbose
 
     // Only change this array when one of the portions changes, eliminating the
     // need to perform expensive Linq Sum operations every iteration.
-    private readonly float[] m_nutrientAmounts = new float[Nutrient.Count];
+    private readonly float[] m_nutrientAmounts;
 
     public int Mass { get; private set; } = 0;
+    public Fitness TotalFitness { get; }
 
 
-    public Day(Algorithm algorithm)
+    private Day()
+    {
+        switch (Preferences.Instance.fitnessApproach)
+        {
+            case EFitnessApproach.SummedFitness:
+                TotalFitness = new SummedFitness(this);
+                break;
+            case EFitnessApproach.ParetoDominance:
+                TotalFitness = new ParetoFitness(this);
+                break;
+        }
+    }
+
+
+    /// <summary>
+    /// Default constructor.
+    /// </summary>
+    public Day(Algorithm algorithm) : this()
     {
         _portions = new();
         portions = new(_portions);
         m_algorithm = algorithm;
+        m_nutrientAmounts = new float[Nutrient.Count];
     }
 
 
-    public Day(Day day)
+    /// <summary>
+    /// Copy constructor.
+    /// </summary>
+    public Day(Day day) : this()
     {
         _portions = new(day.portions);
         portions = new(_portions);
@@ -61,7 +83,6 @@ public class Day : IVerbose
         if (!merged)
             _portions.Add(portion);
         AddPortionProperties(portion);
-        m_algorithm.OnDayUpdated(this);
     }
 
 
@@ -77,7 +98,6 @@ public class Day : IVerbose
 
         SubtractPortionProperties(_portions[index]);
         _portions.RemoveAt(index);
-        m_algorithm.OnDayUpdated(this);
     }
 
 
@@ -91,7 +111,6 @@ public class Day : IVerbose
 
         Portion diff = new(p.FoodType, dmass);
         AddPortionProperties(diff);
-        m_algorithm.OnDayUpdated(this);
     }
 
 
@@ -103,7 +122,11 @@ public class Day : IVerbose
     {
         for (int i = 0; i < Nutrient.Count; i++)
         {
-            m_nutrientAmounts[i] += portion.GetNutrientAmount((ENutrient)i);
+            float diff = portion.GetNutrientAmount((ENutrient)i);
+            m_nutrientAmounts[i] += diff;
+
+            if (diff > 0)
+                TotalFitness.SetNutrientOutdated((ENutrient)i);
         }
         Mass += portion.Mass;
     }
@@ -113,51 +136,30 @@ public class Day : IVerbose
     {
         for (int i = 0; i < Nutrient.Count; i++)
         {
-            m_nutrientAmounts[i] -= portion.GetNutrientAmount((ENutrient)i);
+            float diff = portion.GetNutrientAmount((ENutrient)i);
+            m_nutrientAmounts[i] -= diff;
+
+            if (diff > 0)
+                TotalFitness.SetNutrientOutdated((ENutrient)i);
         }
         Mass -= portion.Mass;
     }
 
 
-    // --- Calculation methods
+    // --- Fitness methods
 
 
     /// <summary>
-    /// Evaluates the fitness of this day.
+    /// Compare two days in terms of their fitness.
     /// </summary>
-    /// <returns>The fitness as a float.</returns>
-    public float GetFitness()
+    public int CompareTo(Day other)
     {
-        // Calculate the overall fitness value based on the sum of the fitness of the individual
-        // nutrient amounts. (E.g. protein leads to a fitness value, which is multiplied to the fat fitness,
-        // etc... over all nutrients).
-
-        float fitness = 0;
-
-        for (int i = 0; i < Nutrient.Count; i++)
-        {
-            float amount = m_nutrientAmounts[i];
-            fitness += m_algorithm.Constraints[i].GetFitness(amount);
-
-            // Quick exit for infinity fitness
-            if (fitness == float.PositiveInfinity)
-            {
-                //Logger.Log($"{Nutrient.Values[i]} : {Preferences.Instance.constraints[i].Type} {((HardConstraint)m_algorithm.Constraints[i]).min} {amount} {((HardConstraint)m_algorithm.Constraints[i]).max} gave finf");
-                return fitness;
-            }
-        }
-
-        if (Preferences.Instance.addFitnessForMass)
-        {
-            // Penalise portions with mass over the maximum (Food mass constraint)
-            foreach (Portion p in portions)
-            {
-                fitness += MathF.Max(p.Mass - Preferences.Instance.maxPortionMass, 0);
-            }
-        }
-
-        return fitness;
+        return TotalFitness.CompareTo(other.TotalFitness);
     }
+
+
+    public static bool operator <(Day op1, Day op2) => op1.CompareTo(op2) < 0;
+    public static bool operator >(Day op1, Day op2) => op1.CompareTo(op2) > 0;
 
 
     /// <summary>
@@ -218,62 +220,7 @@ public class Day : IVerbose
     }
 
 
-    /// <summary>
-    /// Compares two days, and returns a detailed enum value on the dominance hierarchy between
-    /// the two.
-    /// </summary>
-    public ParetoComparison CompareTo(Day other)
-    {
-        return CompareTo(other, m_algorithm.Constraints);
-    }
-
-
-    public ParetoComparison CompareTo(Day other, ReadOnlyCollection<Constraint> constraints)
-    {
-        // Store how many constraints this is better/worse than `day` on.
-        int betterCount = 0;
-        int worseCount = 0;
-
-        for (int i = 0; i < Nutrient.Count; i++)
-        {
-            float fitnessA = constraints[i].GetFitness(GetNutrientAmount((ENutrient)i));
-            float fitnessB = constraints[i].GetFitness(other.GetNutrientAmount((ENutrient)i));
-
-            if (fitnessA < fitnessB)
-                betterCount++;
-            else if (fitnessA > fitnessB)
-                worseCount++;
-        }
-
-
-        // If on any constraint, !(ourFitness <= fitness) then this does not dominate.
-        if (worseCount > 0)
-        {
-            // Worse on 1+, and better on 1+ => MND
-            if (betterCount > 0)
-                return ParetoComparison.MutuallyNonDominating;
-
-            // Worse on all => Strictly Dominated
-            if (worseCount == constraints.Count)
-                return ParetoComparison.StrictlyDominated;
-
-            // Worse on 1+, and not better on any => Dominated
-            return ParetoComparison.Dominated;
-        }
-        else
-        {
-            // Better on all => Strictly Dominates
-            if (betterCount == constraints.Count)
-                return ParetoComparison.StrictlyDominates;
-
-            // Not worse on any, and better on 1+ => Dominates
-            if (betterCount > 0)
-                return ParetoComparison.Dominates;
-
-            // Not worse on any, and not better on any => MND (They are equal)
-            return ParetoComparison.MutuallyNonDominating;
-        }
-    }
+    public string FitnessVerbose() => TotalFitness.Verbose();
 
 
     // --- Other methods

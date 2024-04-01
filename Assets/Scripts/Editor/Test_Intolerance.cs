@@ -24,7 +24,7 @@ public class Test_Intolerance
 
         foreach (Food food in foods)
         {
-            Assert.IsTrue(prefs.IsFoodAllowed(food.FoodGroup, food.Name));
+            Assert.IsTrue(prefs.IsFoodAllowed(food.FoodGroup, food.Name, food.CompositeKey));
         }
     }
 
@@ -86,7 +86,7 @@ public class Test_Intolerance
         Preferences.Instance.bannedFoodKeys = new();
 
         // Get list of foods before banning
-        List<Food> foods = Algorithm.Build(typeof(AlgSFGA)).Foods.ToList();
+        List<Food> foods = Algorithm.Build(typeof(AlgGA)).Foods.ToList();
         int numFoodsBeforeBan = foods.Count;
 
         // Ban 2nd and 3rd foods
@@ -96,7 +96,7 @@ public class Test_Intolerance
         Preferences.Instance.bannedFoodKeys.Add(bannedB.CompositeKey);
 
         // Get the foods with bans applied
-        List<Food> newFoods = Algorithm.Build(typeof(AlgSFGA)).Foods.ToList();
+        List<Food> newFoods = Algorithm.Build(typeof(AlgGA)).Foods.ToList();
         int numFoodsAfterBan = newFoods.Count;
 
         // First foods list contains the banned foods

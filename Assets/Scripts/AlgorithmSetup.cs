@@ -3,8 +3,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+
+/// <summary>
+/// A Unity script which handles algorithm preference setup.
+/// In short, handles the Algorithm Setup panel.
+/// </summary>
 public class AlgorithmSetup : SetupBehaviour
 {
+    private static Preferences Prefs => Preferences.Instance;
+
+
     // ENutrient fields (each object's index represents its ENutrient enum value)
     [SerializeField]
     private GameObject[] m_nutrientFields;
@@ -22,6 +30,17 @@ public class AlgorithmSetup : SetupBehaviour
     private TMP_Text m_addFitnessForMassBtnTxt;
     [SerializeField]
     private TMP_Text m_algTypeText;
+    [SerializeField]
+    private Button m_fitnessApproachBtn;
+    [SerializeField]
+    private TMP_Text m_fitnessApproachTxt;
+
+
+    // GA Settings
+    [SerializeField]
+    private Button m_selectionMethodBtn;
+    [SerializeField]
+    private TMP_Text m_selectionMethodTxt;
 
 
     // ACO Settings
@@ -33,6 +52,10 @@ public class AlgorithmSetup : SetupBehaviour
     private TMP_InputField m_alphaInput;
     [SerializeField]
     private TMP_InputField m_betaInput;
+    [SerializeField]
+    private TMP_InputField m_colonyPortionsInput;
+    [SerializeField]
+    private TMP_InputField m_stagnationItersInput;
 
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
@@ -64,28 +87,35 @@ public class AlgorithmSetup : SetupBehaviour
             goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value));
 
             TMP_InputField minInput = go.transform.Find("MinInput").GetComponent<TMP_InputField>();
-            minInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Min, value));
+            minInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.constraints[(int)nutrient].Min, value));
 
             TMP_InputField maxInput = go.transform.Find("MaxInput").GetComponent<TMP_InputField>();
-            maxInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Max, value));
+            maxInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.constraints[(int)nutrient].Max, value));
 
             TMP_InputField weightInput = go.transform.Find("WeightInput").GetComponent<TMP_InputField>();
-            weightInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Weight, value));
+            weightInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.constraints[(int)nutrient].Weight, value));
 
             Button constraintTypeBtn = go.transform.Find("ConstraintTypeBtn").GetComponent<Button>();
-            constraintTypeBtn.onClick.AddListener(() => OnCycleConstraintType(nutrient, constraintTypeBtn));
+            constraintTypeBtn.onClick.AddListener(() => OnCycleArrayWithLabel(ref Prefs.constraints[(int)nutrient].Type, Preferences.CONSTRAINT_TYPES,
+                true, constraintTypeBtn.GetComponentInChildren<TMP_Text>()));
         }
 
-        m_popSizeInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.populationSize, value));
+        m_popSizeInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.populationSize, value));
         m_numStartingPortionsPerDayInput.onEndEdit.AddListener(
-            (string value) => OnIntInputChanged(ref Preferences.Instance.numStartingPortionsPerDay, value));
-        m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.minPortionMass, value));
-        m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Preferences.Instance.maxPortionMass, value));
+            (string value) => OnIntInputChanged(ref Prefs.numStartingPortionsPerDay, value));
+        m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.minPortionMass, value));
+        m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.maxPortionMass, value));
 
-        m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroImportance, value));
-        m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.pheroEvapRate, value));
-        m_alphaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.acoAlpha, value));
-        m_betaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Preferences.Instance.acoBeta, value));
+        // Get guaranteed text component through prefab hierarchy
+        m_fitnessApproachBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.fitnessApproach, true, m_fitnessApproachTxt));
+        m_selectionMethodBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.selectionMethod, true, m_selectionMethodTxt));
+
+        m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pheroImportance, value));
+        m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pheroEvapRate, value));
+        m_alphaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.acoAlpha, value));
+        m_betaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.acoBeta, value));
+        m_colonyPortionsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyPortions, value));
+        m_stagnationItersInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyStagnationIters, value));
 
         UpdateUI();
     }
@@ -93,7 +123,7 @@ public class AlgorithmSetup : SetupBehaviour
 
     private void OnGoalInputChanged(ENutrient nutrient, string value)
     {
-        OnFloatInputChanged(ref Preferences.Instance.constraints[(int)nutrient].Goal, value);
+        OnFloatInputChanged(ref Prefs.constraints[(int)nutrient].Goal, value);
         OnGoalChanged(nutrient);
         UpdateUI();
     }
@@ -119,10 +149,10 @@ public class AlgorithmSetup : SetupBehaviour
     private static void MacrosToCalories()
     {
         MathTools.MacrosToCalories(
-            ref Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
-            Preferences.Instance.constraints[(int)ENutrient.Protein].Goal,
-            Preferences.Instance.constraints[(int)ENutrient.Fat].Goal,
-            Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal
+            ref Prefs.constraints[(int)ENutrient.Kcal].Goal,
+            Prefs.constraints[(int)ENutrient.Protein].Goal,
+            Prefs.constraints[(int)ENutrient.Fat].Goal,
+            Prefs.constraints[(int)ENutrient.Carbs].Goal
         );
     }
 
@@ -130,56 +160,38 @@ public class AlgorithmSetup : SetupBehaviour
     private static void CaloriesToMacros()
     {
         MathTools.CaloriesToMacros(
-            Preferences.Instance.constraints[(int)ENutrient.Kcal].Goal,
-            ref Preferences.Instance.constraints[(int)ENutrient.Protein].Goal,
-            ref Preferences.Instance.constraints[(int)ENutrient.Fat].Goal,
-            ref Preferences.Instance.constraints[(int)ENutrient.Carbs].Goal
+            Prefs.constraints[(int)ENutrient.Kcal].Goal,
+            ref Prefs.constraints[(int)ENutrient.Protein].Goal,
+            ref Prefs.constraints[(int)ENutrient.Fat].Goal,
+            ref Prefs.constraints[(int)ENutrient.Carbs].Goal
         );
-    }
-
-
-    private static void OnCycleConstraintType(ENutrient nutrient, Button btn)
-    {
-        // Get original type
-        string type = Preferences.Instance.constraints[(int)nutrient].Type;
-
-        int indexOfType = Array.IndexOf(Preferences.CONSTRAINT_TYPES, type);
-        if (indexOfType == -1) Logger.Error($"Provided constraint type ({type}) was not valid.");
-
-        // Set the new type
-        string newType = Preferences.Instance.constraints[(int)nutrient].Type = ArrayTools.CircularNextElement(Preferences.CONSTRAINT_TYPES, indexOfType, true);
-
-        // Update the button label to reflect the change (need to do this as this input
-        // is not done through an input field)
-        btn.GetComponentInChildren<TMP_Text>().text = newType;
-        Saving.SavePreferences();
     }
 
 
     public void OnToggleAddFitnessForMass()
     {
-        Preferences.Instance.addFitnessForMass = !Preferences.Instance.addFitnessForMass;
+        Prefs.addFitnessForMass = !Prefs.addFitnessForMass;
         Saving.SavePreferences();
-        m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
+        m_addFitnessForMassBtnTxt.text = Prefs.addFitnessForMass ? "X" : "";
     }
 
 
     public void OnCycleAlgorithm()
     {
-        Preferences.Instance.algorithmType =
+        Prefs.algorithmType =
             Preferences.ALG_TYPES[ArrayTools.CircularNextIndex(
-                Array.IndexOf(Preferences.ALG_TYPES, Preferences.Instance.algorithmType, 0, Preferences.ALG_TYPES.Length),
+                Array.IndexOf(Preferences.ALG_TYPES, Prefs.algorithmType, 0, Preferences.ALG_TYPES.Length),
                 Preferences.ALG_TYPES.Length,
                 true
             )];
         Saving.SavePreferences();
-        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algorithmType}";
+        m_algTypeText.text = Prefs.algorithmType;
     }
 
 
     private void UpdateUI()
     {
-        Preferences p = Preferences.Instance;
+        Preferences p = Prefs;
         ConstraintData[] constraints = p.constraints;
 
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
@@ -207,13 +219,18 @@ public class AlgorithmSetup : SetupBehaviour
         m_numStartingPortionsPerDayInput.text = p.numStartingPortionsPerDay.ToString();
         m_minStartMassInput.text = p.minPortionMass.ToString();
         m_maxStartMassInput.text = p.maxPortionMass.ToString();
-        m_addFitnessForMassBtnTxt.text = Preferences.Instance.addFitnessForMass ? "X" : "";
-        m_algTypeText.text = $"Algorithm:\n{Preferences.Instance.algorithmType}";
+        m_addFitnessForMassBtnTxt.text = Prefs.addFitnessForMass ? "X" : "";
+        m_algTypeText.text = Prefs.algorithmType;
+        m_selectionMethodTxt.text = $"{Prefs.selectionMethod}";
+
+        m_fitnessApproachTxt.text = $"{Prefs.fitnessApproach}";
 
         m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
         m_pheroImportanceInput.text = p.pheroImportance.ToString();
         m_alphaInput.text = p.acoAlpha.ToString();
         m_betaInput.text = p.acoBeta.ToString();
+        m_colonyPortionsInput.text = p.colonyPortions.ToString();
+        m_stagnationItersInput.text = p.colonyStagnationIters.ToString();
     }
 
 

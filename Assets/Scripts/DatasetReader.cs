@@ -127,7 +127,7 @@ public class DatasetReader
         foreach (FoodData data in m_dataset)
         {
             // Check the food is allowed.
-            if (!m_prefs.IsFoodAllowed(data.FoodGroup, data.Name))
+            if (!m_prefs.IsFoodAllowed(data.FoodGroup, data.Name, data.CompositeKey))
             {
                 continue;
             }
@@ -157,8 +157,6 @@ public class DatasetReader
 
         NextFood: continue;
         }
-
-        Logger.Log(Dataset.Count);
 
         return foods;
     }

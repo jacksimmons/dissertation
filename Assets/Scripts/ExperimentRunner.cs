@@ -15,7 +15,9 @@ using UnityEngine;
 /// An experiment consists of a sequence of one or more steps, run serially.
 /// During each step, a number of algorithms are run in parallel (and their
 /// best fitnesses each iteration are averaged in the result).
-/// </summary>
+/// 
+/// The output fitness is always in the SummedFitness format, because ParetoDominance
+/// fitnesses are >> 2-dimensional and thus cannot be represented well on a 2D plot.
 public class ExperimentRunner : SetupBehaviour
 {
     /// <summary>
@@ -133,7 +135,9 @@ public class ExperimentRunner : SetupBehaviour
     /// </summary>
     public void RunNoStep()
     {
+        // Ensure parameters are correct
         if (!CheckParams()) return;
+
 
         PlotTools.PlotLines(RunAlgorithmSet(m_numAlgs, m_numIters));
     }
@@ -146,6 +150,7 @@ public class ExperimentRunner : SetupBehaviour
     /// </summary>
     public void Run()
     {
+        // Ensure parameters are correct
         if (!CheckParams()) return;
 
         FieldInfo field = m_preferenceFields[m_selectedPreferenceFieldIndex];
@@ -163,8 +168,7 @@ public class ExperimentRunner : SetupBehaviour
             result = RunBoolExperiment(m_numAlgs, m_numIters, field, field.Name);
         }
 
-        // Reset the value of the preference, so that the experiment doesn't alter regular algorithm
-        // performance.
+        // Reload original preferences
         Saving.LoadPreferences();
 
         PlotTools.PlotExperiment(result, field.Name);

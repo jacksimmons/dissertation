@@ -6,6 +6,9 @@ using System.Diagnostics;
 using UnityEngine;
 
 
+/// <summary>
+/// A class which handles the running and performance logging of any type of algorithm from start to end.
+/// </summary>
 public class AlgorithmRunner
 {
     public Algorithm Alg { get; private set; }
@@ -50,7 +53,10 @@ public class AlgorithmRunner
         for (int i = 0; i < numIters; i++)
         {
             Alg.RunIteration();
-            m_plot.Add(Alg.BestFitness); // ith plot addition
+
+            // Always plot the graph using a summed-fitness measure.
+            Day.SummedFitness sf = new(Alg.BestDay);
+            m_plot.Add(sf.Value); // ith plot addition
         }
 
         sw.Stop();

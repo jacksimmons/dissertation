@@ -9,7 +9,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 158972459284757181, guid: f4fde77c87d4c39499d75080a6b49b3a, type: 3}
       propertyPath: m_Name
-      value: IntFloatInputField!
+      value: IntInputField
+      objectReference: {fileID: 0}
+    - target: {fileID: 2085207013258182037, guid: f4fde77c87d4c39499d75080a6b49b3a, type: 3}
+      propertyPath: m_fontSize
+      value: 15.45
       objectReference: {fileID: 0}
     - target: {fileID: 2998786740257275076, guid: f4fde77c87d4c39499d75080a6b49b3a, type: 3}
       propertyPath: m_ContentType

@@ -19,9 +19,8 @@ public abstract class Algorithm
 
     public int IterNum { get; private set; } = 0;        // The current iteration of the algorithm.
 
-    protected Population m_population = new();           // Population stores all Days in the population and their associated data.
-    public ReadOnlyDictionary<Day, float> DayFitnesses => m_population.DayFitnesses;
-
+    private readonly List<Day> m_population;
+    public readonly ReadOnlyCollection<Day> Population;
 
     // A huge data structure storing all possible portions from the dataset in non-random order.
     // Preferences.Instance.minPortionMass and Preferences.Instance.maxPortionMass can drastically change the
@@ -30,6 +29,17 @@ public abstract class Algorithm
     protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
 
     private readonly Dictionary<ENutrient, float> m_prevAvgPopStats = new(); // Stores the average nutrient amount for the whole population from last iteration.
+
+
+    //
+    // Pareto fitness evaluation -exclusive member fields
+    //
+    /// <summary>
+    /// (ParetoFitness exclusive)
+    /// A sorted list of mutually non-dominated sets for all days in the population.
+    /// </summary>
+    public readonly ParetoHierarchy Hierarchy = new();
+
 
     // --- Best day properties, can only be set together ---
 
@@ -44,15 +54,17 @@ public abstract class Algorithm
     {
         get => m_bestDay != null;
     }
-    public float BestFitness { get; private set; } = float.PositiveInfinity; // The fitness of the Best Day.
 
-    // The iteration number of the best day.
+    /// <summary>
+    /// A representation of the best day's fitness.
+    /// </summary>
+    public float BestFitness { get; private set; } = float.PositiveInfinity;
+
+    /// <summary>
+    /// The iteration number of the best day.
+    /// </summary>
     public int BestIteration { get; private set; } = 0;
 
-    // The best possible day that could exist with the given constraints. Must have a fitness of 0.
-
-
-    public virtual float AverageFitness => m_population.GetAvgFitness(); // The average fitness of the population.
     public readonly string DatasetError = ""; // Stores any errors which occur during the dataset stage, to display to the user instead of running.
 
 
@@ -113,6 +125,11 @@ public abstract class Algorithm
 
         // Load constraints from Preferences.
         Constraints = new(Prefs.constraints.Select(Constraint.Build).ToList());
+
+
+        // Create the population data structure
+        m_population = new();
+        Population = new(m_population);
     }
 
 
@@ -159,7 +176,6 @@ public abstract class Algorithm
             return false;
         }
 
-        UpdateBestDay(); // Update best day for iteration 0
         return true;
     }
 
@@ -181,9 +197,29 @@ public abstract class Algorithm
     protected abstract void NextIteration();
 
 
-    public virtual void OnDayUpdated(Day day)
+    /// <summary>
+    /// Accessible method for subclasses to add a day to the population.
+    /// </summary>
+    protected void AddToPopulation(Day day)
     {
-        m_population.FlagAsOutdated(day);
+        m_population.Add(day);
+        if (Prefs.fitnessApproach == EFitnessApproach.ParetoDominance)
+        {
+            Hierarchy.Add((Day.ParetoFitness)day.TotalFitness);
+        }
+    }
+
+
+    /// <summary>
+    /// Accessible method for subclasses to remove a day to the population.
+    /// </summary>
+    protected void RemoveFromPopulation(Day day)
+    {
+        m_population.Remove(day);
+        if (Prefs.fitnessApproach == EFitnessApproach.ParetoDominance)
+        {
+            Hierarchy.Remove((Day.ParetoFitness)day.TotalFitness);
+        }
     }
 
 
@@ -192,33 +228,28 @@ public abstract class Algorithm
     /// </summary>
     private void UpdateBestDay()
     {
-        List<Day> days = DayFitnesses.Keys.ToList();
-        foreach (Day day in days)
+        foreach (Day day in m_population)
         {
-            float fitness = m_population.GetFitness(day);
-            if (fitness < BestFitness || !BestDayExists)
+            if (!BestDayExists || day < BestDay)
             {
-                SetBestDay(day, fitness, IterNum);
+                SetBestDay(day, IterNum);
             }
         }
 
-        // Prevent other classes modifying the best day by cloning it
-        if (BestDayExists)
-        {
-            SetBestDay(new(BestDay), BestFitness, BestIteration);
-        }
+        // Prevent other classes modifying the just-added best day by cloning it
+        SetBestDay(new(BestDay), BestIteration);
     }
 
 
     /// <summary>
-    /// The only way to "set" the best day, its fitness and iteration.
-    /// These parameters are all private so inherited classes MUST set them all
+    /// The only way to "set" the best day.
+    /// These parameters are all private so inherited classes MUST set them
     /// together with this method (reducing bugs).
     /// </summary>
-    protected void SetBestDay(Day day, float fitness, int iteration)
+    protected void SetBestDay(Day day, int iteration)
     {
         m_bestDay = day;
-        BestFitness = fitness;
+        BestFitness = day.TotalFitness.Value;
         BestIteration = iteration;
     }
 
@@ -240,7 +271,7 @@ public abstract class Algorithm
     /// </summary>
     public virtual string EvaluateDay(Day day)
     {
-        return $"Fitness: {m_population.GetFitness(day)}";
+        return $"Fitness: {day.FitnessVerbose()}";
     }
 
 
@@ -254,7 +285,7 @@ public abstract class Algorithm
         foreach (ENutrient nutrient in Nutrient.Values)
         {
             float sum = 0;
-            foreach (Day day in DayFitnesses.Keys)
+            foreach (Day day in m_population)
             {
                 sum += day.GetNutrientAmount(nutrient);
             }

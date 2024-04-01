@@ -3,10 +3,17 @@ using System.Collections.Generic;
 using System.Reflection;
 
 
-public enum EFitnessFunc
+public enum EFitnessApproach
 {
-    Exponential,
-    ManhattanDist,
+    SummedFitness,
+    ParetoDominance
+}
+
+
+public enum ESelectionMethod
+{
+    Tournament,
+    Rank
 }
 
 
@@ -45,8 +52,8 @@ public class Preferences : ICached, IVerbose
 
     public static readonly string[] ALG_TYPES =
     {
-        typeof(AlgSFGA).FullName!,
-        typeof(AlgACODynamic).FullName!,
+        typeof(AlgGA).FullName!,
+        typeof(AlgACO).FullName!,
     };
 
 
@@ -97,10 +104,10 @@ public class Preferences : ICached, IVerbose
     public int numStartingPortionsPerDay = 1;
     public int minPortionMass = 1;
     public int maxPortionMass = 500;
+    public int maxDayMass = 500;
     public bool addFitnessForMass = true;
     public string algorithmType = ALG_TYPES[0];
-    public bool elitist = false;
-    public EFitnessFunc fitnessFunc = EFitnessFunc.ManhattanDist; // Checked
+    public EFitnessApproach fitnessApproach = EFitnessApproach.SummedFitness;
 
 
     //
@@ -110,10 +117,10 @@ public class Preferences : ICached, IVerbose
     public int mutationMassChangeMax = 10;
     // Chance for any portion to be mutated in an algorithm pass.
     // Is divided by the number of portions in the calculation.
-    public float chanceToMutatePortion = 1f;
+    public float changePortionMassMutationProb = 1f;
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // 0 or 1 -> No convergence
-    public float chanceToAddOrRemovePortion = 0.1f;
+    public float addOrRemovePortionMutationProb = 0.1f;
     // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
     // program as this approaches 1.
     public float proportionParents = 0.5f;
@@ -121,6 +128,8 @@ public class Preferences : ICached, IVerbose
     public float selectionPressure = 1.5f;
     // crossoverPoints-point crossover. Set this to 2 for 2-point crossover, etc.
     public int crossoverPoints = 1;
+    // Selection method
+    public ESelectionMethod selectionMethod = ESelectionMethod.Tournament;
 
 
     //
@@ -129,8 +138,9 @@ public class Preferences : ICached, IVerbose
     // Number of iterations before replacing the worst food.
     // High value => Deeper search (more iterations for evaluation)
     // Low value => Wider search (more foods)
+    public bool elitist = false;
     public int colonyPortions = 10;
-    public int colonyStagnationIters = 1000;
+    public int colonyStagnationIters = 50;
 
     public float pheroImportance = 1f;
     public float pheroEvapRate = 0.1f;
@@ -232,14 +242,17 @@ public class Preferences : ICached, IVerbose
 
     /// <summary>
     /// A function to eliminate the vast majority of unacceptable foods by food group, and/or name.
+    /// Also removes a food if it was banned specifically by the user.
     /// May still leave some in, for example chicken soup may be under the soup group - WA[A,C,E]
     /// Will exclude all alcohol, as it is not nutritious.
     /// </summary>
     /// <param name="foodGroup">The food group to check, to see if allowed.</param>
     /// <param name="name">The name to check.</param>
     /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
-    public bool IsFoodAllowed(string foodGroup, string name)
+    public bool IsFoodAllowed(string foodGroup, string name, string compositeKey)
     {
+        if (bannedFoodKeys.Contains(compositeKey)) return false;
+
         // In case of no food group, say it is not allowed.
         // Safest approach - removes all foods without a proper food group label.
         if (foodGroup.Length == 0) return false;

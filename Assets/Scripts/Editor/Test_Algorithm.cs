@@ -42,19 +42,19 @@ public class Test_Algorithm
 
         // Assert number of days is correct
         int expectedPopSize = Preferences.Instance.populationSize;
-        int actualPopSize = alg.DayFitnesses.Count;
+        int actualPopSize = alg.Population.Count;
         Assert.IsTrue(expectedPopSize == actualPopSize);
 
 
         // Test each population member is valid
-        foreach (var kvp in alg.DayFitnesses)
+        foreach (Day day in alg.Population)
         {
-            Assert.IsTrue(kvp.Key.portions.Count == Preferences.Instance.numStartingPortionsPerDay);
+            Assert.IsTrue(day.portions.Count == Preferences.Instance.numStartingPortionsPerDay);
 
             // Assert that the random ranges are satisfied for every portion
-            for (int j = 0; j < kvp.Key.portions.Count; j++)
+            for (int j = 0; j < day.portions.Count; j++)
             {
-                float mass = kvp.Key.portions[j].Mass;
+                float mass = day.portions[j].Mass;
                 Assert.IsTrue(mass >= Preferences.Instance.minPortionMass && mass <= Preferences.Instance.maxPortionMass);
             }
         }

@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 
 
-/// <summary>
-/// Runs crossover from the point that the parents' genes have been
-/// combined into one list.
-/// </summary>
+// The Crossover implementation for the AlgGA class.
 public partial class AlgGA
 {
     /// <summary>

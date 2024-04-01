@@ -18,82 +18,83 @@ public class Test_GA
     [Test]
     public void RunTests()
     {
-        AlgSFGA sfga = (AlgSFGA)Algorithm.Build(typeof(AlgSFGA));
-        sfga.Init();
+        AlgGA ga = (AlgGA)Algorithm.Build(typeof(AlgGA));
+        ga.Init();
 
-        NormalTest(sfga);
-        BoundaryTest(sfga);
-        ErroneousTest(sfga);
+        NormalTest(ga);
+        BoundaryTest(ga);
+        ErroneousTest(ga);
     }
 
 
-    private void NormalTest(AlgSFGA sfga)
+    private void NormalTest(AlgGA ga)
     {
         // Selection
-        List<Day> sfgaDays = sfga.DayFitnesses.Keys.ToList();
-        SelectionTest(sfga, sfgaDays);
+        List<Day> gaDays = new(ga.Population);
+        SelectionTest(ga, gaDays);
 
         // Crossover
-        CrossoverTest(sfga, sfga.PerformPairSelection(sfga.DayFitnesses.Keys.ToList(), true));
+        gaDays = new(ga.Population);
+        CrossoverTest(ga, ga.PerformPairSelection(gaDays, true));
     }
 
 
-    private void BoundaryTest(AlgSFGA sfga)
+    private void BoundaryTest(AlgGA ga)
     {
         // Selection of just 2
-        List<Day> sfgaDays = sfga.DayFitnesses.Keys.ToList().GetRange(0, 2);
-        SelectionTest(sfga, sfgaDays);
+        List<Day> gaDays = ga.Population.ToList().GetRange(0, 2);
+        SelectionTest(ga, gaDays);
 
         // Selection of just 1 (should return itself)
-        Day sfgaDay = sfga.DayFitnesses.Keys.ToList()[0];
-        sfgaDays = new() { sfgaDay };
-        SelectionTest(sfga, sfgaDays);
+        Day gaDay = ga.Population.ToList()[0];
+        gaDays = new() { gaDay };
+        SelectionTest(ga, gaDays);
 
         // Crossover with no portions
-        Day parentA = new(sfga); // No portions
-        Day parentB = new(sfga);
+        Day parentA = new(ga); // No portions
+        Day parentB = new(ga);
         FoodData food = new();
         food.Nutrients[0] = 300;
-        CrossoverTest(sfga, sfga.PerformPairSelection(new() { parentA, parentB }, true));
+        CrossoverTest(ga, ga.PerformPairSelection(new() { parentA, parentB }, true));
     }
 
 
-    private void ErroneousTest(AlgSFGA sfga)
+    private void ErroneousTest(AlgGA ga)
     {
         // Selection of 0
-        Assert.Throws(typeof(Exception), () => SelectionTest(sfga, new()));
+        Assert.Throws(typeof(Exception), () => SelectionTest(ga, new()));
     }
 
 
-    private void SelectionTest(AlgSFGA sfga, List<Day> sfgaDays)
+    private void SelectionTest(AlgGA ga, List<Day> gaDays)
     {
-        if (sfgaDays.Count == 1)
+        if (gaDays.Count == 1)
         {
-            Assert.True(sfga.TournamentSelection(sfgaDays, true) == sfgaDays[0]);
-            Assert.True(sfga.TournamentSelection(sfgaDays, false) == sfgaDays[0]);
+            Assert.True(ga.TournamentSelection(gaDays, true) == gaDays[0]);
+            Assert.True(ga.TournamentSelection(gaDays, false) == gaDays[0]);
 
-            Assert.True(sfga.RankSelection(sfgaDays, true) == sfgaDays[0]);
-            Assert.True(sfga.RankSelection(sfgaDays, false) == sfgaDays[0]);
+            Assert.True(ga.RankSelection(gaDays, true) == gaDays[0]);
+            Assert.True(ga.RankSelection(gaDays, false) == gaDays[0]);
         }
         else
         {
-            Assert.NotNull(sfga.TournamentSelection(sfgaDays, true));
-            Assert.NotNull(sfga.TournamentSelection(sfgaDays, false));
+            Assert.NotNull(ga.TournamentSelection(gaDays, true));
+            Assert.NotNull(ga.TournamentSelection(gaDays, false));
     
-            Assert.NotNull(sfga.RankSelection(sfgaDays, true));
-            Assert.NotNull(sfga.RankSelection(sfgaDays, false));
+            Assert.NotNull(ga.RankSelection(gaDays, true));
+            Assert.NotNull(ga.RankSelection(gaDays, false));
         }
     }
 
 
-    private void CrossoverTest(AlgSFGA sfga, Tuple<Day, Day> parents)
+    private void CrossoverTest(AlgGA ga, Tuple<Day, Day> parents)
     {
         // For every crossover, all of the childrens' Foods must be a member of one of the parents.
         // Also, the childrens' mass must equal the parents' mass, unless the max portion mass was reached
 
         int parentMass = parents.Item1.Mass + parents.Item2.Mass;
 
-        Tuple<Day, Day> children = sfga.Crossover(parents);
+        Tuple<Day, Day> children = ga.Crossover(parents);
         int childMass = children.Item1.Mass + children.Item2.Mass;
 
         Assert.True(parentMass >= childMass);

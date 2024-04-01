@@ -112,8 +112,6 @@ public class HardConstraint : Constraint, IVerbose
     /// </summary>
     public readonly float max;
 
-    public readonly EFitnessFunc fitnessFuncType;
-
     public override float BestValue => (min + max) / 2;
     public override float WorstValue => float.PositiveInfinity;
 
@@ -146,16 +144,6 @@ public class HardConstraint : Constraint, IVerbose
             Logger.Error($"Argument max ({max}) was less than argument min ({min}).");
         if (weight < 0)
             Logger.Error($"Argument weight ({weight}) was < 0.");
-
-        switch (fitnessFuncType)
-        {
-            case EFitnessFunc.Exponential:
-            case EFitnessFunc.ManhattanDist:
-                break;
-            default:
-                Logger.Error($"Argument fitnessFuncType ({Preferences.Instance.fitnessFunc}) was invalid.");
-                break;
-        }
     }
 
 
@@ -164,7 +152,7 @@ public class HardConstraint : Constraint, IVerbose
         // Use approx less than to ensure the minimum and maximum values can be used in the range.
         // Using standard < and > doesn't account for floating point inaccuracies, which can make
         // Approx(amount, min) or Approx(amount, max) yield fitness == Infinity.
-        if (MathTools.ApproxLessThan(amount, min) || MathTools.ApproxLessThan(max, amount))
+        if (amount < min || amount > max)
         {
             return float.PositiveInfinity;
         }
@@ -253,8 +241,6 @@ public class ConvergeConstraint : HardConstraint, IVerbose
 
     private new void Init()
     {
-        base.Init();
-
         if (goal < 0 || goal < min || goal > max)
             Logger.Error($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).");
     }
@@ -262,19 +248,13 @@ public class ConvergeConstraint : HardConstraint, IVerbose
 
     public override float GetUnweightedFitness(float amount)
     {
-        if (float.IsPositiveInfinity(base.GetUnweightedFitness(amount))) return float.PositiveInfinity;
-        // If amount == max, sometimes this can give -Infinity, so assign a fitness of Infinity in this case.
-
-        switch (Preferences.Instance.fitnessFunc)
+        // Impose a hard limit only during GA, as ACO requires lots of exploration
+        if (Preferences.Instance.algorithmType == typeof(AlgGA).FullName)
         {
-            case EFitnessFunc.Exponential:
-                return ExponentialFitness(amount, min, max, goal);
-            case EFitnessFunc.ManhattanDist:
-                return ManhattanFitness(amount, goal);
-            default:
-                // Unlikely to reach this due to exception handling in HardConstraint.
-                return float.NegativeInfinity;
+            if (float.IsPositiveInfinity(base.GetUnweightedFitness(amount))) return float.PositiveInfinity;
         }
+
+        return ManhattanFitness(amount, goal);
     }
 
 
@@ -330,17 +310,15 @@ public class MinimiseConstraint : HardConstraint, IVerbose
 
     public override float GetUnweightedFitness(float amount)
     {
-        if (float.IsPositiveInfinity(base.GetUnweightedFitness(amount))) return float.PositiveInfinity;
-        if (MathTools.Approx(amount, 0)) return 0;
-
-        return Preferences.Instance.fitnessFunc switch
+        // Impose a hard limit only during GA, as ACO requires lots of exploration
+        if (Preferences.Instance.algorithmType == typeof(AlgGA).FullName)
         {
-            // Shift the graph to the right by max, as ConvergeConstraint's graph breaks down approaching goal == 0.
-            // Then calculate the fitness with amount + max.
-            EFitnessFunc.Exponential => ExponentialFitness(amount + max, min + max, max + max, max),
-            EFitnessFunc.ManhattanDist => ManhattanFitness(amount, 0),
-            _ => float.NegativeInfinity, // Unlikely to reach this due to exception handling in HardConstraint.
-        };
+            if (float.IsPositiveInfinity(base.GetUnweightedFitness(amount))) return float.PositiveInfinity;
+        }
+
+        if (MathTools.Approx(amount, 0)) return 0;
+        return ManhattanFitness(amount, 0);
+        //return ExponentialFitness(amount + max, min + max, max + max, (min + max) / 2);
     }
 
 

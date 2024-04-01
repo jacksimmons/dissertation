@@ -48,12 +48,12 @@ public class MenuStackHandler : MonoBehaviour
 
     private void Awake()
     {
+        // Load and cache the user's preferences into Preferences.Instance.
+        Saving.LoadPreferences();
+     
         // Initialise the stack datastructure, with the main menu as its bottom element.
         m_panelStack = new Stack<GameObject>();
         m_panelStack.Push(m_menuPanel);
-
-        // Load and cache the user's preferences into Preferences.Instance.
-        Saving.LoadPreferences();
     }
 
 
