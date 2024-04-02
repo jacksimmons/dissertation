@@ -146,22 +146,6 @@ public partial class Day : IVerbose, IComparable<Day>
     }
 
 
-    // --- Fitness methods
-
-
-    /// <summary>
-    /// Compare two days in terms of their fitness.
-    /// </summary>
-    public int CompareTo(Day other)
-    {
-        return TotalFitness.CompareTo(other.TotalFitness);
-    }
-
-
-    public static bool operator <(Day op1, Day op2) => op1.CompareTo(op2) < 0;
-    public static bool operator >(Day op1, Day op2) => op1.CompareTo(op2) > 0;
-
-
     /// <summary>
     /// Returns a sum over the quantity of the provided nutrient each portion contains.
     /// </summary>

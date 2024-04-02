@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -135,11 +136,16 @@ public class ExperimentRunner : SetupBehaviour
     /// </summary>
     public void RunNoStep()
     {
+        Stopwatch sw = Stopwatch.StartNew();
+
         // Ensure parameters are correct
         if (!CheckParams()) return;
 
 
         PlotTools.PlotLines(RunAlgorithmSet(m_numAlgs, m_numIters));
+
+        sw.Stop();
+        Logger.Log($"Execution time: {sw.ElapsedMilliseconds}ms");
     }
 
 
@@ -150,6 +156,8 @@ public class ExperimentRunner : SetupBehaviour
     /// </summary>
     public void Run()
     {
+        Stopwatch sw = Stopwatch.StartNew();
+
         // Ensure parameters are correct
         if (!CheckParams()) return;
 
@@ -172,6 +180,9 @@ public class ExperimentRunner : SetupBehaviour
         Saving.LoadPreferences();
 
         PlotTools.PlotExperiment(result, field.Name);
+
+        sw.Stop();
+        Logger.Log($"Execution time: {sw.ElapsedMilliseconds}ms");
     }
 
 

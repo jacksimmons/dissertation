@@ -11,7 +11,8 @@ public abstract class Algorithm
     // Shorthand for Preferences.Instance
     protected static Preferences Prefs => Preferences.Instance;
 
-    // All of the foods that were extracted from the dataset, minus banned foods.
+    // All of the foods that were extracted from the dataset (aligning with user diet preferences), minus the foods
+    // the user specifically banned.
     private readonly List<Food> m_foods;
     public readonly ReadOnlyCollection<Food> Foods;
 
@@ -220,6 +221,15 @@ public abstract class Algorithm
         {
             Hierarchy.Remove((Day.ParetoFitness)day.TotalFitness);
         }
+    }
+
+
+    /// <summary>
+    /// Accessible method for subclasses to clear the entire population.
+    /// </summary>
+    protected void ClearPopulation()
+    {
+        m_population.Clear();
     }
 
 

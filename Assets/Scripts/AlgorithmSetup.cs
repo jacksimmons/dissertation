@@ -57,6 +57,13 @@ public class AlgorithmSetup : SetupBehaviour
     [SerializeField]
     private TMP_InputField m_stagnationItersInput;
 
+
+    // PSO Settings
+    [SerializeField]
+    private TMP_InputField m_pbestAccInput;
+    [SerializeField]
+    private TMP_InputField m_gbestAccInput;
+
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
     private int m_currentPanelIndex = 0;
@@ -116,6 +123,9 @@ public class AlgorithmSetup : SetupBehaviour
         m_betaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.acoBeta, value));
         m_colonyPortionsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyPortions, value));
         m_stagnationItersInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyStagnationIters, value));
+
+        m_pbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pAccCoefficient, value));
+        m_gbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.gAccCoefficient, value));
 
         UpdateUI();
     }
@@ -221,16 +231,19 @@ public class AlgorithmSetup : SetupBehaviour
         m_maxStartMassInput.text = p.maxPortionMass.ToString();
         m_addFitnessForMassBtnTxt.text = Prefs.addFitnessForMass ? "X" : "";
         m_algTypeText.text = Prefs.algorithmType;
-        m_selectionMethodTxt.text = $"{Prefs.selectionMethod}";
 
         m_fitnessApproachTxt.text = $"{Prefs.fitnessApproach}";
+        m_selectionMethodTxt.text = $"{Prefs.selectionMethod}";
 
-        m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
         m_pheroImportanceInput.text = p.pheroImportance.ToString();
+        m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
         m_alphaInput.text = p.acoAlpha.ToString();
         m_betaInput.text = p.acoBeta.ToString();
         m_colonyPortionsInput.text = p.colonyPortions.ToString();
         m_stagnationItersInput.text = p.colonyStagnationIters.ToString();
+
+        m_pbestAccInput.text = p.pAccCoefficient.ToString();
+        m_gbestAccInput.text = p.gAccCoefficient.ToString();
     }
 
 

@@ -1,11 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using static Day;
 
 
 public partial class Day
 {
+    /// <summary>
+    /// Compare two days in terms of their fitness.
+    /// </summary>
+    public int CompareTo(Day other)
+    {
+        return TotalFitness.CompareTo(other.TotalFitness);
+    }
+
+
+    public static bool operator <(Day op1, Day op2) => op1.CompareTo(op2) < 0;
+    public static bool operator >(Day op1, Day op2) => op1.CompareTo(op2) > 0;
+
+
     /// <summary>
     /// A class representing the fitness of an individual nutrient.
     /// </summary>

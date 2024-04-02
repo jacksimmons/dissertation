@@ -54,6 +54,7 @@ public class Preferences : ICached, IVerbose
     {
         typeof(AlgGA).FullName!,
         typeof(AlgACO).FullName!,
+        typeof(AlgPSO).FullName!,
     };
 
 
@@ -69,6 +70,7 @@ public class Preferences : ICached, IVerbose
     //
     // Food Groups
     //
+    
     public bool eatsLandMeat = true; // Carnivore, Lactose-Intolerant
     public bool eatsSeafood = true; // Carnivore, Pescatarian, LI
     public bool eatsAnimalProduce = true; // Vegetarian, LI
@@ -79,6 +81,7 @@ public class Preferences : ICached, IVerbose
     //
     // User Info
     //
+    
     public bool isMale = true;
     public bool isPregnant = false;
     public bool needsVitD = true;
@@ -90,6 +93,7 @@ public class Preferences : ICached, IVerbose
     //
     // Constraints
     //
+    
     public ConstraintData[] constraints = new ConstraintData[Nutrient.Count];
     public bool[] acceptMissingNutrientValue = new bool[Nutrient.Count];
 
@@ -100,6 +104,7 @@ public class Preferences : ICached, IVerbose
     //
     // Algorithm settings
     //
+    
     public int populationSize = 10;
     public int numStartingPortionsPerDay = 1;
     public int minPortionMass = 1;
@@ -113,21 +118,28 @@ public class Preferences : ICached, IVerbose
     //
     // GA-specific settings
     //
+    
     public int mutationMassChangeMin = 1;
     public int mutationMassChangeMax = 10;
+    
     // Chance for any portion to be mutated in an algorithm pass.
     // Is divided by the number of portions in the calculation.
     public float changePortionMassMutationProb = 1f;
+    
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // 0 or 1 -> No convergence
     public float addOrRemovePortionMutationProb = 0.1f;
+    
     // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
     // program as this approaches 1.
     public float proportionParents = 0.5f;
+    
     // Must be in the range [1, 2]
     public float selectionPressure = 1.5f;
+    
     // crossoverPoints-point crossover. Set this to 2 for 2-point crossover, etc.
     public int crossoverPoints = 1;
+    
     // Selection method
     public ESelectionMethod selectionMethod = ESelectionMethod.Tournament;
 
@@ -135,19 +147,38 @@ public class Preferences : ICached, IVerbose
     //
     // ACO-specific settings
     //
+
     // Number of iterations before replacing the worst food.
     // High value => Deeper search (more iterations for evaluation)
     // Low value => Wider search (more foods)
+    public int colonyStagnationIters = 50;
+
     public bool elitist = false;
     public int colonyPortions = 10;
-    public int colonyStagnationIters = 50;
 
     public float pheroImportance = 1f;
     public float pheroEvapRate = 0.1f;
+
     // Probability calculation variables
     public float acoAlpha = 1f;      // Pheromone exponent
     public float acoBeta = 1f;       // Desirability exponent
     public float defaultPheromone = 1f;
+
+
+    //
+    // PSO-specific settings
+    //
+
+    /// <summary>
+    /// The acceleration coefficient relating particle best and current position.
+    /// </summary>
+    public float pAccCoefficient = 1;
+
+    /// <summary>
+    /// The acceleration coefficient relating global best and current position.
+    /// </summary>
+    public float gAccCoefficient = 1;
+
 
     //
     // Experiment settings
