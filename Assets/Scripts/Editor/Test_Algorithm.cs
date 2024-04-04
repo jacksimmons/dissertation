@@ -61,6 +61,13 @@ public class Test_Algorithm
     }
 
 
+    /// <summary>
+    /// Assertation test which asserts that NormalTest throws an error, given
+    /// the provided preference assigned to a provided value.
+    /// </summary>
+    /// <typeparam name="T">The preference type.</typeparam>
+    /// <param name="pref">Reference to the preference to assign to.</param>
+    /// <param name="value">The erroneous value which should cause an Exception.</param>
     private void AssertPrefValueThrows<T>(ref T pref, T value)
     {
         // Set pref value to provided value; store old pref value

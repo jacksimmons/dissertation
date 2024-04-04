@@ -98,6 +98,11 @@ public partial class Day
         }
 
 
+        /// <summary>
+        /// Compares this object to another object of the same type.
+        /// </summary>
+        /// <param name="obj">Object to compare to. Throws InvalidCastException if not the same type.</param>
+        /// <returns>`-1` if it is less than obj, `0` if equal, `1` if greater.</returns>
         public abstract int CompareTo(object obj);
 
 
@@ -169,7 +174,8 @@ public partial class Day
         {
             get
             {
-                ParetoHierarchy hierarchy = m_day.m_algorithm.Hierarchy;
+                // Only an AlgGA can create a ParetoFitness object, so safely cast to obtain the Pareto Hierarchy
+                ParetoHierarchy hierarchy = ((AlgGA)m_day.m_algorithm).Hierarchy;
 
                 int set = hierarchy.GetSet(this);
 
@@ -193,11 +199,6 @@ public partial class Day
         public override int CompareTo(object obj)
         {
             ParetoFitness other = (ParetoFitness)obj;
-            if (other == null)
-            {
-                Logger.Warn("Invalid comparison to ParetoFitness!");
-                return 0;
-            }
 
             // Store how many constraints this is better/worse than `other` on.
             int betterCount = 0;

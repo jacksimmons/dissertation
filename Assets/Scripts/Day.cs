@@ -13,24 +13,23 @@ public partial class Day : IVerbose, IComparable<Day>
     private readonly Algorithm m_algorithm;
 
     // Only change this array when one of the portions changes, eliminating the
-    // need to perform expensive Linq Sum operations every iteration.
+    // need to perform expensive Sum operations every iteration.
     private readonly float[] m_nutrientAmounts;
 
     public int Mass { get; private set; } = 0;
     public Fitness TotalFitness { get; }
 
 
+    /// <summary>
+    /// Internal constructor for code reuse.
+    /// </summary>
     private Day()
     {
-        switch (Preferences.Instance.fitnessApproach)
-        {
-            case EFitnessApproach.SummedFitness:
-                TotalFitness = new SummedFitness(this);
-                break;
-            case EFitnessApproach.ParetoDominance:
-                TotalFitness = new ParetoFitness(this);
-                break;
-        }
+        // Make a ParetoFitness if PD is selected AND AlgGA is selected, otherwise make a SummedFitness
+        if (Preferences.Instance.fitnessApproach == EFitnessApproach.ParetoDominance && Preferences.Instance.algorithmType == typeof(AlgGA).FullName)
+            TotalFitness = new ParetoFitness(this);
+        else
+            TotalFitness = new SummedFitness(this);
     }
 
 

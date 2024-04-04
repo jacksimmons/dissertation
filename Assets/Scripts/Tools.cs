@@ -497,7 +497,7 @@ public static class PlotTools
         = "set terminal png enhanced\n"
         + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), graphPath).Replace("\\", "/")}\"\n"
         + $"set xrange [0: {graph.NumIters}]\n"
-        + $"set yrange [0: {maxFitness}]\n"
+        + $"set yrange [0: {MathF.Min(maxFitness, 50_000)}]\n" // Graph becomes very cramped when including y > 50_000
         + "set title \"Graph of Best Fitness against Iteration Number\"\n"
         + "set xlabel \"Iteration\"\n"
         + "set ylabel \"Best Fitness\"\n"

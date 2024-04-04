@@ -14,6 +14,11 @@ using UnityEngine.TestTools;
 public class Test_Dataset
 {
     public static DatasetReader Reader = new(new(), "Editor/TestProximates", "Editor/TestInorganics", "Editor/TestVitamins");
+    
+    /// <summary>
+    /// Manual overwrite of the number of rows in the dataset, so the program
+    /// knows when to stop reading rows specifically for the test dataset.
+    /// </summary>
     private const int TEST_DATASET_TOTAL_ROWS = 9;
 
 

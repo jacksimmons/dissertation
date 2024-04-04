@@ -13,6 +13,16 @@ public partial class AlgGA : Algorithm
     private Func<List<Day>, bool, Day> m_selectionMethod;
 
 
+    //
+    // Pareto fitness evaluation (if enabled)
+    //
+    /// <summary>
+    /// (ParetoFitness exclusive)
+    /// A sorted list of mutually non-dominated sets for all days in the population.
+    /// </summary>
+    public readonly ParetoHierarchy Hierarchy = new();
+
+
     public override bool Init()
     {
         if (!base.Init()) return false;
@@ -57,6 +67,26 @@ public partial class AlgGA : Algorithm
         }
 
         return true;
+    }
+
+
+    protected override void AddToPopulation(Day day)
+    {
+        base.AddToPopulation(day);
+        if (Prefs.fitnessApproach == EFitnessApproach.ParetoDominance)
+        {
+            Hierarchy.Add((Day.ParetoFitness)day.TotalFitness);
+        }
+    }
+
+
+    protected override void RemoveFromPopulation(Day day)
+    {
+        base.RemoveFromPopulation(day);
+        if (Prefs.fitnessApproach == EFitnessApproach.ParetoDominance)
+        {
+            Hierarchy.Remove((Day.ParetoFitness)day.TotalFitness);
+        }
     }
 
 

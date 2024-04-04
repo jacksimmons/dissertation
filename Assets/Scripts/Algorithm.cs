@@ -32,16 +32,6 @@ public abstract class Algorithm
     private readonly Dictionary<ENutrient, float> m_prevAvgPopStats = new(); // Stores the average nutrient amount for the whole population from last iteration.
 
 
-    //
-    // Pareto fitness evaluation -exclusive member fields
-    //
-    /// <summary>
-    /// (ParetoFitness exclusive)
-    /// A sorted list of mutually non-dominated sets for all days in the population.
-    /// </summary>
-    public readonly ParetoHierarchy Hierarchy = new();
-
-
     // --- Best day properties, can only be set together ---
 
     // The current best day. Cloned as a new Day to prevent side effects.
@@ -199,28 +189,20 @@ public abstract class Algorithm
 
 
     /// <summary>
-    /// Accessible method for subclasses to add a day to the population.
+    /// Overridable method for subclasses to add a day to the population.
     /// </summary>
-    protected void AddToPopulation(Day day)
+    protected virtual void AddToPopulation(Day day)
     {
         m_population.Add(day);
-        if (Prefs.fitnessApproach == EFitnessApproach.ParetoDominance)
-        {
-            Hierarchy.Add((Day.ParetoFitness)day.TotalFitness);
-        }
     }
 
 
     /// <summary>
-    /// Accessible method for subclasses to remove a day to the population.
+    /// Overridable method for subclasses to remove a day to the population.
     /// </summary>
-    protected void RemoveFromPopulation(Day day)
+    protected virtual void RemoveFromPopulation(Day day)
     {
         m_population.Remove(day);
-        if (Prefs.fitnessApproach == EFitnessApproach.ParetoDominance)
-        {
-            Hierarchy.Remove((Day.ParetoFitness)day.TotalFitness);
-        }
     }
 
 
