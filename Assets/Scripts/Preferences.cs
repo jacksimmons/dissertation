@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 
@@ -47,6 +48,14 @@ public class Preferences : ICached, IVerbose
     public void Cache() { m_instance = this; }
 
 
+    [Serializable]
+    public class CustomFoodSettings
+    {
+        public string Key;
+        public float Cost;
+        public bool Banned;
+    }
+
     // PREFS MENU------------------
 
 
@@ -75,7 +84,6 @@ public class Preferences : ICached, IVerbose
     public bool eatsSeafood = true; // Carnivore, Pescatarian, LI
     public bool eatsAnimalProduce = true; // Vegetarian, LI
     public bool eatsLactose = true; // Vegetarian, i.e. no Milk
-    public List<string> bannedFoodKeys = new(); // The composite keys of banned foods.
 
 
     //
@@ -96,6 +104,7 @@ public class Preferences : ICached, IVerbose
     
     public ConstraintData[] constraints = new ConstraintData[Nutrient.Count];
     public bool[] acceptMissingNutrientValue = new bool[Nutrient.Count];
+    public List<CustomFoodSettings> customFoodSettings = new();                     // List of structs, each of which contains a composite key and cost of the food it represents.
 
 
     // ALG SETUP MENU--------------
@@ -104,7 +113,7 @@ public class Preferences : ICached, IVerbose
     //
     // Algorithm settings
     //
-    
+
     public int populationSize = 10;
     public int numStartingPortionsPerDay = 1;
     public int minPortionMass = 1;
@@ -199,12 +208,6 @@ public class Preferences : ICached, IVerbose
 
     public void CalculateDefaultConstraints()
     {
-        // Default weight: 3
-        SetConstraint(ENutrient.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
-        SetConstraint(ENutrient.SatFat, typeof(MinimiseConstraint), max: isMale ? 30f : 20f, weight: 3);
-        SetConstraint(ENutrient.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
-
-        // Default weight: 2
         SetConstraint(ENutrient.Kcal, typeof(ConvergeConstraint), max: isMale ? 3000 : 2500, weight: 2, goal: isMale ? 2500 : 2000);
 
         // Auto-generate default p/f/c properties based on the above constraint
@@ -220,32 +223,37 @@ public class Preferences : ICached, IVerbose
         SetConstraint(ENutrient.Fat, typeof(ConvergeConstraint), max: fatData.Max, weight: 2, goal: fatData.Goal);
         SetConstraint(ENutrient.Carbs, typeof(ConvergeConstraint), max: carbsData.Max, weight: 2, goal: carbsData.Goal);
 
-        // Default weight: 1 (Beneficial)
+        // Default weight: 3
+        SetConstraint(ENutrient.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
+        SetConstraint(ENutrient.SatFat, typeof(MinimiseConstraint), max: isMale ? 30f : 20f, weight: 3);
+        SetConstraint(ENutrient.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
+
+        // Default weight: 1
         // For these, set the goal to be the recommended amount from the NHS.
         // The maximum is the highest "definitely safe" amount recommended by the NHS.
-        SetConstraint(ENutrient.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, min: 0, goal: 700f);
+        SetConstraint(ENutrient.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, goal: 700f);
 
         bool moreIron = !isMale && (19 <= ageYears && ageYears <= 49);
-        SetConstraint(ENutrient.Iodine, typeof(ConvergeConstraint), max: 500f, weight: 1, min: 0, goal: 140f);
-        SetConstraint(ENutrient.Iron, typeof(ConvergeConstraint), max: 17f, weight: 1, min: 0, goal: moreIron ? 14.8f : 8.7f);
+        SetConstraint(ENutrient.Iodine, typeof(ConvergeConstraint), max: 500f, weight: 1, goal: 140f);
+        SetConstraint(ENutrient.Iron, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: moreIron ? 14.8f : 8.7f);
 
-        SetConstraint(ENutrient.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, min: 0, goal: isMale ? 700 : 600);
-        SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, min: 0, goal: isMale ? 1 : 0.8f);
-        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, min: 0, goal: isMale ? 1.3f : 1.1f);
-        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, min: 0, goal: isMale ? 16.5f : 13.2f);
-        SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, min: 0, goal: isMale ? 1.4f : 1.2f);
-        SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: isPregnant ? 400f : 200f);
-        SetConstraint(ENutrient.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, min: 0, goal: 1.5f);
-        SetConstraint(ENutrient.VitC, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: 40f);
-        SetConstraint(ENutrient.VitD, typeof(ConvergeConstraint), max: 100f, weight: 1, min: 0, goal: needsVitD ? 10 : 0); // Not needed if sunny.
-        SetConstraint(ENutrient.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, min: 0, goal: isMale ? 4 : 3);
-        SetConstraint(ENutrient.VitK1, typeof(ConvergeConstraint), max: 1000f, weight: 1, min: 0, goal: weightKg); // Goal: 1 microgram per kg bodyweight.
+        SetConstraint(ENutrient.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, goal: isMale ? 700 : 600);
+        SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, goal: isMale ? 1 : 0.8f);
+        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, goal: isMale ? 1.3f : 1.1f);
+        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: isMale ? 16.5f : 13.2f);
+        SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, goal: isMale ? 1.4f : 1.2f);
+        SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: isPregnant ? 400f : 200f);
+        SetConstraint(ENutrient.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, goal: 1.5f);
+        SetConstraint(ENutrient.VitC, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: 40f);
+        SetConstraint(ENutrient.VitD, typeof(ConvergeConstraint), max: 100f, weight: 1, goal: needsVitD ? 10 : 0); // Not needed if sunny.
+        SetConstraint(ENutrient.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, goal: isMale ? 4 : 3);
+        SetConstraint(ENutrient.VitK1, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: weightKg); // Goal: 1 microgram per kg bodyweight.
     }
 
 
     private void SetConstraint(ENutrient nut, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
-        constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight };
+        constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight, NutrientName = nut.ToString() };
         Constraint.Build(constraints[(int)nut]); // Checks if all params are valid. If not, throws an error.
     }
 
@@ -271,6 +279,63 @@ public class Preferences : ICached, IVerbose
     }
 
 
+    public CustomFoodSettings TryGetSettings(string key)
+    {
+        foreach (var cfs in customFoodSettings)
+        {
+            if (cfs.Key == key) return cfs;
+        }
+
+        throw new KeyNotFoundException("Composite key provided has no custom settings.");
+    }
+
+
+    /// <summary>
+    /// Gets whether the provided key is banned or not.
+    /// </summary>
+    /// <param name="key">The key to check.</param>
+    public bool IsFoodBanned(string key)
+    {
+        try
+        {
+            if (TryGetSettings(key).Banned) return true;
+            return false;
+        }
+        catch (KeyNotFoundException)
+        {
+            return false;
+        }
+    }
+
+
+    /// <summary>
+    /// Toggles whether the provided key is banned or not.
+    /// If the key has no corresponding settings, then it must not yet be banned.
+    /// </summary>
+    /// <param name="key">The key to toggle.</param>
+    public void ToggleFoodBanned(string key)
+    {
+        try
+        {
+            // Get struct from list and update
+            CustomFoodSettings settings = TryGetSettings(key);
+            settings.Banned = !settings.Banned;
+        }
+        catch (KeyNotFoundException)
+        {
+            // If a settings for this food doesn't exist, the food cannot be banned, so ban it
+            CustomFoodSettings settings = new()
+            {
+                Key = key,
+                Banned = true
+            };
+
+            // Add the new setting
+            customFoodSettings.Add(settings);
+        }
+    }
+
+
     /// <summary>
     /// A function to eliminate the vast majority of unacceptable foods by food group, and/or name.
     /// Also removes a food if it was banned specifically by the user.
@@ -282,7 +347,8 @@ public class Preferences : ICached, IVerbose
     /// <returns>A boolean of whether the provided food is allowed by the user's diet.</returns>
     public bool IsFoodAllowed(string foodGroup, string name, string compositeKey)
     {
-        if (bannedFoodKeys.Contains(compositeKey)) return false;
+        // If a matching setting says the food is banned, then the food is not allowed.
+        if (IsFoodBanned(compositeKey)) return false;
 
         // In case of no food group, say it is not allowed.
         // Safest approach - removes all foods without a proper food group label.

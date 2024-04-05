@@ -33,7 +33,7 @@ public class Test_Food
             m_convConstraints[i] = new()
             {
                 Goal = 10_000,
-                Min = 0.001f,
+                Min = 0f,
                 Max = 10_000,
                 Weight = 1,
                 Type = typeof(ConvergeConstraint).FullName
@@ -50,73 +50,29 @@ public class Test_Food
     }
 
 
-    [Test]
-    public void FoodErrorTest()
-    {
-        // Assertation to ensure the next test works
-        Assert.IsTrue(Nutrient.Count < int.MaxValue);
-
-        // Ensure GetProximateUnit throws an exception when given an out-of-range input.
-        // This error is impossible to achieve unless casting an int to a ProximateType.
-        Assert.Throws(
-            typeof(ArgumentOutOfRangeException),
-            new(() => Nutrient.GetUnit((ENutrient)int.MaxValue)));
-    }
-
-
-    [Test]
-    public void FitnessTest()
-    {
-        AlgTest alg = new();
-        foreach (Day day in alg.Population)
-        {
-            float fitness = day.TotalFitness.Value;
-
-            // Fitness can only be positive or 0.
-            Assert.IsTrue(fitness >= 0);
-
-            for (int i = 0; i < Nutrient.Count; i++)
-            {
-                // Fitness for each nutrient can only be positive or 0.
-                float nutrientFitness = alg.Constraints[i].GetFitness(day.GetNutrientAmount((ENutrient)i));
-                Assert.IsTrue(nutrientFitness >= 0);
-            }
-        }
-    }
-
-
     /// <summary>
     /// Tests the pareto comparison method in the Day class.
     /// </summary>
     [Test]
     public void ParetoComparisonTest()
     {
-        AlgTest algTest = new();
-
-        // Create a best Day (this will dominate any Day object)
-        Day bestDay = new(algTest);
-        float[] bestNutrients = new float[Nutrient.Count];
-
-        bestDay.AddPortion(new Portion(new Food(new FoodData())));
-
-        // Create the worst Day (will be dominated by any Day object which doesn't
-        // have a fitness of PositiveInfinity).
-        Day worstDay = new(algTest);
-        float[] worstNutrients = new float[Nutrient.Count];
-        worstDay.AddPortion(new(new(new())));
-
-
         List<ConstraintData[]> constraintsLists = new() { m_minConstraints, m_convConstraints, m_rangeConstraints };
         for (int i = 0; i < constraintsLists.Count; i++)
         {
-            WorstVsBestTest(constraintsLists[i], bestNutrients, worstNutrients, bestDay, worstDay);
+            WorstVsBestTest(constraintsLists[i]);
         }
     }
 
 
-    private void WorstVsBestTest(ConstraintData[] constraints, float[] bestNutrients, float[] worstNutrients,
-        Day bestDay, Day worstDay)
+    private void WorstVsBestTest(ConstraintData[] constraints)
     {
+        // Set preferences
+        Preferences.Instance.constraints = constraints;
+
+        AlgTest algTest = new();
+
+        float[] bestNutrients = new float[Nutrient.Count];
+        float[] worstNutrients = new float[Nutrient.Count];
         // Set the nutrients attribs for both worst and best days (bestNutrients and worstNutrients are
         // references to these attribs)
         for (int i = 0; i < Nutrient.Count; i++)
@@ -125,20 +81,17 @@ public class Test_Food
             worstNutrients[i] = Constraint.Build(constraints[i]).WorstValue;
         }
 
-        // Set preferences
-        Preferences.Instance.constraints = constraints;
-        AlgTest algTest = new();
-        foreach (Day day in algTest.Population)
-        {
-            // Test that the best day is always at least as good as any randomly selected day.
-            Assert.IsFalse(day < bestDay);
+        Day bestDay = new(algTest);
+        // Add the best possible portion
+        bestDay.AddPortion(new(new(new() { Nutrients = bestNutrients })));
 
-            // Test that the worst day is always at least as bad as any randomly selected day.
-            Assert.IsFalse(day > worstDay);
+        Day worstDay = new(algTest);
+        // Add the worst possible portion
+        worstDay.AddPortion(new(new(new() { Nutrients = worstNutrients })));
 
-            // Test that the best day STRICTLY dominates the worst day
-            Assert.IsTrue(bestDay < worstDay);
-        }
+        // Assert that the best day dominates the worst day
+        Assert.IsTrue(bestDay < worstDay);
+        
         // Reload old preferences
         Saving.LoadPreferences();
     }

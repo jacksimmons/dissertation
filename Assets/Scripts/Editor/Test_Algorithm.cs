@@ -9,15 +9,21 @@ using System.Reflection;
 /// </summary>
 public class Test_Algorithm
 {
-    private Assembly m_assembly = Assembly.GetAssembly(typeof(Algorithm));
+    private readonly Assembly m_assembly = Assembly.GetAssembly(typeof(Algorithm));
 
 
     [Test]
     public void RunTests()
     {
+        // Load in some sensible constraints to test on
+        Preferences.Instance.CalculateDefaultConstraints();
+
         NormalTest();
         BoundaryTest();
         ErroneousTest();
+
+        // Reload user's specified constraints
+        Saving.LoadPreferences();
     }
 
 
@@ -25,6 +31,8 @@ public class Test_Algorithm
     {
         foreach (string algType in Preferences.ALG_TYPES)
         {
+            // PSO doesn't generate a population of Days unlike the others.
+            if (algType == typeof(AlgPSO).FullName) continue;
             TestPopulationGeneration(Algorithm.Build(m_assembly.GetType(algType)!));
         }
     }
@@ -39,10 +47,10 @@ public class Test_Algorithm
     {
         alg.Init();
 
-
         // Assert number of days is correct
         int expectedPopSize = Preferences.Instance.populationSize;
         int actualPopSize = alg.Population.Count;
+
         Assert.IsTrue(expectedPopSize == actualPopSize);
 
 
@@ -76,7 +84,7 @@ public class Test_Algorithm
 
         // NormalTest can throw both Exception and TargetInvocationException but
         // just checking that any exception is thrown is sufficient.
-        Assert.That(NormalTest, Throws.Exception);
+        Assert.Throws(typeof(WarnException), NormalTest);
 
         // Reset old pref value and return
         pref = temp;
@@ -106,5 +114,7 @@ public class Test_Algorithm
         AssertPrefValueThrows(ref Preferences.Instance.pheroEvapRate, -1);
         AssertPrefValueThrows(ref Preferences.Instance.pheroImportance, -1);
         AssertPrefValueThrows(ref Preferences.Instance.populationSize, 0);
+
+        Assert.True(false);
     }
 }

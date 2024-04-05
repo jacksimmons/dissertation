@@ -33,7 +33,18 @@ public enum ELogSeverity
 /// </summary>
 public static class Logger
 {
-    private static MenuStackHandler Menu => GameObject.FindWithTag("MenuStackHandler").GetComponent<MenuStackHandler>();
+    private static MenuStackHandler Menu
+    {
+        get
+        {
+            GameObject menuHandler = GameObject.FindWithTag("MenuStackHandler");
+            if (menuHandler)
+            {
+                return menuHandler.GetComponent<MenuStackHandler>();
+            }
+            throw new WarnException();
+        }
+    }
 
 
     /// <summary>
@@ -250,7 +261,7 @@ public static class MathTools
     /// <param name="calories">The calories to update.</param>
     public static void MacrosToCalories(ref float calories, float proteinG, float fatG, float carbsG)
     {
-        calories = proteinG * 4 + fatG * 8 + carbsG * 4;
+        calories = proteinG * 4 + fatG * 9 + carbsG * 4;
     }
 
 

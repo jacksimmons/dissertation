@@ -18,12 +18,17 @@ public class Test_GA
     [Test]
     public void RunTests()
     {
+        Preferences.Instance.CalculateDefaultConstraints();
+
         AlgGA ga = (AlgGA)Algorithm.Build(typeof(AlgGA));
         ga.Init();
 
         NormalTest(ga);
         BoundaryTest(ga);
         ErroneousTest(ga);
+        FitnessTest(ga);
+
+        Saving.LoadPreferences();
     }
 
 
@@ -80,7 +85,7 @@ public class Test_GA
         {
             Assert.NotNull(ga.TournamentSelection(gaDays, true));
             Assert.NotNull(ga.TournamentSelection(gaDays, false));
-    
+
             Assert.NotNull(ga.RankSelection(gaDays, true));
             Assert.NotNull(ga.RankSelection(gaDays, false));
         }
@@ -117,6 +122,25 @@ public class Test_GA
         foreach (Portion p in childPortions)
         {
             Assert.True(parentFoods.Contains(p.FoodType));
+        }
+    }
+
+
+    private void FitnessTest(AlgGA alg)
+    {
+        foreach (Day day in alg.Population)
+        {
+            float fitness = day.TotalFitness.Value;
+
+            // Fitness can only be positive or 0.
+            Assert.IsTrue(fitness >= 0);
+
+            for (int i = 0; i < Nutrient.Count; i++)
+            {
+                // Fitness for each nutrient can only be positive or 0.
+                float nutrientFitness = alg.Constraints[i].GetFitness(day.GetNutrientAmount((ENutrient)i));
+                Assert.IsTrue(nutrientFitness >= 0);
+            }
         }
     }
 }

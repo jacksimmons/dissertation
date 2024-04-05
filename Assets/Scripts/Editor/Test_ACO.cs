@@ -1,17 +1,23 @@
 using NUnit.Framework;
 
-public class Test_ACO : AlgACO
+public class Test_ACO : Test_HasPopulation
 {
     [Test]
     public void RunTests()
     {
-        Assert.False(true);
+        Preferences.Instance.CalculateDefaultConstraints();
+
+        AlgACO aco = (AlgACO)Algorithm.Build(typeof(AlgACO));
+        aco.Init();
+
+        PheroTest(aco);
+        FitnessTest(aco);
     }
 
 
-    public void NormalTest()
+    private void PheroTest(AlgACO aco)
     {
-        
+        Assert.True(false);
     }
 
 

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using TMPro;
 using UnityEngine;
@@ -32,7 +34,11 @@ public class PreferencesHandler : SetupBehaviour
     private GameObject[] m_preferenceCategoryPanels;
     private int m_currentPanelIndex = 0;
 
-    private List<Food> m_allFoods = new();
+    /// <summary>
+    /// A list of foods that are specifically enabled by the user. By default, all are specifically enabled, but this list
+    /// only contains *permitted* enabled foods. A permitted food is one that is permitted by dietary preferences (e.g. vegan).
+    /// </summary>
+    private List<Food> m_enabledFoods = new();
     [SerializeField]
     private GameObject m_enabledFoodsContent;
     [SerializeField]
@@ -180,33 +186,63 @@ public class PreferencesHandler : SetupBehaviour
     {
         // Clear all existing buttons
         DatasetReader dr = new(Preferences.Instance);
-        m_allFoods = dr.ProcessFoods();
-        m_enabledFoodsCountTxt.text = $"Enabled foods: {m_allFoods.Count}/{DatasetReader.FOOD_ROWS}";
+        m_enabledFoods = dr.ProcessFoods();
+        m_enabledFoodsCountTxt.text = $"Enabled foods: {m_enabledFoods.Count}/{DatasetReader.FOOD_ROWS}";
 
         // Remove any existing buttons
         UITools.DestroyAllChildren(m_enabledFoodsContent.transform);
 
-        // Add disabled food buttons at the top
-        for (int _i = 0; _i < Preferences.Instance.bannedFoodKeys.Count; _i++)
+        void SetupCostInputField(GameObject go, string key)
+        {
+            TMP_InputField inp = go.transform.Find("FloatInputProperty").GetComponentInChildren<TMP_InputField>();
+            Preferences.CustomFoodSettings cfs;
+            try
+            {
+                cfs = Preferences.Instance.TryGetSettings(key);
+            }
+            catch (KeyNotFoundException)
+            {
+                cfs = new() { Key = key, Banned = false, Cost = 0 };
+                Preferences.Instance.customFoodSettings.Add(cfs);
+            }
+
+            int index = Preferences.Instance.customFoodSettings.IndexOf(cfs);
+            inp.text = $"{cfs.Cost}";
+            inp.onEndEdit.AddListener((string text) => OnFloatInputChanged(ref Preferences.Instance.customFoodSettings[index].Cost, text));
+        }
+
+        // Add custom settings foods at the top
+        for (int _i = 0; _i < Preferences.Instance.customFoodSettings.Count; _i++)
         {
             GameObject go = Instantiate(m_btnPropertyTemplate, m_enabledFoodsContent.transform);
-            string key = Preferences.Instance.bannedFoodKeys[_i];
+            var cfs = Preferences.Instance.customFoodSettings[_i];
+            string key = cfs.Key;
 
             TMP_Text tmpText = go.GetComponentInChildren<TMP_Text>(); // Depth-first search, so it will find OnOffBtn.TMP_Text
-            tmpText.text = "";
+            tmpText.text = cfs.Banned ? "" : "x";
 
             go.GetComponentInChildren<Button>().onClick.AddListener(() => OnFoodEnableToggle(key, tmpText));
 
             go.transform.Find("Text (TMP)").GetComponent<TMP_Text>().text = key;
+
+            SetupCostInputField(go, key);
         }
 
-        // Add enabled food buttons underneath
-        for (int _i = 0; _i < m_allFoods.Count; _i++)
+        // Add other food buttons underneath
+        for (int _i = 0; _i < m_enabledFoods.Count; _i++)
         {
-            GameObject go;
-            Food food;
+            Food food = m_enabledFoods[_i];
 
-            food = m_allFoods[_i];
+            try
+            {
+                // Skip this food if it has a setting (it has already been added)
+                Preferences.Instance.TryGetSettings(food.CompositeKey);
+                continue;
+            }
+
+            catch (KeyNotFoundException) { }
+            
+            GameObject go;
             go = Instantiate(m_btnPropertyTemplate, m_enabledFoodsContent.transform);
 
             TMP_Text tmpText = go.GetComponentInChildren<TMP_Text>(); // Depth-first search, so it will find OnOffBtn.TMP_Text
@@ -215,24 +251,57 @@ public class PreferencesHandler : SetupBehaviour
             go.GetComponentInChildren<Button>().onClick.AddListener(() => OnFoodEnableToggle(food.CompositeKey, tmpText));
 
             go.transform.Find("Text (TMP)").GetComponent<TMP_Text>().text = food.Name;
+
+            SetupCostInputField(go, food.CompositeKey);
         }
     }
 
 
     private void OnFoodEnableToggle(string foodKey, TMP_Text tmpText)
     {
-        // If food disabled, enable it.
-        if (Preferences.Instance.bannedFoodKeys.Contains(foodKey))
-        {
-            Preferences.Instance.bannedFoodKeys.Remove(foodKey);
-            tmpText.text = "x";
-        }
-        else
-        {
-            Preferences.Instance.bannedFoodKeys.Add(foodKey);
-            tmpText.text = "";
-        }
+        Preferences.Instance.ToggleFoodBanned(foodKey);
+
+        // Update the UI for this food
+        tmpText.text = Preferences.Instance.IsFoodBanned(foodKey) ? "" : "x";
+
         Saving.SavePreferences();
+    }
+
+
+    /// <summary>
+    /// Listener called when Enable All Foods or Disable All Foods buttons are pressed.
+    /// </summary>
+    public void OnEnableOrDisableAllBtnPressed(bool enableElseDisable)
+    {
+        // Construct all permitted food keys
+        List<string> permittedKeys = Preferences.Instance.customFoodSettings.Select(x => x.Key).ToList();
+        permittedKeys.AddRange(m_enabledFoods.Select(x => x.CompositeKey));
+
+        foreach (string key in permittedKeys)
+        {
+            if (Preferences.Instance.IsFoodBanned(key))
+            {
+                // If enabling all, need to unban (toggle) the food
+                if (enableElseDisable)
+                {
+                    Preferences.Instance.ToggleFoodBanned(key);
+                }
+
+                // If disabling all, leave the food banned.
+                continue;
+            }
+            else
+            {
+                // If disabling all, need to ban (toggle) the food
+                if (!enableElseDisable)
+                {
+                    Preferences.Instance.ToggleFoodBanned(key);
+                }
+
+                // If enabling all, leave the food unbanned.
+                continue;
+            }
+        }
     }
 
 

@@ -46,8 +46,8 @@ public class Test_Constraint
 
     private void MinimiseTest(MinimiseConstraint mc)
     {
-        // Test that the limit gives an infinite fitness
-        Assert.True(float.IsPositiveInfinity(mc.GetFitness(mc.max)));
+        // Test that the after the limit gives an infinite fitness
+        Assert.True(float.IsPositiveInfinity(mc.GetFitness(mc.max + MathTools.EPSILON)));
 
         // Test that values get increasingly worse as the input approaches the limit.
         float prevFitness = 0;
@@ -105,23 +105,27 @@ public class Test_Constraint
     [Test]
     public void ErroneousTest()
     {
+        Constraint BuildConstraint(float min, float max, float weight, string type, float goal = 0)
+        {
+            return Constraint.Build(new() { Min = min, Max = max, Weight = weight, Type = type});
+        }
         void HCThrowsOutOfRangeTest(float min, float max, float weight = 1)
         {
             Assert.Throws(
-                typeof(Exception),
-                new(() => HardTest(new(min, max, weight))));
+                typeof(WarnException),
+                new(() => HardTest((HardConstraint)BuildConstraint(min, max, weight, "HardConstraint"))));
         }
         void CCThrowsOutOfRangeTest(float goal, float min, float max, float weight = 1)
         {
             Assert.Throws(
-                typeof(Exception),
-                new(() => ConvergenceTest(new(goal, min, max, weight))));
+                typeof(WarnException),
+                new(() => ConvergenceTest((ConvergeConstraint)BuildConstraint(min, max, weight, "HardConstraint", goal))));
         }
         void MCThrowsOutOfRangeTest(float max, float weight = 1)
         {
             Assert.Throws(
-                typeof(Exception),
-                new(() => MinimiseTest(new(max, weight))));
+                typeof(WarnException),
+                new(() => MinimiseTest((MinimiseConstraint)BuildConstraint(0, max, weight, "HardConstraint"))));
         }
 
 

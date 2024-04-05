@@ -46,6 +46,11 @@ public class ConstraintData : IVerbose
     /// </summary>
     public string Type = "";
 
+    /// <summary>
+    /// The name of the nutrient this constraint is for (for error messages).
+    /// </summary>
+    public string NutrientName = "";
+
 
     public string Verbose()
     {
@@ -68,12 +73,27 @@ public abstract class Constraint
     public static Constraint Build(ConstraintData data)
     {
         Type type = Type.GetType(data.Type)!;
-        if (!type.IsSubclassOf(typeof(Constraint)))
+
+        bool initFailed = false;
+        if (data.Weight <= 0)
         {
-            Logger.Error($"Invalid Constraint type: {data.Type}.");
-            return new NullConstraint();
+            Logger.Warn($"{data.NutrientName}: Constraint weight ({data.Weight}) must be positive and non-zero.");
+            initFailed = true;
         }
 
+        if (data.Goal < 0 || data.Goal < data.Min || data.Goal > data.Max)
+        {
+            Logger.Warn($"{data.NutrientName}: Goal ({data.Goal}) is out of range. It must satisfy 0 <= min ({data.Min}) <= goal <= max ({data.Max}).");
+            initFailed = true;
+        }
+
+        if (!type.IsSubclassOf(typeof(Constraint)))
+        {
+            Logger.Warn($"{data.NutrientName}: Invalid Constraint type: {data.Type}.");
+            initFailed = true;
+        }
+
+        if (initFailed) return new NullConstraint();
         return (Constraint)Activator.CreateInstance(Type.GetType(data.Type)!, data)!;
     }
 
@@ -120,8 +140,6 @@ public class HardConstraint : Constraint, IVerbose
     {
         this.min = min;
         this.max = max;
-
-        Init();
     }
 
 
@@ -129,21 +147,6 @@ public class HardConstraint : Constraint, IVerbose
     {
         min = data.Min;
         max = data.Max;
-
-        Init();
-    }
-
-
-    /// <summary>
-    /// Do not inherit this. Base constructor is called first, so HardConstraint will check the params of
-    /// the inherited class before the inherited constructor has begun.
-    /// </summary>
-    protected void Init()
-    {
-        if (max < min)
-            Logger.Error($"Argument max ({max}) was less than argument min ({min}).");
-        if (weight < 0)
-            Logger.Error($"Argument weight ({weight}) was < 0.");
     }
 
 
@@ -226,23 +229,12 @@ public class ConvergeConstraint : HardConstraint, IVerbose
         : base(min, max, weight)
     {
         this.goal = goal;
-
-        Init();
     }
 
 
     public ConvergeConstraint(ConstraintData data) : base(data)
     {
         goal = data.Goal;
-
-        Init();
-    }
-
-
-    private new void Init()
-    {
-        if (goal < 0 || goal < min || goal > max)
-            Logger.Error($"Goal: {goal} is out of range. It must be >= 0, >= min ({min}) and <= max ({max}).");
     }
 
 

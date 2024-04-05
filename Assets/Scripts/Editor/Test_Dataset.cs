@@ -57,8 +57,13 @@ public class Test_Dataset
     [Test]
     public void AppliedTest()
     {
-        List<Food> foods = new DatasetReader(Preferences.Instance).ProcessFoods(TEST_DATASET_TOTAL_ROWS);
-        Assert.IsTrue(foods.Count > 0);
+        // Preferences that are very unrestrictive
+        Preferences p = new Preferences();
+
+        List<Food> foods = new DatasetReader(p).ProcessFoods();
+
+        // These unrestrictive preferences should yield at least 100 foods
+        Assert.IsTrue(foods.Count > 100);
     }
 
 

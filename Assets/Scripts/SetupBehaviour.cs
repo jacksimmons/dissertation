@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -51,7 +52,7 @@ public class SetupBehaviour : MonoBehaviour
         if (value == "")
             return;
 
-        float newPref = float.Parse(value);
+        float newPref = float.TryParse(value, out newPref) ? newPref : -1;
         if (newPref < 0)
         {
             PreferenceErrorPopup();
@@ -73,7 +74,7 @@ public class SetupBehaviour : MonoBehaviour
         if (value == "")
             return;
 
-        int newPref = int.Parse(value);
+        int newPref = int.TryParse(value, out newPref) ? newPref : -1;
         if (newPref < 0)
         {
             PreferenceErrorPopup();
@@ -138,5 +139,5 @@ public class SetupBehaviour : MonoBehaviour
     }
 
 
-    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be >= 0).");
+    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be positive, non-zero and not excessively large).");
 }

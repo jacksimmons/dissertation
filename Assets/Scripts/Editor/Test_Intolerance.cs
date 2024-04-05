@@ -83,7 +83,10 @@ public class Test_Intolerance
     [Test]
     public void BannedFoodsNormalTest()
     {
-        Preferences.Instance.bannedFoodKeys = new();
+        // Load sensible constraints to test on
+        Preferences.Instance.CalculateDefaultConstraints();
+
+        Preferences.Instance.customFoodSettings = new();
 
         // Get list of foods before banning
         List<Food> foods = Algorithm.Build(typeof(AlgGA)).Foods.ToList();
@@ -92,8 +95,8 @@ public class Test_Intolerance
         // Ban 2nd and 3rd foods
         Food bannedA = foods[2];
         Food bannedB = foods[3];
-        Preferences.Instance.bannedFoodKeys.Add(bannedA.CompositeKey);
-        Preferences.Instance.bannedFoodKeys.Add(bannedB.CompositeKey);
+        Preferences.Instance.customFoodSettings.Add(new() { Key = bannedA.CompositeKey, Banned = true });
+        Preferences.Instance.customFoodSettings.Add(new() { Key = bannedB.CompositeKey, Banned = true });
 
         // Get the foods with bans applied
         List<Food> newFoods = Algorithm.Build(typeof(AlgGA)).Foods.ToList();
@@ -107,6 +110,9 @@ public class Test_Intolerance
 
         // Also numFoods from 2nd = numFoods from 1st - 2
         Assert.True(numFoodsAfterBan == numFoodsBeforeBan - 2);
+
+        // Reload user's preferences
+        Saving.LoadPreferences();
     }
 
 

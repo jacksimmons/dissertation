@@ -91,7 +91,7 @@ public abstract class Algorithm
         foreach (Food food in allFoods)
         {
             // If the FoodData of `food` from the Dataset is in the banned list...
-            if (Prefs.bannedFoodKeys.Contains(food.CompositeKey))
+            if (Prefs.IsFoodBanned(food.CompositeKey))
             {
                 m_foods.Remove(food);
             }

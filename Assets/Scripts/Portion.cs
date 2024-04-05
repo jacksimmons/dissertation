@@ -6,13 +6,13 @@ public struct Portion : IVerbose
     public readonly Food FoodType { get; }
 
     public int Mass { get; set; }
-    private readonly float Multiplier => (float)Mass / Food.MASS;
+    private readonly float Multiplier => Mass / Food.MASS;
 
 
     public Portion(Food food)
     {
         FoodType = food;
-        Mass = 100;
+        Mass = Food.MASS;
     }
 
 
