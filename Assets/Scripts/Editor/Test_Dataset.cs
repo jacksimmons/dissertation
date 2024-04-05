@@ -44,9 +44,9 @@ public class Test_Dataset
         // Vitamins
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            Assert.AreEqual(nutrients[i], food.Nutrients[i], $"{Nutrient.Values[i]} was incorrect.");
+            Assert.AreEqual(nutrients[i], food.Nutrients[i], $"{Constraint.Values[i]} was incorrect.");
         }
     }
 
@@ -72,9 +72,9 @@ public class Test_Dataset
     /// </summary>
     private void EqualFloatTest(Food food, float value)
     {
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            Assert.AreEqual(value, food.Nutrients[i], $"{Nutrient.Values[i]} was incorrect.");
+            Assert.AreEqual(value, food.Nutrients[i], $"{Constraint.Values[i]} was incorrect.");
         }
     }
 

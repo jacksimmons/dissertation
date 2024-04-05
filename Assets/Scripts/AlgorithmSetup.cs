@@ -12,8 +12,7 @@ public class AlgorithmSetup : SetupBehaviour
 {
     private static Preferences Prefs => Preferences.Instance;
 
-
-    // ENutrient fields (each object's index represents its ENutrient enum value)
+    // EConstraintType fields (each object's index represents its EConstraintType enum value)
     [SerializeField]
     private GameObject[] m_nutrientFields;
 
@@ -79,7 +78,7 @@ public class AlgorithmSetup : SetupBehaviour
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
         {
             GameObject go;
-            ENutrient nutrient;
+            EConstraintType nutrient;
 
             // _i usage scoped
             {
@@ -87,10 +86,10 @@ public class AlgorithmSetup : SetupBehaviour
 
                 // Must store the nutrient as a local variable, for use in the listener declarations.
                 // Using iter var directly would lead to := m_nutrientFields.Length whenever a listener event occurred.
-                nutrient = (ENutrient)_i;
+                nutrient = (EConstraintType)_i;
             }
 
-            TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();
+            TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();   
             goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value));
 
             TMP_InputField minInput = go.transform.Find("MinInput").GetComponent<TMP_InputField>();
@@ -131,7 +130,7 @@ public class AlgorithmSetup : SetupBehaviour
     }
 
 
-    private void OnGoalInputChanged(ENutrient nutrient, string value)
+    private void OnGoalInputChanged(EConstraintType nutrient, string value)
     {
         OnFloatInputChanged(ref Prefs.constraints[(int)nutrient].Goal, value);
         OnGoalChanged(nutrient);
@@ -139,16 +138,16 @@ public class AlgorithmSetup : SetupBehaviour
     }
 
 
-    private static void OnGoalChanged(ENutrient nutrient)
+    private static void OnGoalChanged(EConstraintType nutrient)
     {
         switch (nutrient)
         {
-            case ENutrient.Protein:
-            case ENutrient.Fat:
-            case ENutrient.Carbs:
+            case EConstraintType.Protein:
+            case EConstraintType.Fat:
+            case EConstraintType.Carbs:
                 MacrosToCalories();
                 break;
-            case ENutrient.Kcal:
+            case EConstraintType.Kcal:
                 CaloriesToMacros();
                 break;
         }
@@ -159,10 +158,10 @@ public class AlgorithmSetup : SetupBehaviour
     private static void MacrosToCalories()
     {
         MathTools.MacrosToCalories(
-            ref Prefs.constraints[(int)ENutrient.Kcal].Goal,
-            Prefs.constraints[(int)ENutrient.Protein].Goal,
-            Prefs.constraints[(int)ENutrient.Fat].Goal,
-            Prefs.constraints[(int)ENutrient.Carbs].Goal
+            ref Prefs.constraints[(int)EConstraintType.Kcal].Goal,
+            Prefs.constraints[(int)EConstraintType.Protein].Goal,
+            Prefs.constraints[(int)EConstraintType.Fat].Goal,
+            Prefs.constraints[(int)EConstraintType.Carbs].Goal
         );
     }
 
@@ -170,10 +169,10 @@ public class AlgorithmSetup : SetupBehaviour
     private static void CaloriesToMacros()
     {
         MathTools.CaloriesToMacros(
-            Prefs.constraints[(int)ENutrient.Kcal].Goal,
-            ref Prefs.constraints[(int)ENutrient.Protein].Goal,
-            ref Prefs.constraints[(int)ENutrient.Fat].Goal,
-            ref Prefs.constraints[(int)ENutrient.Carbs].Goal
+            Prefs.constraints[(int)EConstraintType.Kcal].Goal,
+            ref Prefs.constraints[(int)EConstraintType.Protein].Goal,
+            ref Prefs.constraints[(int)EConstraintType.Fat].Goal,
+            ref Prefs.constraints[(int)EConstraintType.Carbs].Goal
         );
     }
 
@@ -207,14 +206,14 @@ public class AlgorithmSetup : SetupBehaviour
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
         {
             GameObject go;
-            ENutrient nutrient;
+            EConstraintType nutrient;
 
             {
                 go = m_nutrientFields[_i];
 
                 // Must store the nutrient as a local variable, for use in the listener declarations.
                 // Using iter var directly would lead to := m_nutrientFields.Length whenever a listener event occurred.
-                nutrient = (ENutrient)_i;
+                nutrient = (EConstraintType)_i;
             }
 
             go.transform.Find("GoalInput").GetComponent<TMP_InputField>().text = constraints[(int)nutrient].Goal.ToString();

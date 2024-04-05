@@ -19,12 +19,12 @@ public partial class Day
 
 
     /// <summary>
-    /// A class representing the fitness of an individual nutrient.
+    /// A class representing the fitness of an individual constraint.
     /// </summary>
-    public class NutrientFitness
+    public class ConstraintFitness
     {
         private Day m_day;
-        private ENutrient m_nutrient;
+        private EConstraintType m_nutrient;
 
         private float m_value;
         public float Value
@@ -33,7 +33,7 @@ public partial class Day
             {
                 if (UpToDate) return m_value;
 
-                float amount = m_day.GetNutrientAmount(m_nutrient);
+                float amount = m_day.GetConstraintAmount(m_nutrient);
                 m_value = m_day.m_algorithm.Constraints[(int)m_nutrient].GetFitness(amount);
 
                 UpToDate = true;
@@ -43,7 +43,7 @@ public partial class Day
         public bool UpToDate { get; private set; } = false;
 
 
-        public NutrientFitness(Day day, ENutrient nutrient)
+        public ConstraintFitness(Day day, EConstraintType nutrient)
         {
             m_day = day;
             m_nutrient = nutrient;
@@ -63,7 +63,7 @@ public partial class Day
     public abstract class Fitness : IComparable, IVerbose
     {
         protected Day m_day;
-        protected NutrientFitness[] m_nutrientFitnesses;
+        protected ConstraintFitness[] m_nutrientFitnesses;
 
 
         /// <summary>
@@ -83,15 +83,15 @@ public partial class Day
         public Fitness(Day day)
         {
             m_day = day;
-            m_nutrientFitnesses = new NutrientFitness[Nutrient.Count];
-            for (int i = 0; i < Nutrient.Count; i++)
+            m_nutrientFitnesses = new ConstraintFitness[Constraint.Count];
+            for (int i = 0; i < Constraint.Count; i++)
             {
-                m_nutrientFitnesses[i] = new(day, (ENutrient)i);
+                m_nutrientFitnesses[i] = new(day, (EConstraintType)i);
             }
         }
 
 
-        public void SetNutrientOutdated(ENutrient nutrient)
+        public void SetNutrientOutdated(EConstraintType nutrient)
         {
             m_allUpToDate = false;
             m_nutrientFitnesses[(int)nutrient].SetOutdated();
@@ -204,7 +204,7 @@ public partial class Day
             int betterCount = 0;
             int worseCount = 0;
 
-            for (int i = 0; i < Nutrient.Count; i++)
+            for (int i = 0; i < Constraint.Count; i++)
             {
                 float fitnessA = m_nutrientFitnesses[i].Value;
                 float fitnessB = other.m_nutrientFitnesses[i].Value;

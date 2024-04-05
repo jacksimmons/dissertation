@@ -102,9 +102,9 @@ public class Preferences : ICached, IVerbose
     // Constraints
     //
     
-    public ConstraintData[] constraints = new ConstraintData[Nutrient.Count];
-    public bool[] acceptMissingNutrientValue = new bool[Nutrient.Count];
-    public List<CustomFoodSettings> customFoodSettings = new();                     // List of structs, each of which contains a composite key and cost of the food it represents.
+    public ConstraintData[] constraints = new ConstraintData[Constraint.Count];
+    public bool[] acceptMissingNutrientValue = new bool[Constraint.Count];
+    public List<CustomFoodSettings> customFoodSettings = new();                      // List of structs, each of which contains a composite key and cost of the food it represents.
 
 
     // ALG SETUP MENU--------------
@@ -208,53 +208,56 @@ public class Preferences : ICached, IVerbose
 
     public void CalculateDefaultConstraints()
     {
-        SetConstraint(ENutrient.Kcal, typeof(ConvergeConstraint), max: isMale ? 3000 : 2500, weight: 2, goal: isMale ? 2500 : 2000);
+        SetConstraint(EConstraintType.Kcal, typeof(ConvergeConstraint), max: isMale ? 3000 : 2500, weight: 2, goal: isMale ? 2500 : 2000);
 
         // Auto-generate default p/f/c properties based on the above constraint
         ConstraintData proteinData = new();
         ConstraintData fatData = new();
         ConstraintData carbsData = new();
 
-        MathTools.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Min, ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
-        MathTools.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Max, ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
-        MathTools.CaloriesToMacros(constraints[(int)ENutrient.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
+        MathTools.CaloriesToMacros(constraints[(int)EConstraintType.Kcal].Min, ref proteinData.Min, ref fatData.Min, ref carbsData.Min);
+        MathTools.CaloriesToMacros(constraints[(int)EConstraintType.Kcal].Max, ref proteinData.Max, ref fatData.Max, ref carbsData.Max);
+        MathTools.CaloriesToMacros(constraints[(int)EConstraintType.Kcal].Goal, ref proteinData.Goal, ref fatData.Goal, ref carbsData.Goal);
 
-        SetConstraint(ENutrient.Protein, typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, goal: proteinData.Goal);
-        SetConstraint(ENutrient.Fat, typeof(ConvergeConstraint), max: fatData.Max, weight: 2, goal: fatData.Goal);
-        SetConstraint(ENutrient.Carbs, typeof(ConvergeConstraint), max: carbsData.Max, weight: 2, goal: carbsData.Goal);
+        SetConstraint(EConstraintType.Protein, typeof(ConvergeConstraint), max: proteinData.Max, weight: 2, goal: proteinData.Goal);
+        SetConstraint(EConstraintType.Fat, typeof(ConvergeConstraint), max: fatData.Max, weight: 2, goal: fatData.Goal);
+        SetConstraint(EConstraintType.Carbs, typeof(ConvergeConstraint), max: carbsData.Max, weight: 2, goal: carbsData.Goal);
 
         // Default weight: 3
-        SetConstraint(ENutrient.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
-        SetConstraint(ENutrient.SatFat, typeof(MinimiseConstraint), max: isMale ? 30f : 20f, weight: 3);
-        SetConstraint(ENutrient.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
+        SetConstraint(EConstraintType.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
+        SetConstraint(EConstraintType.SatFat, typeof(MinimiseConstraint), max: isMale ? 30f : 20f, weight: 3);
+        SetConstraint(EConstraintType.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
 
         // Default weight: 1
         // For these, set the goal to be the recommended amount from the NHS.
         // The maximum is the highest "definitely safe" amount recommended by the NHS.
-        SetConstraint(ENutrient.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, goal: 700f);
+        SetConstraint(EConstraintType.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, goal: 700f);
 
         bool moreIron = !isMale && (19 <= ageYears && ageYears <= 49);
-        SetConstraint(ENutrient.Iodine, typeof(ConvergeConstraint), max: 500f, weight: 1, goal: 140f);
-        SetConstraint(ENutrient.Iron, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: moreIron ? 14.8f : 8.7f);
+        SetConstraint(EConstraintType.Iodine, typeof(ConvergeConstraint), max: 500f, weight: 1, goal: 140f);
+        SetConstraint(EConstraintType.Iron, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: moreIron ? 14.8f : 8.7f);
 
-        SetConstraint(ENutrient.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, goal: isMale ? 700 : 600);
-        SetConstraint(ENutrient.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, goal: isMale ? 1 : 0.8f);
-        SetConstraint(ENutrient.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, goal: isMale ? 1.3f : 1.1f);
-        SetConstraint(ENutrient.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: isMale ? 16.5f : 13.2f);
-        SetConstraint(ENutrient.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, goal: isMale ? 1.4f : 1.2f);
-        SetConstraint(ENutrient.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: isPregnant ? 400f : 200f);
-        SetConstraint(ENutrient.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, goal: 1.5f);
-        SetConstraint(ENutrient.VitC, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: 40f);
-        SetConstraint(ENutrient.VitD, typeof(ConvergeConstraint), max: 100f, weight: 1, goal: needsVitD ? 10 : 0); // Not needed if sunny.
-        SetConstraint(ENutrient.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, goal: isMale ? 4 : 3);
-        SetConstraint(ENutrient.VitK1, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: weightKg); // Goal: 1 microgram per kg bodyweight.
+        SetConstraint(EConstraintType.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, goal: isMale ? 700 : 600);
+        SetConstraint(EConstraintType.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, goal: isMale ? 1 : 0.8f);
+        SetConstraint(EConstraintType.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, goal: isMale ? 1.3f : 1.1f);
+        SetConstraint(EConstraintType.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: isMale ? 16.5f : 13.2f);
+        SetConstraint(EConstraintType.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, goal: isMale ? 1.4f : 1.2f);
+        SetConstraint(EConstraintType.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: isPregnant ? 400f : 200f);
+        SetConstraint(EConstraintType.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, goal: 1.5f);
+        SetConstraint(EConstraintType.VitC, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: 40f);
+        SetConstraint(EConstraintType.VitD, typeof(ConvergeConstraint), max: 100f, weight: 1, goal: needsVitD ? 10 : 0); // Not needed if sunny.
+        SetConstraint(EConstraintType.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, goal: isMale ? 4 : 3);
+        SetConstraint(EConstraintType.VitK1, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: weightKg); // Goal: 1 microgram per kg bodyweight.
+
+        // Disable cost by default as it requires user input for each food they enable.
+        SetConstraint(EConstraintType.Cost, typeof(NullConstraint), max: 0f, weight: 1);
     }
 
 
-    private void SetConstraint(ENutrient nut, Type constraintType, float max, float weight, float min = 0, float goal = 0)
+    private void SetConstraint(EConstraintType nutrient, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
-        constraints[(int)nut] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight, NutrientName = nut.ToString() };
-        Constraint.Build(constraints[(int)nut]); // Checks if all params are valid. If not, throws an error.
+        constraints[(int)nutrient] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight, NutrientName = $"{nutrient}"};
+        Constraint.Build(constraints[(int)nutrient]); // Checks if all params are valid. If not, throws an error.
     }
 
 
@@ -417,7 +420,7 @@ public class Preferences : ICached, IVerbose
         for (int i = 0; i < constraints.Length; i++)
         {
             ConstraintData constraint = constraints[i];
-            str += $"Nutrient: {Nutrient.Values[i],10}" + constraint.Verbose();
+            str += $"Constraint: {Constraint.Values[i],10}" + constraint.Verbose();
         }
 
         str += "\n";

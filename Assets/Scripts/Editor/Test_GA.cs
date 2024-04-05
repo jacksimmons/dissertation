@@ -135,10 +135,10 @@ public class Test_GA
             // Fitness can only be positive or 0.
             Assert.IsTrue(fitness >= 0);
 
-            for (int i = 0; i < Nutrient.Count; i++)
+            for (int i = 0; i < Constraint.Count; i++)
             {
                 // Fitness for each nutrient can only be positive or 0.
-                float nutrientFitness = alg.Constraints[i].GetFitness(day.GetNutrientAmount((ENutrient)i));
+                float nutrientFitness = alg.Constraints[i].GetFitness(day.GetConstraintAmount((EConstraintType)i));
                 Assert.IsTrue(nutrientFitness >= 0);
             }
         }

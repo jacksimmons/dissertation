@@ -30,7 +30,7 @@ public class FoodData : IFood
 
     public FoodData()
     {
-        Nutrients = new float[Nutrient.Count];
+        Nutrients = new float[Constraint.Count];
     }
 
 
@@ -38,7 +38,7 @@ public class FoodData : IFood
     {
         if (EquivalentType(other))
         {
-            for (int i = 0; i < Nutrient.Count; i++)
+            for (int i = 0; i < Constraint.Count; i++)
             {
                 // If not initialised in this nutrients, take it from the other nutrients.
                 if (MathTools.Approx(Nutrients[i], 0)) Nutrients[i] = other.Nutrients[i];
@@ -96,7 +96,7 @@ public class Food : IFood, IVerbose
         if (!attribs) return false;
 
         // Check all nutrients are the same
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
             if (Nutrients[i] != other.Nutrients[i])
                 return false;

@@ -17,11 +17,11 @@ public class Test_Food
 
     public Test_Food()
     {
-        m_minConstraints = new ConstraintData[Nutrient.Count];
-        m_convConstraints = new ConstraintData[Nutrient.Count];
-        m_rangeConstraints = new ConstraintData[Nutrient.Count];
+        m_minConstraints = new ConstraintData[Constraint.Count];
+        m_convConstraints = new ConstraintData[Constraint.Count];
+        m_rangeConstraints = new ConstraintData[Constraint.Count];
 
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
             m_minConstraints[i] = new()
             {
@@ -71,11 +71,11 @@ public class Test_Food
 
         AlgTest algTest = new();
 
-        float[] bestNutrients = new float[Nutrient.Count];
-        float[] worstNutrients = new float[Nutrient.Count];
+        float[] bestNutrients = new float[Constraint.Count];
+        float[] worstNutrients = new float[Constraint.Count];
         // Set the nutrients attribs for both worst and best days (bestNutrients and worstNutrients are
         // references to these attribs)
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
             bestNutrients[i] = Constraint.Build(constraints[i]).BestValue;
             worstNutrients[i] = Constraint.Build(constraints[i]).WorstValue;

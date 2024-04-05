@@ -311,9 +311,9 @@ public class PreferencesHandler : SetupBehaviour
         UITools.DestroyAllChildren(m_missingNutrientsContent.transform);
 
         // Readd all buttons
-        for (int _i = 0; _i < Nutrient.Count; _i++)
+        for (int _i = 0; _i < Constraint.Count; _i++)
         {
-            ENutrient nutrient = (ENutrient)_i;
+            EConstraintType nutrient = (EConstraintType)_i;
 
             GameObject go = Instantiate(m_btnPropertyTemplate, m_missingNutrientsContent.transform);
 
@@ -327,7 +327,7 @@ public class PreferencesHandler : SetupBehaviour
     }
 
 
-    private void OnMissingNutrientToggle(ENutrient nutrient, TMP_Text tmpText)
+    private void OnMissingNutrientToggle(EConstraintType nutrient, TMP_Text tmpText)
     {
         OnBoolInputChanged(ref Preferences.Instance.acceptMissingNutrientValue[(int)nutrient]);
         tmpText.text = Preferences.Instance.acceptMissingNutrientValue[(int)nutrient] ? "x" : "";

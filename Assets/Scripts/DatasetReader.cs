@@ -33,9 +33,9 @@ public class DatasetReader
     private List<FoodData> m_dataset;
     public ReadOnlyCollection<FoodData> Dataset { get; }
 
-    private readonly ENutrient[] m_proximateColumns = new ENutrient[47]; // The number of columns with useful data in starting from col 0.
-    private readonly ENutrient[] m_inorganicsColumns = new ENutrient[19];
-    private readonly ENutrient[] m_vitaminsColumns = new ENutrient[24];
+    private readonly EConstraintType[] m_proximateColumns = new EConstraintType[47]; // The number of columns with useful data in starting from col 0.
+    private readonly EConstraintType[] m_inorganicsColumns = new EConstraintType[19];
+    private readonly EConstraintType[] m_vitaminsColumns = new EConstraintType[24];
 
     public readonly string SetupError = "";
 
@@ -67,7 +67,7 @@ public class DatasetReader
         m_dataset = new();
         Dataset = new(m_dataset);
 
-        static void FillNutrientArray(ENutrient[] array, ENutrient value)
+        static void FillNutrientArray(EConstraintType[] array, EConstraintType value)
         {
             for (int i = 0; i < array.Length; i++)
             {
@@ -75,33 +75,33 @@ public class DatasetReader
             }
         }
 
-        FillNutrientArray(m_proximateColumns, (ENutrient)(-1));
-        FillNutrientArray(m_inorganicsColumns, (ENutrient)(-1));
-        FillNutrientArray(m_vitaminsColumns, (ENutrient)(-1));
+        FillNutrientArray(m_proximateColumns, (EConstraintType)(-1));
+        FillNutrientArray(m_inorganicsColumns, (EConstraintType)(-1));
+        FillNutrientArray(m_vitaminsColumns, (EConstraintType)(-1));
 
-        m_proximateColumns[9] = ENutrient.Protein;
-        m_proximateColumns[10] = ENutrient.Fat;
-        m_proximateColumns[11] = ENutrient.Carbs;
-        m_proximateColumns[12] = ENutrient.Kcal;
-        m_proximateColumns[16] = ENutrient.Sugar;
-        m_proximateColumns[27] = ENutrient.SatFat;
-        m_proximateColumns[45] = ENutrient.TransFat;
+        m_proximateColumns[9] = EConstraintType.Protein;
+        m_proximateColumns[10] = EConstraintType.Fat;
+        m_proximateColumns[11] = EConstraintType.Carbs;
+        m_proximateColumns[12] = EConstraintType.Kcal;
+        m_proximateColumns[16] = EConstraintType.Sugar;
+        m_proximateColumns[27] = EConstraintType.SatFat;
+        m_proximateColumns[45] = EConstraintType.TransFat;
 
-        m_inorganicsColumns[9] = ENutrient.Calcium;
-        m_inorganicsColumns[12] = ENutrient.Iron;
-        m_inorganicsColumns[18] = ENutrient.Iodine;
+        m_inorganicsColumns[9] = EConstraintType.Calcium;
+        m_inorganicsColumns[12] = EConstraintType.Iron;
+        m_inorganicsColumns[18] = EConstraintType.Iodine;
 
-        m_vitaminsColumns[9] = ENutrient.VitA; // "Retinol equivalent"
-        m_vitaminsColumns[13] = ENutrient.VitB1;
-        m_vitaminsColumns[14] = ENutrient.VitB2;
-        m_vitaminsColumns[17] = ENutrient.VitB3; // "Niacin equivalent"
-        m_vitaminsColumns[18] = ENutrient.VitB6;
-        m_vitaminsColumns[20] = ENutrient.VitB9;
-        m_vitaminsColumns[19] = ENutrient.VitB12;
-        m_vitaminsColumns[23] = ENutrient.VitC;
-        m_vitaminsColumns[10] = ENutrient.VitD;
-        m_vitaminsColumns[11] = ENutrient.VitE;
-        m_vitaminsColumns[12] = ENutrient.VitK1;
+        m_vitaminsColumns[9] = EConstraintType.VitA; // "Retinol equivalent"
+        m_vitaminsColumns[13] = EConstraintType.VitB1;
+        m_vitaminsColumns[14] = EConstraintType.VitB2;
+        m_vitaminsColumns[17] = EConstraintType.VitB3; // "Niacin equivalent"
+        m_vitaminsColumns[18] = EConstraintType.VitB6;
+        m_vitaminsColumns[20] = EConstraintType.VitB9;
+        m_vitaminsColumns[19] = EConstraintType.VitB12;
+        m_vitaminsColumns[23] = EConstraintType.VitC;
+        m_vitaminsColumns[10] = EConstraintType.VitD;
+        m_vitaminsColumns[11] = EConstraintType.VitE;
+        m_vitaminsColumns[12] = EConstraintType.VitK1;
     }
 
 
@@ -137,7 +137,7 @@ public class DatasetReader
 
             // Missing data is only permitted if the user has set the preference "accept missing nutrient value"
             // to true for this specific nutrient.
-            for (int i = 0; i < Nutrient.Count; i++)
+            for (int i = 0; i < Constraint.Count; i++)
             {
                 if (MathTools.ApproxLessThan(data.Nutrients[i], 0))
                 {
@@ -191,7 +191,7 @@ public class DatasetReader
             // Process file row
             FoodData currentFood = new()
             {
-                Nutrients = new float[Nutrient.Count]
+                Nutrients = new float[Constraint.Count]
             };
 
             // Process the next row in the 3 dataset files, put them into one FoodData object.
@@ -203,7 +203,19 @@ public class DatasetReader
 
             // Add processed row to the list (if it is a valid food)
             if (i >= FIRST_ROW)
+            {
+                // See if it has a custom setting, if so add its cost value
+                foreach (var cfs in m_prefs.customFoodSettings)
+                {
+                    if (cfs.Key != currentFood.CompositeKey) continue;
+
+                    // Add the custom settings cost value, and break
+                    currentFood.Nutrients[(int)EConstraintType.Cost] = cfs.Cost;
+                    break;
+                }
+
                 m_dataset.Add(currentFood);
+            }
         }
     }
 
@@ -291,7 +303,7 @@ public class DatasetReader
     //{
     //    FoodData currentFood = new()
     //    {
-    //        Nutrients = new float[Nutrient.Count]
+    //        Nutrients = new float[Constraint.Count]
     //    };
 
     //    string currentWord = "";
@@ -352,7 +364,7 @@ public class DatasetReader
     //                        // Reset
     //                        currentFood = new()
     //                        {
-    //                            Nutrients = new float[Nutrient.Count]
+    //                            Nutrients = new float[Constraint.Count]
     //                        };
     //                    }
     //                }
@@ -414,7 +426,7 @@ public class DatasetReader
     /// </summary>
     private void HandleNutrientLookup(DatasetFileStatus status, int col, float colValParsed)
     {
-        ENutrient[] columns;
+        EConstraintType[] columns;
 
         switch (status.file)
         {
@@ -435,7 +447,7 @@ public class DatasetReader
             return;
         }
 
-        if (columns[col] != (ENutrient)(-1))
+        if (columns[col] != (EConstraintType)(-1))
             status.currentFood.Nutrients[(int)columns[col]] = colValParsed;
 
         return;

@@ -14,7 +14,7 @@ public partial class Day : IVerbose, IComparable<Day>
 
     // Only change this array when one of the portions changes, eliminating the
     // need to perform expensive Sum operations every iteration.
-    private readonly float[] m_nutrientAmounts;
+    private readonly float[] m_constraintAmounts;
 
     public int Mass { get; private set; } = 0;
     public Fitness TotalFitness { get; }
@@ -41,7 +41,7 @@ public partial class Day : IVerbose, IComparable<Day>
         _portions = new();
         portions = new(_portions);
         m_algorithm = algorithm;
-        m_nutrientAmounts = new float[Nutrient.Count];
+        m_constraintAmounts = new float[Constraint.Count];
     }
 
 
@@ -54,7 +54,7 @@ public partial class Day : IVerbose, IComparable<Day>
         portions = new(_portions);
         m_algorithm = day.m_algorithm;
         Mass = day.Mass;
-        m_nutrientAmounts = day.m_nutrientAmounts;
+        m_constraintAmounts = day.m_constraintAmounts;
     }
 
 
@@ -119,13 +119,13 @@ public partial class Day : IVerbose, IComparable<Day>
 
     private void AddPortionProperties(Portion portion)
     {
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            float diff = portion.GetNutrientAmount((ENutrient)i);
-            m_nutrientAmounts[i] += diff;
+            float diff = portion.GetConstraintAmount((EConstraintType)i);
+            m_constraintAmounts[i] += diff;
 
             if (diff > 0)
-                TotalFitness.SetNutrientOutdated((ENutrient)i);
+                TotalFitness.SetNutrientOutdated((EConstraintType)i);
         }
         Mass += portion.Mass;
     }
@@ -133,13 +133,13 @@ public partial class Day : IVerbose, IComparable<Day>
 
     private void SubtractPortionProperties(Portion portion)
     {
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            float diff = portion.GetNutrientAmount((ENutrient)i);
-            m_nutrientAmounts[i] -= diff;
+            float diff = portion.GetConstraintAmount((EConstraintType)i);
+            m_constraintAmounts[i] -= diff;
 
             if (diff > 0)
-                TotalFitness.SetNutrientOutdated((ENutrient)i);
+                TotalFitness.SetNutrientOutdated((EConstraintType)i);
         }
         Mass -= portion.Mass;
     }
@@ -150,29 +150,21 @@ public partial class Day : IVerbose, IComparable<Day>
     /// </summary>
     /// <param name="nutrient">The nutrient to get the amount for.</param>
     /// <returns>The quantity of the nutrient in the whole day.</returns>
-    public float GetNutrientAmount(ENutrient nutrient)
+    public float GetConstraintAmount(EConstraintType nutrient)
     {
-        return m_nutrientAmounts[(int)nutrient];
+        return m_constraintAmounts[(int)nutrient];
     }
 
 
     public float GetManhattanDistanceToPerfect()
     {
         float manhattan = 0;
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            float amount = m_nutrientAmounts[i];
+            float amount = m_constraintAmounts[i];
             manhattan += MathF.Abs(amount - m_algorithm.Constraints[i].BestValue);
         }
         return manhattan;
-    }
-
-
-    public float GetDistance(Day day)
-    {
-        // Square root of all differences squared = Pythagorean Distance
-        ENutrient[] vals = (ENutrient[])Enum.GetValues(typeof(ENutrient));
-        return MathF.Sqrt(vals.Sum(o => MathF.Pow(GetNutrientAmount(o) - day.GetNutrientAmount(o), 2)));
     }
 
 
@@ -216,11 +208,11 @@ public partial class Day : IVerbose, IComparable<Day>
     public string Verbose()
     {
         string asString = "";
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            ENutrient nutrient = (ENutrient)i;
-            float nutrientAmount = GetNutrientAmount(nutrient);
-            asString += $"{nutrient}: {nutrientAmount}{Nutrient.GetUnit(nutrient)}\n";
+            EConstraintType nutrient = (EConstraintType)i;
+            float constraintAmount = GetConstraintAmount(nutrient);
+            asString += $"{nutrient}: {constraintAmount}{Constraint.GetUnit(nutrient)}\n";
         }
         return asString + $"Mass: {Mass}g";
     }

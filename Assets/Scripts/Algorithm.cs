@@ -16,7 +16,7 @@ public abstract class Algorithm
     private readonly List<Food> m_foods;
     public readonly ReadOnlyCollection<Food> Foods;
 
-    public readonly ReadOnlyCollection<Constraint> Constraints; // User-defined constraints, one for each nutrient.
+    public readonly ReadOnlyCollection<Constraint> Constraints; // User-defined constraints, one for each constraint type.
 
     public int IterNum { get; private set; } = 0;        // The current iteration of the algorithm.
 
@@ -29,7 +29,7 @@ public abstract class Algorithm
     protected Portion[] m_portions = Array.Empty<Portion>();
     protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
 
-    private readonly Dictionary<ENutrient, float> m_prevAvgPopStats = new(); // Stores the average nutrient amount for the whole population from last iteration.
+    private readonly Dictionary<EConstraintType, float> m_prevAvgPopStats = new(); // Stores the average constraint amount for the whole population from last iteration.
 
 
     // --- Best day properties, can only be set together ---
@@ -274,18 +274,18 @@ public abstract class Algorithm
     public virtual string GetAverageStatsLabel()
     {
         string avgStr = "";
-        foreach (ENutrient nutrient in Nutrient.Values)
+        foreach (EConstraintType nutrient in Constraint.Values)
         {
             float sum = 0;
             foreach (Day day in m_population)
             {
-                sum += day.GetNutrientAmount(nutrient);
+                sum += day.GetConstraintAmount(nutrient);
             }
 
-            float avg = sum / Nutrient.Count;
+            float avg = sum / Constraint.Count;
             if (!m_prevAvgPopStats.ContainsKey(nutrient)) m_prevAvgPopStats[nutrient] = avg;
 
-            avgStr += $"{nutrient}: {avg:F2}(+{avg - m_prevAvgPopStats[nutrient]:F2}){Nutrient.GetUnit(nutrient)}\n";
+            avgStr += $"{nutrient}: {avg:F2}(+{avg - m_prevAvgPopStats[nutrient]:F2}){Constraint.GetUnit(nutrient)}\n";
 
             m_prevAvgPopStats[nutrient] = avg;
         }

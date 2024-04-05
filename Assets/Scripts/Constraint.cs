@@ -15,6 +15,44 @@ using System;
 
 
 /// <summary>
+/// An enum representation of all constraint types this project considers.
+/// They are nearly all nutrients, except for the cost constraint.
+/// </summary>
+public enum EConstraintType
+{
+    // Proximates
+    Protein,
+    Fat,
+    Carbs,
+    Kcal,
+    Sugar,
+    SatFat,
+    TransFat,
+
+    // Inorganics
+    Calcium,
+    Iodine,
+    Iron,
+
+    // Vitamins
+    VitA,
+    VitB1,
+    VitB2,
+    VitB3,
+    VitB6,
+    VitB9,
+    VitB12,
+    VitC,
+    VitD,
+    VitE,
+    VitK1,
+
+    // Miscellaneous
+    Cost
+}
+
+
+/// <summary>
 /// Stores parameters for any constraint. Note these are not Properties, to allow each parameter
 /// to be changed by ref.
 /// </summary>
@@ -114,6 +152,31 @@ public abstract class Constraint
 
 
     public abstract float GetUnweightedFitness(float amount);
+
+
+    // Property-like static variables for EConstraintType enum length, and EConstraintType enum values.
+    public static int Count = Enum.GetValues(typeof(EConstraintType)).Length;
+    public static EConstraintType[] Values = (EConstraintType[])Enum.GetValues(typeof(EConstraintType));
+
+
+    public static string GetUnit(EConstraintType nutrient)
+    {
+        return nutrient switch
+        {
+            EConstraintType.Protein or EConstraintType.Fat or EConstraintType.Carbs or EConstraintType.Sugar or EConstraintType.SatFat or EConstraintType.TransFat => "g",
+
+            EConstraintType.Calcium or EConstraintType.Iron or
+            EConstraintType.VitE or EConstraintType.VitB1 or EConstraintType.VitB2 or EConstraintType.VitB3 or EConstraintType.VitB6 or EConstraintType.VitC => "mg",
+
+            EConstraintType.Iodine or
+            EConstraintType.VitA or EConstraintType.VitD or EConstraintType.VitK1 or EConstraintType.VitB12 or EConstraintType.VitB9 => "µg",
+
+            EConstraintType.Kcal => "kcal",
+
+            EConstraintType.Cost => "£",
+            _ => throw new ArgumentOutOfRangeException(nameof(nutrient)),
+        };
+    }
 }
 
 

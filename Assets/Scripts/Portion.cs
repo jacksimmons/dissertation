@@ -23,7 +23,7 @@ public struct Portion : IVerbose
     }
 
 
-    public float GetNutrientAmount(ENutrient nutrient)
+    public float GetConstraintAmount(EConstraintType nutrient)
     {
         return FoodType.Nutrients[(int)nutrient] * Multiplier;
     }
@@ -39,9 +39,9 @@ public struct Portion : IVerbose
     {
         string str = $"Name: {FoodType.Name}\nNutrients:";
 
-        for (int i = 0; i < Nutrient.Count; i++)
+        for (int i = 0; i < Constraint.Count; i++)
         {
-            str += $"\n{Nutrient.Values[i]}: {FoodType.Nutrients[i] * Multiplier}{Nutrient.GetUnit(Nutrient.Values[i])}";
+            str += $"\n{Constraint.Values[i]}: {FoodType.Nutrients[i] * Multiplier}{Constraint.GetUnit(Constraint.Values[i])}";
         }
 
         str += $"\nMass: {Mass}g";
