@@ -90,7 +90,7 @@ public class Preferences : ICached, IVerbose
     // User Info
     //
     
-    public bool isMale = true;
+    public bool maleElseFemale = true;
     public bool isPregnant = false;
     public bool needsVitD = true;
     public int ageYears = 20;
@@ -208,7 +208,15 @@ public class Preferences : ICached, IVerbose
 
     public void CalculateDefaultConstraints()
     {
-        SetConstraint(EConstraintType.Kcal, typeof(ConvergeConstraint), max: isMale ? 3000 : 2500, weight: 2, goal: isMale ? 2500 : 2000);
+        // Calculates daily calories based on the Harris-Benedict equations.
+        float GetDailyCalories()
+        {
+            if (maleElseFemale)
+                return 66.4730f + 13.7516f * weightKg + 5.0033f * heightCm - 6.7550f * ageYears;
+            return 655.0955f + 9.5634f * weightKg + 1.8496f * heightCm - 4.6756f * ageYears;
+        }
+
+        SetConstraint(EConstraintType.Kcal, typeof(ConvergeConstraint), max: GetDailyCalories(), weight: 2, goal: maleElseFemale ? 2500 : 2000);
 
         // Auto-generate default p/f/c properties based on the above constraint
         ConstraintData proteinData = new();
@@ -225,7 +233,7 @@ public class Preferences : ICached, IVerbose
 
         // Default weight: 3
         SetConstraint(EConstraintType.Sugar, typeof(MinimiseConstraint), max: 30f, weight: 3);
-        SetConstraint(EConstraintType.SatFat, typeof(MinimiseConstraint), max: isMale ? 30f : 20f, weight: 3);
+        SetConstraint(EConstraintType.SatFat, typeof(MinimiseConstraint), max: maleElseFemale ? 30f : 20f, weight: 3);
         SetConstraint(EConstraintType.TransFat, typeof(MinimiseConstraint), max: 5f, weight: 3);
 
         // Default weight: 1
@@ -233,20 +241,20 @@ public class Preferences : ICached, IVerbose
         // The maximum is the highest "definitely safe" amount recommended by the NHS.
         SetConstraint(EConstraintType.Calcium, typeof(ConvergeConstraint), max: 1500f, weight: 1, goal: 700f);
 
-        bool moreIron = !isMale && (19 <= ageYears && ageYears <= 49);
+        bool moreIron = !maleElseFemale && (19 <= ageYears && ageYears <= 49);
         SetConstraint(EConstraintType.Iodine, typeof(ConvergeConstraint), max: 500f, weight: 1, goal: 140f);
         SetConstraint(EConstraintType.Iron, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: moreIron ? 14.8f : 8.7f);
 
-        SetConstraint(EConstraintType.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, goal: isMale ? 700 : 600);
-        SetConstraint(EConstraintType.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, goal: isMale ? 1 : 0.8f);
-        SetConstraint(EConstraintType.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, goal: isMale ? 1.3f : 1.1f);
-        SetConstraint(EConstraintType.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: isMale ? 16.5f : 13.2f);
-        SetConstraint(EConstraintType.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, goal: isMale ? 1.4f : 1.2f);
+        SetConstraint(EConstraintType.VitA, typeof(ConvergeConstraint), max: 1500, weight: 1, goal: maleElseFemale ? 700 : 600);
+        SetConstraint(EConstraintType.VitB1, typeof(ConvergeConstraint), max: 100, weight: 1, goal: maleElseFemale ? 1 : 0.8f);
+        SetConstraint(EConstraintType.VitB2, typeof(ConvergeConstraint), max: 40f, weight: 1, goal: maleElseFemale ? 1.3f : 1.1f);
+        SetConstraint(EConstraintType.VitB3, typeof(ConvergeConstraint), max: 17f, weight: 1, goal: maleElseFemale ? 16.5f : 13.2f);
+        SetConstraint(EConstraintType.VitB6, typeof(ConvergeConstraint), max: 10f, weight: 1, goal: maleElseFemale ? 1.4f : 1.2f);
         SetConstraint(EConstraintType.VitB9, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: isPregnant ? 400f : 200f);
         SetConstraint(EConstraintType.VitB12, typeof(ConvergeConstraint), max: 2000f, weight: 1, goal: 1.5f);
         SetConstraint(EConstraintType.VitC, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: 40f);
         SetConstraint(EConstraintType.VitD, typeof(ConvergeConstraint), max: 100f, weight: 1, goal: needsVitD ? 10 : 0); // Not needed if sunny.
-        SetConstraint(EConstraintType.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, goal: isMale ? 4 : 3);
+        SetConstraint(EConstraintType.VitE, typeof(ConvergeConstraint), max: 540f, weight: 1, goal: maleElseFemale ? 4 : 3);
         SetConstraint(EConstraintType.VitK1, typeof(ConvergeConstraint), max: 1000f, weight: 1, goal: weightKg); // Goal: 1 microgram per kg bodyweight.
 
         // Disable cost by default as it requires user input for each food they enable.

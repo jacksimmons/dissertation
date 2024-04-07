@@ -79,7 +79,7 @@ public class PreferencesHandler : SetupBehaviour
     /// </summary>
     private void SetBodyPreferenceUI()
     {
-        m_assignedSexText.text = "Assigned sex: " + (Preferences.Instance.isMale ? "Male" : "Female");
+        m_assignedSexText.text = "Assigned sex: " + (Preferences.Instance.maleElseFemale ? "Male" : "Female");
         m_isPregnantText.text = "Pregnancy: " + (Preferences.Instance.isPregnant ? "True" : "False");
         m_needsVitDText.text = "Vit D: " + (Preferences.Instance.needsVitD ? "True" : "False");
         m_weightInputField.text = Preferences.Instance.weightKg.ToString();
@@ -92,10 +92,10 @@ public class PreferencesHandler : SetupBehaviour
     //
     public void OnAssignedSexBtnPressed()
     {
-        OnBoolInputChanged(ref Preferences.Instance.isMale);
+        OnBoolInputChanged(ref Preferences.Instance.maleElseFemale);
 
         // Ensure conflicting parameters are set to correct values
-        if (Preferences.Instance.isMale) OnBoolInputChanged(ref Preferences.Instance.isPregnant, false);
+        if (Preferences.Instance.maleElseFemale) OnBoolInputChanged(ref Preferences.Instance.isPregnant, false);
 
         SetBodyPreferenceUI();
     }
@@ -104,7 +104,7 @@ public class PreferencesHandler : SetupBehaviour
     public void OnIsPregnantBtnPressed()
     {
         // Changing this parameter causes conflicts; don't change
-        if (Preferences.Instance.isMale) return;
+        if (Preferences.Instance.maleElseFemale) return;
 
         OnBoolInputChanged(ref Preferences.Instance.isPregnant);
 
