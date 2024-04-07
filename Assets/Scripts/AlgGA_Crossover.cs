@@ -1,3 +1,4 @@
+// Commented 7/4
 using System;
 using System.Collections.Generic;
 
@@ -83,13 +84,6 @@ public partial class AlgGA
                 massSum += mass;
             }
         }
-
-
-        // PATCHED: A bug could occur where the second child was given none of the portions.
-        //if (m_children.Item2.Mass == 0 && !(m_parentPortions.Count == 0))
-        //{
-        //    Logger.Error("Crossover was not split correctly.");
-        //}
 
 
         return children;
@@ -200,6 +194,7 @@ public partial class AlgGA
     {
         Portion right;
 
+        // If the cutoff point doesn't send all of the portion to the right child, need to divide it between the two children.
         if (exactCrossoverPt != 0)
         {
             Tuple<Portion, Portion> split = SplitPortion(portion, exactCrossoverPt);
@@ -236,9 +231,13 @@ public partial class AlgGA
     /// <returns>Two new portions, split from the original.</returns>
     private static Tuple<Portion, Portion> SplitPortion(Portion portion, int cutoffMass)
     {
+        // Split the portion into two parts, one for the left child and one for the right.
+        // The left child gets mass from 0 to cutoffMass.
+        // The right child gets mass from cutoffMass to (portionMass - cutoffMass).
         Portion left = new(portion.FoodType, cutoffMass);
         Portion right = new(portion.FoodType, portion.Mass - cutoffMass);
 
+        // If the portion didn't divide correctly, this indicates a negative mass was involved.
         if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
             Logger.Error($"Invalid cutoff mass: Portion mass: {portion.Mass}, Cutoff mass: {cutoffMass}");
 

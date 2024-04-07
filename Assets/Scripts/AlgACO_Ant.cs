@@ -1,3 +1,4 @@
+// Commented 7/4
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +12,25 @@ partial class AlgACO
     /// </summary>
     protected class Ant
     {
-        private static int s_numAnts;
-        public readonly int id;
+        /// <summary>
+        /// The algorithm this ant belongs to.
+        /// </summary>
         private readonly AlgACO m_colony;
 
+        /// <summary>
+        /// If true, this ant overwrites its path into the day population.
+        /// Can be set to false for testing ants.
+        /// </summary>
+        private readonly bool m_partOfPopulation;
+
+        /// <summary>
+        /// The index of the vertex (in the colony's portions) this ant starts at.
+        /// </summary>
         private readonly int m_startIndex;
 
+        /// <summary>
+        /// The current path this ant is travelling along.
+        /// </summary>
         public Day Path;
         public int PathLength => Path.portions.Count;
         public float Fitness
@@ -29,50 +43,52 @@ partial class AlgACO
         }
 
         public int LastIndex { get; private set; }
-        private HashSet<int> m_pathIndices;
 
-        private readonly bool m_partOfPopulation;
+        /// <summary>
+        /// A quick lookup for all indices the path contains.
+        /// </summary>
+        private HashSet<int> m_pathIndices;
 
 
         public Ant(AlgACO colony, int startIndex, bool partOfPopulation)
         {
+            // Init
             m_colony = colony;
-
             m_partOfPopulation = partOfPopulation;
             Path = new(m_colony);
-            if (partOfPopulation)
-            {
-                // 0, 1, 2, ...
-                id = s_numAnts;
-                s_numAnts++;
-                m_colony.AddToPopulation(Path);
-            }
-            else
-            {
-                id = -1;
-            }
-
             m_startIndex = startIndex;
 
-            // Initialise the path
+            // Insert path into the population, if necessary
+            if (partOfPopulation)
+            {
+                m_colony.AddToPopulation(Path);
+            }
+
+            // Initialise the path (after inserting into population)
             ResetPath();
         }
 
 
         /// <summary>
-        /// Reset the ant's path.
+        /// Reset the ant's path. The path must be inserted into the population
+        /// for this to work.
         /// </summary>
         public void ResetPath()
         {
             if (m_partOfPopulation)
+            // Ensure to remove the path from the population before resetting it
                 m_colony.RemoveFromPopulation(Path);
 
+            // Instantiate a new path, to reset it
             Path = new(m_colony);
-
+            
             if (m_partOfPopulation)
+            // Add the reset path back into the population
                 m_colony.AddToPopulation(Path);
 
+            // Reset the lookup for indices in the path
             m_pathIndices = new(Prefs.colonyPortions);
+
             AddIndex(m_startIndex);
         }
 
@@ -88,23 +104,31 @@ partial class AlgACO
         }
 
 
+        /// <summary>
+        /// Accessible method to check whether the provided index has been traversed by the current path.
+        /// </summary>
         public bool PathContains(int portionIndex)
         {
             return m_pathIndices.Contains(portionIndex);
         }
 
 
+        /// <summary>
+        /// Add pheromone to the matrix based on the fitness of the current path.
+        /// </summary>
         public void DepositPheromone()
         {
+            // A path with one vertex has no edges
             if (Path.portions.Count <= 1) return;
 
+            // A value representing path fitness
             float increment = Preferences.Instance.pheroImportance / Path.TotalFitness.Value;
+
+            // Increase pheromone for every edge on the path, based on the path's fitness
             for (int j = 1; j < Path.portions.Count; j++)
             {
                 m_colony.m_pheromone[j - 1, j] += increment;
             }
-
-            m_colony.m_pheromone[Path.portions.Count - 1, 0] += increment;
         }
 
 

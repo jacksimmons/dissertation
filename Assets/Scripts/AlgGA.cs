@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Commented 7/4
+using System;
 using System.Collections.Generic;
 
 
@@ -7,9 +8,9 @@ using System.Collections.Generic;
 /// </summary>
 public partial class AlgGA : Algorithm
 {
+    // Algorithm settings, based on preferences
     protected int m_numParents = (int)(Prefs.populationSize * (Prefs.proportionParents / 2)) * 2; // Cannot be odd
     protected int m_tournamentSize = Math.Min((int)(Prefs.populationSize * 0.2f), 2);
-
     private Func<List<Day>, bool, Day> m_selectionMethod;
 
 
@@ -121,7 +122,7 @@ public partial class AlgGA : Algorithm
         // Need to sort the list for Rank selection
         if (m_selectionMethod == RankSelection)
         {
-            // ! m_population.SortDayList(included);
+            included.Sort();
         }
 
         List<Day> allChildren = new();
@@ -143,7 +144,9 @@ public partial class AlgGA : Algorithm
         // Need to sort the list for Rank selection
         if (m_selectionMethod == RankSelection)
         {
-            // ! m_population.SortDayList(included, true);
+            // Sorts the list based on the Day IComparer implementation.
+            included.Sort();
+            included.Reverse();
         }
 
         List<Day> allDead = new();
@@ -171,6 +174,10 @@ public partial class AlgGA : Algorithm
     }
 
 
+    /// <summary>
+    /// Handles crossover and mutation.
+    /// </summary>
+    /// <returns>The two children.</returns>
     protected Tuple<Day, Day> Reproduction(Tuple<Day, Day> parents)
     {
         // --- Crossover ---
@@ -203,13 +210,16 @@ public partial class AlgGA : Algorithm
                 continue;
 
             Tuple<bool, int> result = MutatePortion(day.portions[i]);
+
+            // If the portion isn't to remain (the mutation led to a negative or 0 mass), remove it.
+            // Otherwise, set the new mutated mass.
             if (!result.Item1)
                 day.RemovePortion(i);
             else
                 day.SetPortionMass(i, result.Item2);
         }
 
-        // Add or remove portions entirely (rarely)
+        // Add or remove portions entirely as a mutation
         bool addPortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
         bool removePortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
 
@@ -248,6 +258,12 @@ public partial class AlgGA : Algorithm
     }
 
 
+    /// <summary>
+    /// Selects a pair of days from the population.
+    /// </summary>
+    /// <param name="included">The days that can be selected.</param>
+    /// <param name="selectBest">`true` if selecting the best, `false` if selecting the worst.</param>
+    /// <returns>The selected pair of days.</returns>
     public Tuple<Day, Day> PerformPairSelection(List<Day> included, bool selectBest)
     {
         Day selectedDayA = PerformSelection(included, selectBest);
@@ -259,6 +275,12 @@ public partial class AlgGA : Algorithm
     }
 
 
+    /// <summary>
+    /// Selects a single day from the population.
+    /// </summary>
+    /// <param name="included">The days that can be selected.</param>
+    /// <param name="selectBest">`true` if selecting the best, `false` if selecting the worst.</param>
+    /// <returns></returns>
     private Day PerformSelection(List<Day> included, bool selectBest)
     {
         if (included.Count == 0)
@@ -273,12 +295,11 @@ public partial class AlgGA : Algorithm
 
 
     /// <summary>
-    /// Returns the "first" best day in a list of randomly picked days.
+    /// Returns the "first" best day in a list of randomly picked days, based on a tournament selection process.
     /// ("first" meaning if two have identical fitness, the first in the list gets returned)
     /// </summary>
     /// <param name="included">The list of days to select from.</param>
     /// <param name="selectBest">`true` => Select the lowest fitness. `false` => Select the highest fitness.</param>
-    /// <returns></returns>
     public Day TournamentSelection(List<Day> included, bool selectBest)
     {
         int tournamentSize = Math.Min(included.Count, m_tournamentSize);
@@ -289,6 +310,11 @@ public partial class AlgGA : Algorithm
         List<Day> days = new(included);
         Day bestDay = null;
 
+        // Repeat (tournamentSize) times:
+        //  Select random individual, if its fitness < bestFitness
+        //  Then update bestFitness and set it as the best day.
+        // End Repeat
+        // Return best da
         for (int i = 0; i < tournamentSize; i++)
         {
             int index = Rand.Next(days.Count);
@@ -299,11 +325,15 @@ public partial class AlgGA : Algorithm
                 bestDay = day;
         }
 
-        // Guaranteed to not be null; if they all have infinite fitness, the first picked day will be returned.
-        return bestDay!;
+        return bestDay;
     }
 
 
+    /// <summary>
+    /// Returns a selected day from a sorted list of days; the lower the sort index, the higher the chance of selection.
+    /// </summary>
+    /// <param name="sortedIncluded">The sorted list of days to select from.</param>
+    /// <param name="selectBest">`true` => Select the lowest fitness. `false` => Select the highest fitness.</param>
     public Day RankSelection(List<Day> sortedIncluded, bool selectBest)
     {
         // Number of elements to select from
@@ -319,11 +349,5 @@ public partial class AlgGA : Algorithm
         // Select a rank with weighted random. This rank will correspond to an element in both population and `included`.
         int selectedRank = MathTools.GetFirstSurpassedProbability(rankProbs);
         return sortedIncluded[selectedRank];
-    }
-
-
-    public Day RandomSelection(List<Day> included, bool selectBest)
-    {
-        return included[Rand.Next(included.Count)];
     }
 }

@@ -122,19 +122,4 @@
 //        return sortedPop;
 //    }
 
-
-//    public void SortDayList(List<Day> days, bool reversed = false)
-//    {
-//        days.Sort((Day a, Day b) =>
-//        {
-//            float fA = GetFitness(a);
-//            float fB = GetFitness(b);
-
-//            if (fA < fB) return -1;
-//            if (fA == fB) return 0;
-//            return 1;
-//        });
-
-//        if (reversed) days.Reverse();
-//    }
 //}
