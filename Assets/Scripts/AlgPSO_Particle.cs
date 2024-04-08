@@ -50,7 +50,7 @@ partial class AlgPSO
         {
             if (a.m_vector.Length != b.m_vector.Length)
             {
-                Logger.Error("PSO: Invalid vector length in addition.");
+                Logger.Warn("PSO: Invalid vector length in addition.");
                 return null;
             }
 
@@ -133,7 +133,7 @@ partial class AlgPSO
             float[] pos = new float[m_swarm.Foods.Count];
             for (int i = 0; i < m_swarm.Foods.Count; i++)
             {
-                pos[i] = Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
+                pos[i] = MathTools.Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
             }
 
             m_position = new ParticleVector(pos);

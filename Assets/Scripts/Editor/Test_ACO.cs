@@ -5,7 +5,7 @@ public class Test_ACO : Test_HasPopulation
     [Test]
     public void RunTests()
     {
-        Preferences.Instance.CalculateDefaultConstraints();
+        Preferences.Instance.Reset();
 
         AlgACO aco = (AlgACO)Algorithm.Build(typeof(AlgACO));
         aco.Init();

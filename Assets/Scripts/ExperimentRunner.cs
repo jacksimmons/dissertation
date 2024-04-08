@@ -269,10 +269,6 @@ public class ExperimentRunner : SetupBehaviour
         for (int i = 0; i < numAlgs; i++)
         {
             runners[i] = new();
-            if (runners[i].Alg.DatasetError != "")
-            {
-                Logger.Error($"Dataset Error: {runners[i].Alg.DatasetError}");
-            }
         }
 
         AlgorithmResult[] results = new AlgorithmResult[numAlgs];

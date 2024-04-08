@@ -25,6 +25,10 @@ public partial class AlgGA
     /// <returns>Two children with only crossover applied.</returns>
     public Tuple<Day, Day> Crossover(Tuple<Day, Day> parents)
     {
+        // Only mutate if day has more than 0 portions.
+        if (parents.Item1.portions.Count == 0 || parents.Item2.portions.Count == 0)
+            Logger.Warn("Crossover: One of the provided parents has no portions.");
+
         Tuple<Day, Day> children = new(new(this), new(this));
 
         /// The sum of all portion masses before this one.
@@ -120,7 +124,7 @@ public partial class AlgGA
         for (int i = 0; i < num; i++)
         {
             // A random split between the two parents
-            float crossoverPoint = (float) Rand.NextDouble();
+            float crossoverPoint = (float)MathTools.Rand.NextDouble();
 
             float floatCutoffMass = massGrandTotal * crossoverPoint;
             int cutoffMass = (int)floatCutoffMass;
@@ -239,7 +243,7 @@ public partial class AlgGA
 
         // If the portion didn't divide correctly, this indicates a negative mass was involved.
         if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
-            Logger.Error($"Invalid cutoff mass: Portion mass: {portion.Mass}, Cutoff mass: {cutoffMass}");
+            Logger.Warn($"Invalid cutoff mass: Portion mass: {portion.Mass}, Cutoff mass: {cutoffMass}");
 
         return new(left, right);
     }

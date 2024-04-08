@@ -16,7 +16,7 @@ public class Test_Algorithm
     public void RunTests()
     {
         // Load in some sensible constraints to test on
-        Preferences.Instance.CalculateDefaultConstraints();
+        Preferences.Instance.Reset();
 
         NormalTest();
         BoundaryTest();
@@ -82,8 +82,7 @@ public class Test_Algorithm
         T temp = pref;
         pref = value;
 
-        // NormalTest can throw both Exception and TargetInvocationException but
-        // just checking that any exception is thrown is sufficient.
+        // Assert that this pref value would cause a Warn in normal execution.
         Assert.Throws(typeof(WarnException), NormalTest);
 
         // Reset old pref value and return

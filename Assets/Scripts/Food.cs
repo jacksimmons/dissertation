@@ -46,7 +46,6 @@ public class FoodData : IFood
             return this;
         }
 
-        Logger.Log(other);
         throw new InvalidOperationException($"Could not merge {CompositeKey} and {other.CompositeKey} - they don't represent the same food type.");
     }
 

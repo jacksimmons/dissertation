@@ -37,9 +37,7 @@ public class DatasetReader
     private readonly EConstraintType[] m_inorganicsColumns = new EConstraintType[19];
     private readonly EConstraintType[] m_vitaminsColumns = new EConstraintType[24];
 
-    public readonly string SetupError = "";
-
-
+    
     public DatasetReader(Preferences prefs, string proximatesFile = "Proximates", string inorganicsFile = "Inorganics", string vitaminsFile
         = "Vitamins")
     {
@@ -55,9 +53,9 @@ public class DatasetReader
             vitaminsData = Resources.Load<TextAsset>(vitaminsFile).text;
         }
         // Catch any sharing violation errors, permission errors, etc.
-        catch (Exception e)
+        catch
         {
-            SetupError = $"Message:\n{e.Message}\nStack Trace:\n{e.StackTrace}";
+            Logger.Warn("Unable to read dataset file. Please ensure you aren't using it with another program.");
             return;
         }
 
@@ -143,9 +141,8 @@ public class DatasetReader
                 {
                     if (m_prefs.acceptMissingNutrientValue[i])
                     {
-                        // User has accepted missing values for this type; set it to NaN to remind the user
-                        // that this data point is not to be trusted.
-                        data.Nutrients[i] = float.NaN;
+                        // User has opted to ignore missing values for this nutrient.
+                        data.Nutrients[i] = 0;
                         continue;
                     }
                     goto NextFood;

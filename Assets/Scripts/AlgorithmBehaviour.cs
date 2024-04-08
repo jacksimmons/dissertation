@@ -28,13 +28,6 @@ public class AlgorithmBehaviour : MonoBehaviour
     public void Init()
     {
         m_core = new();
-
-        if (Algorithm.DatasetError != "")
-        {
-            m_menu.ShowPopup("Error", Algorithm.DatasetError, Color.red);
-            return;
-        }
-
         ResetAlgorithmUI();
     }
 

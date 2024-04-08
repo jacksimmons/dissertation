@@ -1,5 +1,6 @@
 using NUnit.Framework;
 
+
 public abstract class Test_HasPopulation
 {
     protected void FitnessTest(Algorithm alg)

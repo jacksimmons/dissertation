@@ -63,14 +63,11 @@ public static class Logger
             case ELogSeverity.Warning:
                 Menu.ShowPopup("Warning", $"{message}", Color.red);
                 break;
-            case ELogSeverity.Error:
-                throw new Exception($"{message}");
         }
     }
 
 
     public static void Warn(object message) => Log(message, ELogSeverity.Warning);
-    public static void Error(object message) => Log(message, ELogSeverity.Error);
 }
 
 
@@ -189,7 +186,7 @@ public static class MathTools
 {
     // For grams stored as a float, gives precision of up to 1mg.
     public const float EPSILON = 1e-3f;
-    private static readonly Random m_rand = new();
+    public static Random Rand = new();
 
 
     /// <summary>
@@ -232,10 +229,10 @@ public static class MathTools
     {
         int length = probabilities.Length;
         if (length < 1)
-            Logger.Error("Invalid probability array had a length of < 1");
+            Logger.Warn("Invalid probability array had a length of < 1");
 
         // Clamp the probability to the range [EPSILON, 1 - EPSILON]
-        float probability = MathF.Max(MathF.Min((float)m_rand.NextDouble(), 1 - EPSILON), EPSILON);
+        float probability = MathF.Max(MathF.Min((float)Rand.NextDouble(), 1 - EPSILON), EPSILON);
 
         // Calculate which vertex was selected, through
         // a sum-of-probabilities check.
@@ -476,7 +473,14 @@ public static class PlotTools
         }
 
         // Write .dat data file
-        File.WriteAllText(dataFilePath, dataFileContent);
+        try
+        {
+            File.WriteAllText(dataFilePath, dataFileContent);
+        }
+        catch
+        {
+            Logger.Warn($"ConstructDataFile: Unable to write to file {dataFilePath}.");
+        }
     }
 
 
@@ -526,7 +530,14 @@ public static class PlotTools
         }
 
         // Write .gnuplot script file
-        File.WriteAllText(gnuplotScriptPath, gnuplotFile);
+        try
+        {
+            File.WriteAllText(gnuplotScriptPath, gnuplotFile);
+        }
+        catch
+        {
+            Logger.Warn($"ConstructGnuplotFile: Unable to write to file {gnuplotScriptPath}.");
+        }
     }
 
 

@@ -18,7 +18,7 @@ public class Test_GA
     [Test]
     public void RunTests()
     {
-        Preferences.Instance.CalculateDefaultConstraints();
+        Preferences.Instance.Reset();
 
         AlgGA ga = (AlgGA)Algorithm.Build(typeof(AlgGA));
         ga.Init();
@@ -37,10 +37,13 @@ public class Test_GA
         // Selection
         List<Day> gaDays = new(ga.Population);
         SelectionTest(ga, gaDays);
+        Tuple<Day, Day> parents = ga.PerformPairSelection(gaDays, true);
+
+        // Mutation
+        Tuple<Day, Day> children = MutationTest(ga, parents);
 
         // Crossover
-        gaDays = new(ga.Population);
-        CrossoverTest(ga, ga.PerformPairSelection(gaDays, true));
+        CrossoverTest(ga, children);
     }
 
 
@@ -54,20 +57,23 @@ public class Test_GA
         Day gaDay = ga.Population.ToList()[0];
         gaDays = new() { gaDay };
         SelectionTest(ga, gaDays);
-
-        // Crossover with no portions
-        Day parentA = new(ga); // No portions
-        Day parentB = new(ga);
-        FoodData food = new();
-        food.Nutrients[0] = 300;
-        CrossoverTest(ga, ga.PerformPairSelection(new() { parentA, parentB }, true));
     }
 
 
     private void ErroneousTest(AlgGA ga)
     {
-        // Selection of 0
-        Assert.Throws(typeof(Exception), () => SelectionTest(ga, new()));
+        // Selection of no days
+        Assert.Throws(typeof(WarnException), () => SelectionTest(ga, new()));
+
+        // Mutation with no portions
+        Day mutParentA = new(ga);
+        Day mutParentB = new(ga);
+        Assert.Throws(typeof(WarnException), () => MutationTest(ga, new(mutParentA, mutParentB)));
+
+        // Crossover with no portions
+        Day parentA = new(ga);
+        Day parentB = new(ga);
+        Assert.Throws(typeof(WarnException), () => CrossoverTest(ga, new(mutParentA, mutParentB)));
     }
 
 
@@ -89,6 +95,51 @@ public class Test_GA
             Assert.NotNull(ga.RankSelection(gaDays, true));
             Assert.NotNull(ga.RankSelection(gaDays, false));
         }
+    }
+
+
+    private Tuple<Day, Day> MutationTest(AlgGA ga, Tuple<Day, Day> parents)
+    {
+        // The children that result from a mutation must be the same as their parents, with maximum deviation
+        // being one portion added / removed, and changed mass on all portions.
+        Tuple<Day, Day> children = new(new(parents.Item1), new(parents.Item2));
+
+        ga.MutateDay(children.Item1);
+        ga.MutateDay(children.Item2);
+
+        int CountUniquePortions(Day a, Day b)
+        {
+            int uniquePortions = 0;
+            foreach (Portion pa in a.portions)
+            {
+                foreach (Portion pb in b.portions)
+                {
+                    // A portion match was found, so skip incrementing uniquePortions,
+                    // while still breaking out of the inner loop.
+                    if (pa.FoodType == pb.FoodType)
+                    {
+                        goto noDeviation;
+                    }
+                }
+                uniquePortions++;
+
+            noDeviation:
+                continue;
+            }
+            return uniquePortions;
+        }
+
+
+        // Ensure that the child has a maximum of one portion more than the parent.
+        void CheckParentAndChild(Day p, Day c)
+        {
+            Assert.True(CountUniquePortions(c, p) <= 1);
+        }
+
+
+        CheckParentAndChild(parents.Item1, children.Item1);
+        CheckParentAndChild(parents.Item2, children.Item2);
+        return children;
     }
 
 

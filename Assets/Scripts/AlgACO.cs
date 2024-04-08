@@ -43,7 +43,7 @@ public partial class AlgACO : Algorithm
         ActOnMatrix(m_fitnesses, (int i, int j, float _) =>
         {
             m_fitnesses[i, j] = CalculateEdgeFitness(i, j);
-            m_pheromone[i, j] = (float)Rand.NextDouble();
+            m_pheromone[i, j] = (float)MathTools.Rand.NextDouble();
         });
 
         // Create ants
@@ -265,12 +265,12 @@ public partial class AlgACO : Algorithm
             fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
             fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);
 
-            pheromone[i, worstIndex] = (float)Rand.NextDouble();
-            pheromone[worstIndex, i] = (float)Rand.NextDouble();
+            pheromone[i, worstIndex] = (float)MathTools.Rand.NextDouble();
+            pheromone[worstIndex, i] = (float)MathTools.Rand.NextDouble();
         }
 
 
         // Reset pheromone
-        ActOnMatrix(pheromone, (int i, int j, float _) => pheromone[i, j] = (float)Rand.NextDouble());
+        ActOnMatrix(pheromone, (int i, int j, float _) => pheromone[i, j] = (float)MathTools.Rand.NextDouble());
     }
 }

@@ -93,7 +93,7 @@ public readonly struct ExperimentResult : IVerbose
     public ExperimentResult(AlgorithmSetResult[] sets, object[] steps, string name)
     {
         if (sets.Length < 1)
-            Logger.Error($"Could not construct ExperimentResult from {sets.Length} AlgorithmSetResults.");
+            Logger.Warn($"Could not construct ExperimentResult from {sets.Length} AlgorithmSetResults.");
 
         Sets = sets;
         Steps = steps;

@@ -6,8 +6,6 @@ using System.Linq;
 
 public abstract class Algorithm
 {
-    protected static Random Rand { get; } = new();
-
     // Shorthand for Preferences.Instance
     protected static Preferences Prefs => Preferences.Instance;
 
@@ -27,7 +25,7 @@ public abstract class Algorithm
     // Preferences.Instance.minPortionMass and Preferences.Instance.maxPortionMass can drastically change the
     // size of this in memory. (By default, it is about 3M elements, or at least 3MB)
     protected Portion[] m_portions = Array.Empty<Portion>();
-    protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
+    protected Portion RandomPortion => m_portions[MathTools.Rand.Next(m_portions.Length)];
 
     private readonly Dictionary<EConstraintType, float> m_prevAvgPopStats = new(); // Stores the average constraint amount for the whole population from last iteration.
 
@@ -56,8 +54,6 @@ public abstract class Algorithm
     /// </summary>
     public int BestIteration { get; private set; } = 0;
 
-    public readonly string DatasetError = ""; // Stores any errors which occur during the dataset stage, to display to the user instead of running.
-
 
     // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
     /// <summary>
@@ -68,7 +64,7 @@ public abstract class Algorithm
     public static Algorithm Build(Type algType)
     {
         if (!algType.IsSubclassOf(typeof(Algorithm)))
-            Logger.Error($"Invalid Algorithm type: {algType.FullName!}.");
+            Logger.Warn($"Invalid Algorithm type: {algType.FullName!}.");
 
         return (Algorithm)Activator.CreateInstance(algType)!;
     }
@@ -78,11 +74,6 @@ public abstract class Algorithm
     {
         // Load foods from the dataset, and store any errors that occurred.
         DatasetReader dr = new(Prefs);
-        DatasetError = dr.SetupError;
-
-        if (DatasetError != "") // Thrown in Init
-            return;
-
         m_foods = new(dr.ProcessFoods());
         Foods = new(m_foods);
 
@@ -132,9 +123,6 @@ public abstract class Algorithm
     {
         // Handle potential errors.
         string errorText = "";
-
-        if (DatasetError != "")
-            errorText = DatasetError;
 
         if (Preferences.Instance.acoAlpha <= 0)
             errorText = "Invalid parameter: acoAlpha was <= 0.";

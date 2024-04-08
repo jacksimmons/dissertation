@@ -174,7 +174,9 @@ public abstract class Constraint
             EConstraintType.Kcal => "kcal",
 
             EConstraintType.Cost => "£",
-            _ => throw new ArgumentOutOfRangeException(nameof(nutrient)),
+
+            // An invalid cast to the enum.
+            _ => throw new InvalidCastException(nameof(nutrient)),
         };
     }
 }

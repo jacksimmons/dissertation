@@ -42,7 +42,7 @@ public class Preferences : ICached, IVerbose
             if (m_instance != null) return m_instance;
 
             // This will automatically Cache() the preferences, so no need to update m_instance.
-            return Saving.LoadFromFile<Preferences>("Preferences.json");
+            return Saving.LoadPreferences();
         }
     }
     public void Cache() { m_instance = this; }
@@ -80,22 +80,22 @@ public class Preferences : ICached, IVerbose
     // Food Groups
     //
     
-    public bool eatsLandMeat = true; // Carnivore, Lactose-Intolerant
-    public bool eatsSeafood = true; // Carnivore, Pescatarian, LI
-    public bool eatsAnimalProduce = true; // Vegetarian, LI
-    public bool eatsLactose = true; // Vegetarian, i.e. no Milk
+    public bool eatsLandMeat; // Carnivore, Lactose-Intolerant
+    public bool eatsSeafood; // Carnivore, Pescatarian, LI
+    public bool eatsAnimalProduce; // Vegetarian, LI
+    public bool eatsLactose; // Vegetarian, i.e. no Milk
 
 
     //
     // User Info
     //
     
-    public bool maleElseFemale = true;
-    public bool isPregnant = false;
-    public bool needsVitD = true;
-    public int ageYears = 20;
-    public float weightKg = 70;
-    public float heightCm = 160;
+    public bool maleElseFemale;
+    public bool isPregnant;
+    public bool needsVitD;
+    public int ageYears;
+    public float weightKg;
+    public float heightCm;
 
 
     //
@@ -114,43 +114,43 @@ public class Preferences : ICached, IVerbose
     // Algorithm settings
     //
 
-    public int populationSize = 10;
-    public int numStartingPortionsPerDay = 1;
-    public int minPortionMass = 1;
-    public int maxPortionMass = 500;
-    public int maxDayMass = 500;
-    public bool addFitnessForMass = true;
-    public string algorithmType = ALG_TYPES[0];
-    public EFitnessApproach fitnessApproach = EFitnessApproach.SummedFitness;
+    public int populationSize;
+    public int numStartingPortionsPerDay;
+    public int minPortionMass;
+    public int maxPortionMass;
+    public int maxDayMass;
+    public bool addFitnessForMass;
+    public string algorithmType;
+    public EFitnessApproach fitnessApproach;
 
 
     //
     // GA-specific settings
     //
     
-    public int mutationMassChangeMin = 1;
-    public int mutationMassChangeMax = 10;
+    public int mutationMassChangeMin;
+    public int mutationMassChangeMax;
     
     // Chance for any portion to be mutated in an algorithm pass.
     // Is divided by the number of portions in the calculation.
-    public float changePortionMassMutationProb = 1f;
+    public float changePortionMassMutationProb;
     
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // 0 or 1 -> No convergence
-    public float addOrRemovePortionMutationProb = 0.1f;
+    public float addOrRemovePortionMutationProb;
     
     // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
     // program as this approaches 1.
-    public float proportionParents = 0.5f;
+    public float proportionParents;
     
     // Must be in the range [1, 2]
-    public float selectionPressure = 1.5f;
+    public float selectionPressure;
     
     // crossoverPoints-point crossover. Set this to 2 for 2-point crossover, etc.
-    public int crossoverPoints = 1;
+    public int crossoverPoints;
     
     // Selection method
-    public ESelectionMethod selectionMethod = ESelectionMethod.Tournament;
+    public ESelectionMethod selectionMethod;
 
 
     //
@@ -160,18 +160,18 @@ public class Preferences : ICached, IVerbose
     // Number of iterations before replacing the worst food.
     // High value => Deeper search (more iterations for evaluation)
     // Low value => Wider search (more foods)
-    public int colonyStagnationIters = 50;
+    public int colonyStagnationIters;
 
-    public bool elitist = false;
-    public int colonyPortions = 10;
+    public bool elitist;
+    public int colonyPortions;
 
-    public float pheroImportance = 1f;
-    public float pheroEvapRate = 0.1f;
+    public float pheroImportance;
+    public float pheroEvapRate;
 
     // Probability calculation variables
-    public float acoAlpha = 1f;      // Pheromone exponent
-    public float acoBeta = 1f;       // Desirability exponent
-    public float defaultPheromone = 1f;
+    public float acoAlpha;      // Pheromone exponent
+    public float acoBeta;       // Desirability exponent
+    public float defaultPheromone;
 
 
     //
@@ -181,31 +181,70 @@ public class Preferences : ICached, IVerbose
     /// <summary>
     /// The acceleration coefficient relating particle best and current position.
     /// </summary>
-    public float pAccCoefficient = 1;
+    public float pAccCoefficient;
 
     /// <summary>
     /// The acceleration coefficient relating global best and current position.
     /// </summary>
-    public float gAccCoefficient = 1;
+    public float gAccCoefficient;
 
 
-    //
-    // Experiment settings
-    //
-    // Max fitness value plotted on the output graph.
-    public const int MAX_FITNESS = 50_000;
-    // Any fitness below this will be assigned maximum selection pressure.
-    public const int CRITICAL_FITNESS = 1_000;
-
-
-    // By default, the user's settings should permit every food type - this
-    // best fits the average person.
     public Preferences()
     {
+        Reset();
+    }
+
+
+    /// <summary>
+    /// Resets all preferences to their default values.
+    /// </summary>
+    public void Reset()
+    {
+        eatsLandMeat = true;
+        eatsSeafood = true;
+        eatsAnimalProduce = true;
+        eatsLactose = true;
+
+        ageYears = 18;
+        weightKg = 70;
+        heightCm = 160;
+
+        populationSize = 10;
+        numStartingPortionsPerDay = 1;
+        minPortionMass = 1;
+        maxPortionMass = 500;
+        maxDayMass = 500;
+        addFitnessForMass = true;
+        algorithmType = ALG_TYPES[0];
+        fitnessApproach = EFitnessApproach.SummedFitness;
+
+        mutationMassChangeMin = 1;
+        mutationMassChangeMax = 10;
+        changePortionMassMutationProb = 1f;
+        addOrRemovePortionMutationProb = 0.1f;
+        proportionParents = 0.5f;
+        selectionPressure = 1.5f;
+        crossoverPoints = 1;
+        selectionMethod = ESelectionMethod.Tournament;
+
+        colonyStagnationIters = 50;
+        colonyPortions = 10;
+        pheroImportance = 1f;
+        pheroEvapRate = 0.1f;
+        acoAlpha = 1f;      // Pheromone exponent
+        acoBeta = 1f;       // Desirability exponent
+        defaultPheromone = 1f;
+
+        pAccCoefficient = 1;
+        gAccCoefficient = 1;
+
         CalculateDefaultConstraints();
     }
 
 
+    /// <summary>
+    /// Calculates constraint values based on user preferences.
+    /// </summary>
     public void CalculateDefaultConstraints()
     {
         // Calculates daily calories based on the Harris-Benedict equations.
@@ -216,7 +255,8 @@ public class Preferences : ICached, IVerbose
             return 655.0955f + 9.5634f * weightKg + 1.8496f * heightCm - 4.6756f * ageYears;
         }
 
-        SetConstraint(EConstraintType.Kcal, typeof(ConvergeConstraint), max: GetDailyCalories(), weight: 2, goal: maleElseFemale ? 2500 : 2000);
+        float kcalGoal = GetDailyCalories();
+        SetConstraint(EConstraintType.Kcal, typeof(ConvergeConstraint), max: kcalGoal * 1.5f, weight: 2, goal: kcalGoal);
 
         // Auto-generate default p/f/c properties based on the above constraint
         ConstraintData proteinData = new();
@@ -290,6 +330,12 @@ public class Preferences : ICached, IVerbose
     }
 
 
+    /// <summary>
+    /// Checks if a composite key has a custom food setting. If so, returns it. If not, throws.
+    /// </summary>
+    /// <param name="key">The composite key.</param>
+    /// <returns>The custom settings, if there are any.</returns>
+    /// <exception cref="KeyNotFoundException">exception>
     public CustomFoodSettings TryGetSettings(string key)
     {
         foreach (var cfs in customFoodSettings)

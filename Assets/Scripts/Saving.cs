@@ -14,18 +14,34 @@ public static class Saving
     /// </summary>
     public static void SavePreferences()
     {
-        SaveToFile(Preferences.Instance, "Preferences.json");
-        Logger.Log("Saved preferences.");
+        try
+        {
+            SaveToFile(Preferences.Instance, "Preferences.json");
+            Logger.Log("Saved preferences.");
+        }
+        catch
+        {
+            Logger.Warn("Unable to save to Preferences.json. Please ensure you don't have it open in a text editor.");
+        }
     }
 
 
     /// <summary>
     /// Loads preferences from disk into the static Preferences instance.
     /// </summary>
-    public static void LoadPreferences()
+    public static Preferences LoadPreferences()
     {
-        LoadFromFile<Preferences>("Preferences.json");
-        Logger.Log("Loaded preferences.");
+        try
+        {
+            Preferences p = LoadFromFile<Preferences>("Preferences.json");
+            Logger.Log("Loaded preferences.");
+            return p;
+        }
+        catch
+        {
+            Logger.Warn("Unable to load Preferences.json. Please ensure you don't have it open in a text editor.");
+            return new();
+        }
     }
 
 
@@ -33,7 +49,7 @@ public static class Saving
     /// Serialises objects and saves them to a given file location.
     /// Also calls .Cache() on the object beforehand if it : ICached.
     /// </summary>
-    public static void SaveToFile<T>(T serializable, string filename)
+    private static void SaveToFile<T>(T serializable, string filename)
     {
         if (serializable is ICached cached)
             cached.Cache();
@@ -56,7 +72,7 @@ public static class Saving
     /// Deserialises a serialised object stored in a file.
     /// Calls .Cache() on the object if it : ICached.
     /// </summary>
-    public static T LoadFromFile<T>(string filename) where T : new()
+    private static T LoadFromFile<T>(string filename) where T : new()
     {
         string dest = Application.persistentDataPath + "/" + filename;
 

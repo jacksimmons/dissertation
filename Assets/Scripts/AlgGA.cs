@@ -192,73 +192,6 @@ public partial class AlgGA : Algorithm
 
 
     /// <summary>
-    /// Handles mutation for a single Day object, and delegates to MutatePortion
-    /// for all portions in its list.
-    /// </summary>
-    /// <param name="day">The day to mutate.</param>
-    private void MutateDay(Day day)
-    {
-        // Only mutate if day has more than 0 portions.
-        if (day.portions.Count == 0)
-            Logger.Error("Day has no portions");
-
-        // Mutate existing portions (add/remove mass)
-        for (int i = 0; i < day.portions.Count; i++)
-        {
-            // Exit early if the portion is not to be mutated
-            if ((float)Rand.NextDouble() > Prefs.changePortionMassMutationProb / day.portions.Count)
-                continue;
-
-            Tuple<bool, int> result = MutatePortion(day.portions[i]);
-
-            // If the portion isn't to remain (the mutation led to a negative or 0 mass), remove it.
-            // Otherwise, set the new mutated mass.
-            if (!result.Item1)
-                day.RemovePortion(i);
-            else
-                day.SetPortionMass(i, result.Item2);
-        }
-
-        // Add or remove portions entirely as a mutation
-        bool addPortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
-        bool removePortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
-
-        if (addPortion)
-            day.AddPortion(RandomPortion);
-
-        if (removePortion)
-            day.RemovePortion(Rand.Next(day.portions.Count));
-    }
-
-
-    /// <summary>
-    /// Applies mutation to a single Portion object.
-    /// </summary>
-    /// <param name="portion">The portion to mutate.</param>
-    /// <returns>Tuple of:
-    /// Item1:
-    /// A boolean of whether the portion remains.
-    /// True => Leave the portion, False => Delete the portion.
-    /// Item2:
-    /// The new mass of the portion.</returns>
-    private Tuple<bool, int> MutatePortion(Portion portion)
-    {
-        // The sign of the mass change (1 => add, -1 => subtract)
-        int sign = Rand.Next(2) == 1 ? 1 : -1;
-        int mass = portion.Mass;
-        int massDiff = Rand.Next(Prefs.mutationMassChangeMin, Prefs.mutationMassChangeMax);
-
-        // If the new mass is zero or negative, the portion ceases to exist.
-        if (mass + sign * massDiff <= 0)
-            return new(false, mass);
-
-        // Otherwise, add to the portion's mass.
-        mass += sign * massDiff;
-        return new(true, mass);
-    }
-
-
-    /// <summary>
     /// Selects a pair of days from the population.
     /// </summary>
     /// <param name="included">The days that can be selected.</param>
@@ -285,7 +218,7 @@ public partial class AlgGA : Algorithm
     {
         if (included.Count == 0)
         {
-            Logger.Error("Included cannot be empty when performing selection.");
+            Logger.Warn("Included cannot be empty when performing selection.");
             return null;
         }
         if (included.Count == 1) return included[0];
@@ -305,7 +238,7 @@ public partial class AlgGA : Algorithm
         int tournamentSize = Math.Min(included.Count, m_tournamentSize);
 
         if (tournamentSize == 0)
-            Logger.Error("Tournament size must be positive and non-zero.");
+            Logger.Warn("Tournament size must be positive and non-zero.");
 
         List<Day> days = new(included);
         Day bestDay = null;
@@ -317,7 +250,7 @@ public partial class AlgGA : Algorithm
         // Return best da
         for (int i = 0; i < tournamentSize; i++)
         {
-            int index = Rand.Next(days.Count);
+            int index = MathTools.Rand.Next(days.Count);
             Day day = days[index];
             days.RemoveAt(index);
 
@@ -349,5 +282,72 @@ public partial class AlgGA : Algorithm
         // Select a rank with weighted random. This rank will correspond to an element in both population and `included`.
         int selectedRank = MathTools.GetFirstSurpassedProbability(rankProbs);
         return sortedIncluded[selectedRank];
+    }
+
+
+    /// <summary>
+    /// Handles mutation for a single Day object, and delegates to MutatePortion
+    /// for all portions in its list.
+    /// </summary>
+    /// <param name="day">The day to mutate.</param>
+    public void MutateDay(Day day)
+    {
+        // Only mutate if day has more than 0 portions.
+        if (day.portions.Count == 0)
+            Logger.Warn("Mutation: The provided parent has no portions.");
+
+        // Mutate existing portions (add/remove mass)
+        for (int i = 0; i < day.portions.Count; i++)
+        {
+            // Exit early if the portion is not to be mutated
+            if ((float)MathTools.Rand.NextDouble() > Prefs.changePortionMassMutationProb / day.portions.Count)
+                continue;
+
+            Tuple<bool, int> result = MutatePortion(day.portions[i]);
+
+            // If the portion isn't to remain (the mutation led to a negative or 0 mass), remove it.
+            // Otherwise, set the new mutated mass.
+            if (!result.Item1)
+                day.RemovePortion(i);
+            else
+                day.SetPortionMass(i, result.Item2);
+        }
+
+        // Add or remove portions entirely as a mutation
+        bool addPortion = (float)MathTools.Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
+        bool removePortion = (float)MathTools.Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
+
+        if (addPortion)
+            day.AddPortion(RandomPortion);
+
+        if (removePortion)
+            day.RemovePortion(MathTools.Rand.Next(day.portions.Count));
+    }
+
+
+    /// <summary>
+    /// Applies mutation to a single Portion object.
+    /// </summary>
+    /// <param name="portion">The portion to mutate.</param>
+    /// <returns>Tuple of:
+    /// Item1:
+    /// A boolean of whether the portion remains.
+    /// True => Leave the portion, False => Delete the portion.
+    /// Item2:
+    /// The new mass of the portion.</returns>
+    private Tuple<bool, int> MutatePortion(Portion portion)
+    {
+        // The sign of the mass change (1 => add, -1 => subtract)
+        int sign = MathTools.Rand.Next(2) == 1 ? 1 : -1;
+        int mass = portion.Mass;
+        int massDiff = MathTools.Rand.Next(Prefs.mutationMassChangeMin, Prefs.mutationMassChangeMax);
+
+        // If the new mass is zero or negative, the portion ceases to exist.
+        if (mass + sign * massDiff <= 0)
+            return new(false, mass);
+
+        // Otherwise, add to the portion's mass.
+        mass += sign * massDiff;
+        return new(true, mass);
     }
 }

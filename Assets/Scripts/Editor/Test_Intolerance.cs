@@ -84,7 +84,7 @@ public class Test_Intolerance
     public void BannedFoodsNormalTest()
     {
         // Load sensible constraints to test on
-        Preferences.Instance.CalculateDefaultConstraints();
+        Preferences.Instance.Reset();
 
         Preferences.Instance.customFoodSettings = new();
 

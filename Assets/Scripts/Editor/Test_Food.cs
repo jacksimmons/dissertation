@@ -67,6 +67,7 @@ public class Test_Food
     private void WorstVsBestTest(ConstraintData[] constraints)
     {
         // Set preferences
+        Preferences.Instance.Reset();
         Preferences.Instance.constraints = constraints;
 
         AlgTest algTest = new();

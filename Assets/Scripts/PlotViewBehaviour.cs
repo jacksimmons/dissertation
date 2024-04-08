@@ -132,9 +132,17 @@ public class PlotViewBehaviour : MonoBehaviour
         Texture2D texture = new(1, 1);
 
         // Read the image as a binary file, and load it into the texture
-        texture.LoadImage(File.ReadAllBytes(path));
+        try
+        {
+            texture.LoadImage(File.ReadAllBytes(path));
+            return texture;
+        }
+        catch
+        {
+            Logger.Warn("Plot View: Unable to read the next plot image file. Please ensure you don't have it open.");
+            return new(0, 0);
+        }
 
-        return texture;
     }
 
 
