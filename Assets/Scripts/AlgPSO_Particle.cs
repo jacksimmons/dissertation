@@ -1,18 +1,25 @@
 using System;
-using System.Linq;
-using System.Numerics;
+
 
 partial class AlgPSO
 {
+    /// <summary>
+    /// A class representing a vector in N-D space, where N is the number of foods
+    /// extracted from the database. Each scalar in the vector represents an integer
+    /// mass of its dimension (food type).
+    /// </summary>
     protected class ParticleVector
     {
-        private readonly float[] m_vector;
+        /// <summary>
+        /// The underlying datastructure of the vector: an int array of length N.
+        /// </summary>
+        private readonly int[] m_vector;
 
 
         /// <summary>
-        /// Indexer property.
+        /// Indexer property. Allows objects to be indexed like name[num].
         /// </summary>
-        public float this[int i]
+        public int this[int i]
         {
             get
             {
@@ -26,16 +33,30 @@ partial class AlgPSO
         /// </summary>
         public ParticleVector(int length)
         {
-            m_vector = new float[length];
+            m_vector = new int[length];
         }
 
 
         /// <summary>
         /// Constructor with a predetermined internal structure.
         /// </summary>
-        public ParticleVector(float[] vector)
+        public ParticleVector(int[] vector)
         {
             m_vector = vector;
+        }
+
+
+        /// <summary>
+        /// Multiplies a vector by a scalar value and returns it.
+        /// </summary>
+        public static ParticleVector Mult(ParticleVector vec, float scalar)
+        {
+            for (int i = 0; i < vec.m_vector.Length; i++)
+            {
+                vec.m_vector[i] = (int)(vec.m_vector[i] * scalar);
+            }
+
+            return vec;
         }
 
 
@@ -57,20 +78,28 @@ partial class AlgPSO
             ParticleVector c = new(a.m_vector.Length);
             for (int i = 0; i < c.m_vector.Length; i++)
             {
-                // Perform the calculation, ensuring no vector values go below 0.
-                c.m_vector[i] = a.m_vector[i] + multiplier * b.m_vector[i];
+                // This can lead to negative results, so use the Normalise function for masses.
+                c.m_vector[i] = a.m_vector[i] + (int)(multiplier * b.m_vector[i]);
             }
 
             return c;
         }
 
 
+        /// <summary>
+        /// Adds two ParticleVector objects together.
+        /// </summary>
+        /// <returns>The result.</returns>
         public static ParticleVector Add(ParticleVector a, ParticleVector b)
         {
             return MultAndAdd(a, b, 1);
         }
 
 
+        /// <summary>
+        /// Subtracts `b` from `a`, where `a` and `b` are ParticleVector objects.
+        /// </summary>
+        /// <returns>The result.</returns>
         public static ParticleVector Subtract(ParticleVector a, ParticleVector b)
         {
             return MultAndAdd(a, b, -1);
@@ -78,7 +107,7 @@ partial class AlgPSO
 
 
         /// <summary>
-        /// Ensure all elements in the vector are >= 0.
+        /// Sets any vector values less than 0 to 0.
         /// </summary>
         public void Normalise()
         {
@@ -92,30 +121,26 @@ partial class AlgPSO
 
     /// <summary>
     /// A particle which moves around the search space, where each dimension
-    /// is a food from the dataset. This leads to quite large velocity arrays.
-    /// 
-    /// 
+    /// is a food from the dataset. This leads to high-dimensional velocities.
     /// </summary>
     protected class Particle
     {
+        /// <summary>
+        /// The swarm this Particle is a part of.
+        /// </summary>
         private AlgPSO m_swarm;
-
 
         /// <summary>
         /// The position of the particle. In physical terms, for each index this
         /// represents the mass of the food at this index.
-        /// 
-        /// ! Casted down to int
         /// </summary>
         private ParticleVector m_position;
-
 
         /// <summary>
         /// An N-dimensional velocity, where N is the number of foods.
         /// Defaults to the 0-vector.
         /// </summary>
         private ParticleVector m_velocity;
-
 
         /// <summary>
         /// The particle's best position.
@@ -130,10 +155,10 @@ partial class AlgPSO
             m_swarm = swarm;
 
             // Randomly initialise the position
-            float[] pos = new float[m_swarm.Foods.Count];
+            int[] pos = new int[m_swarm.Foods.Count];
             for (int i = 0; i < m_swarm.Foods.Count; i++)
             {
-                pos[i] = MathTools.Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
+                pos[i] = m_swarm.Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
             }
 
             m_position = new ParticleVector(pos);
@@ -141,6 +166,7 @@ partial class AlgPSO
 
             // Initialise the pbest as the starting position
             m_pbest = new(pos);
+            CheckIfGBest(m_pbestDay, m_position);
         }
 
 
@@ -158,10 +184,6 @@ partial class AlgPSO
         private void UpdatePosition()
         {
             m_position = ParticleVector.MultAndAdd(m_position, m_velocity);
-
-            // Only normalise the position so the solutions make physical sense.
-            // Any incredibly negative velocity elements will just set the
-            // corresponding position element to 0.
             m_position.Normalise();
 
             Day day = GetPositionDay();
@@ -180,7 +202,7 @@ partial class AlgPSO
             Day day = new(m_swarm);
             for (int i = 0; i < m_swarm.Foods.Count; i++)
             {
-                int mass = (int)MathF.Ceiling(m_position[i]);
+                int mass = m_position[i];
                 if (mass == 0) continue; // Don't add any empty portions
 
                 day.AddPortion(new(m_swarm.Foods[i], mass));
@@ -228,8 +250,9 @@ partial class AlgPSO
             ParticleVector pbestMinusPos = ParticleVector.Subtract(m_pbest, m_position);
             ParticleVector gbestMinusPos = ParticleVector.Subtract(m_swarm.m_gbest, m_position);
 
-            m_velocity = ParticleVector.Add(m_velocity, pbestMinusPos);
-            m_velocity = ParticleVector.Add(m_velocity, gbestMinusPos);
+            m_velocity = ParticleVector.Mult(m_velocity, Prefs.inertialWeight);
+            m_velocity = ParticleVector.MultAndAdd(m_velocity, pbestMinusPos, Prefs.pAccCoefficient);
+            m_velocity = ParticleVector.MultAndAdd(m_velocity, gbestMinusPos, Prefs.gAccCoefficient);
         }
     }
 }

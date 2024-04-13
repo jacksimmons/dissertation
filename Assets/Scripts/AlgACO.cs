@@ -32,6 +32,29 @@ public partial class AlgACO : Algorithm
     {
         if (!base.Init()) return false;
 
+        string errorText = "";
+
+        if (Preferences.Instance.acoAlpha <= 0)
+            errorText = $"Invalid parameter: acoAlpha ({Preferences.Instance.acoAlpha}) must be greater than 0.";
+
+        if (Preferences.Instance.acoBeta <= 0)
+            errorText = $"Invalid parameter: acoBeta ({Preferences.Instance.acoBeta}) must be greater than 0.";
+
+        if (Preferences.Instance.colonyPortions < 1)
+            errorText = $"Invalid parameter: colonyPortions ({Preferences.Instance.colonyPortions}) must be greater than or equal to 1.";
+
+        if (Preferences.Instance.colonyStagnationIters < 1)
+            errorText = $"Invalid parameter: colonyStagnationIters ({Preferences.Instance.colonyStagnationIters}) must be greater than or equal to 1.";
+
+        if (Preferences.Instance.pheroEvapRate > 1)
+            errorText = $"Invalid parameter: pheroEvapRate ({Preferences.Instance.pheroEvapRate}) must be in the range [0,1].";
+
+        if (errorText != "")
+        {
+            Logger.Warn(errorText);
+            return false;
+        }
+
         // Create vertices
         for (int i = 0; i < Prefs.colonyPortions; i++)
         {
@@ -43,7 +66,7 @@ public partial class AlgACO : Algorithm
         ActOnMatrix(m_fitnesses, (int i, int j, float _) =>
         {
             m_fitnesses[i, j] = CalculateEdgeFitness(i, j);
-            m_pheromone[i, j] = (float)MathTools.Rand.NextDouble();
+            m_pheromone[i, j] = (float)Rand.NextDouble();
         });
 
         // Create ants
@@ -265,12 +288,12 @@ public partial class AlgACO : Algorithm
             fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
             fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);
 
-            pheromone[i, worstIndex] = (float)MathTools.Rand.NextDouble();
-            pheromone[worstIndex, i] = (float)MathTools.Rand.NextDouble();
+            pheromone[i, worstIndex] = (float)Rand.NextDouble();
+            pheromone[worstIndex, i] = (float)Rand.NextDouble();
         }
 
 
         // Reset pheromone
-        ActOnMatrix(pheromone, (int i, int j, float _) => pheromone[i, j] = (float)MathTools.Rand.NextDouble());
+        ActOnMatrix(pheromone, (int i, int j, float _) => pheromone[i, j] = (float)Rand.NextDouble());
     }
 }

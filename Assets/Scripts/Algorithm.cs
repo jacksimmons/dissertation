@@ -1,3 +1,4 @@
+// Commented 8/4
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,6 +9,9 @@ public abstract class Algorithm
 {
     // Shorthand for Preferences.Instance
     protected static Preferences Prefs => Preferences.Instance;
+
+    // Instance-variable Random Instance, to ensure thread-safety.
+    protected Random Rand = new();
 
     // All of the foods that were extracted from the dataset (aligning with user diet preferences), minus the foods
     // the user specifically banned.
@@ -25,7 +29,8 @@ public abstract class Algorithm
     // Preferences.Instance.minPortionMass and Preferences.Instance.maxPortionMass can drastically change the
     // size of this in memory. (By default, it is about 3M elements, or at least 3MB)
     protected Portion[] m_portions = Array.Empty<Portion>();
-    protected Portion RandomPortion => m_portions[MathTools.Rand.Next(m_portions.Length)];
+    public ReadOnlyCollection<Portion> Portions { get; }
+    protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
 
     private readonly Dictionary<EConstraintType, float> m_prevAvgPopStats = new(); // Stores the average constraint amount for the whole population from last iteration.
 
@@ -95,6 +100,7 @@ public abstract class Algorithm
         // MAX - MIN + 1 is the number of elements MIN <= x <= MAX. (E.g. 2 <= x <= 3 => x in {2, 3} (count 2) and 3 - 2 + 1 = 2)
         int portionsPerFood = Prefs.maxPortionMass - Prefs.minPortionMass + 1;
         m_portions = new Portion[Foods.Count * portionsPerFood];
+        Portions = new(m_portions);
         for (int i = 0; i < Foods.Count; i++)
         {
             for (int j = 0; j < portionsPerFood; j++)
@@ -124,29 +130,17 @@ public abstract class Algorithm
         // Handle potential errors.
         string errorText = "";
 
-        if (Preferences.Instance.acoAlpha <= 0)
-            errorText = "Invalid parameter: acoAlpha was <= 0.";
-
-        if (Preferences.Instance.acoBeta <= 0)
-            errorText = "Invalid parameter: acoBeta was <= 0.";
-
         if (Preferences.Instance.minPortionMass <= 0)
-            errorText = "Invalid parameter: minPortionMass was <= 0.";
+            errorText = $"Invalid parameter: minPortionMass ({Preferences.Instance.minPortionMass}) must be greater than 0.";
 
         if (Preferences.Instance.maxPortionMass < Preferences.Instance.minPortionMass)
-            errorText = "Invalid parameter: maxPortionMass was < minPortionMass.";
+            errorText = $"Invalid parameters: maxPortionMass ({Preferences.Instance.maxPortionMass}) cannot be less than minPortionMass ({Preferences.Instance.minPortionMass})";
 
         if (Preferences.Instance.numStartingPortionsPerDay <= 0)
-            errorText = "Invalid parameter: numStartingPortionsPerDay was <= 0.";
-
-        if (Preferences.Instance.pheroEvapRate < 0)
-            errorText = "Invalid parameter: pheroEvapRate was < 0.";
-
-        if (Preferences.Instance.pheroImportance < 0)
-            errorText = "Invalid parameter: pheroImportance was < 0.";
+            errorText = $"Invalid parameter: numStartingPortionsPerDay ({Preferences.Instance.numStartingPortionsPerDay}) must be greater than 0.";
 
         if (Preferences.Instance.populationSize <= 0)
-            errorText = "Invalid parameter: populationSize was <= 0.";
+            errorText = $"Invalid parameter: populationSize ({Preferences.Instance.populationSize}) must be greater than 0.";
 
         // By default, don't show error
         if (errorText != "")
@@ -166,7 +160,7 @@ public abstract class Algorithm
     {
         IterNum++;
         NextIteration();
-        UpdateBestDay(); // Ensures best day is updated for all iterations, even 0
+        UpdateBestDay();
     }
 
 
@@ -210,6 +204,7 @@ public abstract class Algorithm
     {
         foreach (Day day in m_population)
         {
+            // Replace the best day if A) It is null B) This day has a lower fitness
             if (!BestDayExists || day < BestDay)
             {
                 SetBestDay(day, IterNum);
@@ -264,17 +259,23 @@ public abstract class Algorithm
         string avgStr = "";
         foreach (EConstraintType nutrient in Constraint.Values)
         {
+            // Calculate population's total amount of this nutrient
             float sum = 0;
             foreach (Day day in m_population)
             {
                 sum += day.GetConstraintAmount(nutrient);
             }
 
+            // Calculate average from sum
             float avg = sum / Constraint.Count;
-            if (!m_prevAvgPopStats.ContainsKey(nutrient)) m_prevAvgPopStats[nutrient] = avg;
 
+            // Add prevAvgPopStats key if necessary
+            if (!m_prevAvgPopStats.ContainsKey(nutrient)) m_prevAvgPopStats.Add(nutrient, avg);
+
+            // Append to the average stats string
             avgStr += $"{nutrient}: {avg:F2}(+{avg - m_prevAvgPopStats[nutrient]:F2}){Constraint.GetUnit(nutrient)}\n";
 
+            // Update the prevAvgPopStats value
             m_prevAvgPopStats[nutrient] = avg;
         }
         return avgStr;

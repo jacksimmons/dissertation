@@ -1,10 +1,11 @@
+// Commented 8/4
 using System.Linq;
 using TMPro;
 using UnityEngine;
 
 
 /// <summary>
-/// Handles the iterations of an algorithm, as well as construction/destruction.
+/// Handles the stepping through an algorithm through the UI, and an AlgorithmRunner instance.
 /// </summary>
 public class AlgorithmBehaviour : MonoBehaviour
 {

@@ -77,6 +77,14 @@ public class Preferences : ICached, IVerbose
 
 
     //
+    // Calorie Goals
+    //
+    public float dailyExerciseKcal;
+    public bool gainElseLoseWeight;
+    public float dailyLoseOrGainKcal;
+
+
+    //
     // Food Groups
     //
     
@@ -89,7 +97,7 @@ public class Preferences : ICached, IVerbose
     //
     // User Info
     //
-    
+
     public bool maleElseFemale;
     public bool isPregnant;
     public bool needsVitD;
@@ -118,7 +126,6 @@ public class Preferences : ICached, IVerbose
     public int numStartingPortionsPerDay;
     public int minPortionMass;
     public int maxPortionMass;
-    public int maxDayMass;
     public bool addFitnessForMass;
     public string algorithmType;
     public EFitnessApproach fitnessApproach;
@@ -139,15 +146,11 @@ public class Preferences : ICached, IVerbose
     // 0 or 1 -> No convergence
     public float addOrRemovePortionMutationProb;
     
-    // Controls proportion of selected parents in each generation (> 0). Drastically slows, and decreases optimality of, the
-    // program as this approaches 1.
-    public float proportionParents;
-    
-    // Must be in the range [1, 2]
+    // Must be in the range [0, 1]
     public float selectionPressure;
     
-    // crossoverPoints-point crossover. Set this to 2 for 2-point crossover, etc.
-    public int crossoverPoints;
+    // Set this to 1 for 1-pt crossover, 2 for 2-pt crossover, N for N-pt crossover.
+    public int numCrossoverPoints;
     
     // Selection method
     public ESelectionMethod selectionMethod;
@@ -176,6 +179,8 @@ public class Preferences : ICached, IVerbose
 
     //
     // PSO-specific settings
+    // For both coefficients, as PSO deals with integer masses, selecting non-integer values will lead
+    // to masses getting rounded down to the nearest integer during calculations involving these values.
     //
 
     /// <summary>
@@ -187,6 +192,7 @@ public class Preferences : ICached, IVerbose
     /// The acceleration coefficient relating global best and current position.
     /// </summary>
     public float gAccCoefficient;
+    public float inertialWeight;
 
 
     public Preferences()
@@ -205,15 +211,15 @@ public class Preferences : ICached, IVerbose
         eatsAnimalProduce = true;
         eatsLactose = true;
 
+        maleElseFemale = true;
         ageYears = 18;
-        weightKg = 70;
-        heightCm = 160;
+        weightKg = 85f;
+        heightCm = 177.5f;
 
         populationSize = 10;
         numStartingPortionsPerDay = 1;
         minPortionMass = 1;
         maxPortionMass = 500;
-        maxDayMass = 500;
         addFitnessForMass = true;
         algorithmType = ALG_TYPES[0];
         fitnessApproach = EFitnessApproach.SummedFitness;
@@ -222,9 +228,8 @@ public class Preferences : ICached, IVerbose
         mutationMassChangeMax = 10;
         changePortionMassMutationProb = 1f;
         addOrRemovePortionMutationProb = 0.1f;
-        proportionParents = 0.5f;
-        selectionPressure = 1.5f;
-        crossoverPoints = 1;
+        selectionPressure = 0.5f;
+        numCrossoverPoints = 1;
         selectionMethod = ESelectionMethod.Tournament;
 
         colonyStagnationIters = 50;
@@ -237,6 +242,7 @@ public class Preferences : ICached, IVerbose
 
         pAccCoefficient = 1;
         gAccCoefficient = 1;
+        inertialWeight = 1;
 
         CalculateDefaultConstraints();
     }

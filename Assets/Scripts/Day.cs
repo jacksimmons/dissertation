@@ -92,9 +92,6 @@ public partial class Day : IVerbose, IComparable<Day>
     /// <param name="index">The portion index to remove if it is not the only one left.</param>
     public void RemovePortion(int index)
     {
-        if (_portions.Count <= 1)
-            return;
-
         SubtractPortionProperties(_portions[index]);
         _portions.RemoveAt(index);
     }

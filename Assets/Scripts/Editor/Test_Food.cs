@@ -70,7 +70,7 @@ public class Test_Food
         Preferences.Instance.Reset();
         Preferences.Instance.constraints = constraints;
 
-        AlgTest algTest = new();
+        AlgEmpty algTest = new();
 
         float[] bestNutrients = new float[Constraint.Count];
         float[] worstNutrients = new float[Constraint.Count];

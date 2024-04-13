@@ -1,0 +1,943 @@
+{
+    "dailyExerciseKcal": 30.0,
+    "gainElseLoseWeight": true,
+    "dailyLoseOrGainKcal": 200.0,
+    "eatsLandMeat": false,
+    "eatsSeafood": false,
+    "eatsAnimalProduce": false,
+    "eatsLactose": false,
+    "maleElseFemale": true,
+    "isPregnant": false,
+    "needsVitD": true,
+    "ageYears": 20,
+    "weightKg": 68.0,
+    "heightCm": 180.0,
+    "constraints": [
+        {
+            "Min": 0.0,
+            "Max": 127.0884780883789,
+            "Goal": 84.72565460205078,
+            "Weight": 2.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Protein"
+        },
+        {
+            "Min": 0.0,
+            "Max": 98.84658813476563,
+            "Goal": 65.89773559570313,
+            "Weight": 2.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Fat"
+        },
+        {
+            "Min": 0.0,
+            "Max": 285.9490661621094,
+            "Goal": 190.63272094726563,
+            "Weight": 2.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Carbs"
+        },
+        {
+            "Min": 0.0,
+            "Max": 2541.76953125,
+            "Goal": 1694.5130615234375,
+            "Weight": 2.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Kcal"
+        },
+        {
+            "Min": 0.0,
+            "Max": 30.0,
+            "Goal": 0.0,
+            "Weight": 3.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Sugar"
+        },
+        {
+            "Min": 0.0,
+            "Max": 30.0,
+            "Goal": 0.0,
+            "Weight": 3.0,
+            "Type": "NullConstraint",
+            "NutrientName": "SatFat"
+        },
+        {
+            "Min": 0.0,
+            "Max": 5.0,
+            "Goal": 0.0,
+            "Weight": 3.0,
+            "Type": "NullConstraint",
+            "NutrientName": "TransFat"
+        },
+        {
+            "Min": 0.0,
+            "Max": 1500.0,
+            "Goal": 700.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Calcium"
+        },
+        {
+            "Min": 0.0,
+            "Max": 500.0,
+            "Goal": 140.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Iodine"
+        },
+        {
+            "Min": 0.0,
+            "Max": 17.0,
+            "Goal": 8.699999809265137,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Iron"
+        },
+        {
+            "Min": 0.0,
+            "Max": 1500.0,
+            "Goal": 700.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitA"
+        },
+        {
+            "Min": 0.0,
+            "Max": 100.0,
+            "Goal": 1.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitB1"
+        },
+        {
+            "Min": 0.0,
+            "Max": 40.0,
+            "Goal": 1.2999999523162842,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitB2"
+        },
+        {
+            "Min": 0.0,
+            "Max": 17.0,
+            "Goal": 16.5,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitB3"
+        },
+        {
+            "Min": 0.0,
+            "Max": 10.0,
+            "Goal": 1.399999976158142,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitB6"
+        },
+        {
+            "Min": 0.0,
+            "Max": 1000.0,
+            "Goal": 200.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitB9"
+        },
+        {
+            "Min": 0.0,
+            "Max": 2000.0,
+            "Goal": 1.5,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitB12"
+        },
+        {
+            "Min": 0.0,
+            "Max": 1000.0,
+            "Goal": 40.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitC"
+        },
+        {
+            "Min": 0.0,
+            "Max": 100.0,
+            "Goal": 10.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitD"
+        },
+        {
+            "Min": 0.0,
+            "Max": 540.0,
+            "Goal": 4.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitE"
+        },
+        {
+            "Min": 0.0,
+            "Max": 1000.0,
+            "Goal": 70.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "VitK1"
+        },
+        {
+            "Min": 0.0,
+            "Max": 0.0,
+            "Goal": 0.0,
+            "Weight": 1.0,
+            "Type": "NullConstraint",
+            "NutrientName": "Cost"
+        }
+    ],
+    "acceptMissingNutrientValue": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+    ],
+    "customFoodSettings": [
+        {
+            "Key": "Almonds, toasted14-897GA",
+            "Cost": 2.0,
+            "Banned": false
+        },
+        {
+            "Key": "Almonds, weighed with shells14-898GA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Almonds, whole kernels14-896GA",
+            "Cost": 1.0,
+            "Banned": true
+        },
+        {
+            "Key": "Apples, eating, raw, flesh and skin14-319FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Apples, eating, raw, flesh and skin, weighed with core14-346FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Aubergine, raw13-161DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bananas, flesh only14-318FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bananas, raw, flesh only, weighed with skin14-347FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Beans, chick peas, Kabuli, whole, dried, boiled in unsalted water13-662DB",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Beans, green, raw13-514DB",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Beans, runner, boiled in unsalted water13-654DB",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Beans, runner, raw13-112DB",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, aubergine and potato, homemade15-669DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, cauliflower and potato, homemade15-679DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, mushroom, homemade15-681DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, pea, homemade15-687DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, potato and green pepper, homemade15-689DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, potato and onion, homemade15-690DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, potato, onion and mushroom, homemade15-691DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, potato, with butter ghee, homemade15-692DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, potato, with vegetable oil, homemade15-693DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, spinach and potato, homemade15-695DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bhaji, vegetable, with butter, homemade15-698DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, digestive, plain11-799AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, fully coated with chocolate11-809AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, plain, homemade11-1032AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, sandwich, cream11-813AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, semi-sweet11-797AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, short, sweet11-796AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Biscuits, wholemeal, homemade11-1034AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bran, wheat11-906AA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Brandy snaps, homemade11-1036AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Bread, white, sliced11-980AF",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Breakfast cereal, cornflakes, unfortified11-745AI",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Breakfast cereal, wheat biscuits, Weetabix type, fortified11-773AI",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Broccoli, green, boiled in salted water13-583DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Broccoli, green, boiled in unsalted water13-503DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Broccoli, green, raw13-502DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Brussels sprouts, boiled in unsalted water13-630DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Brussels sprouts, raw13-177DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Butter, salted17-685OA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Butter, unsalted17-661OA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cabbage, average, boiled in unsalted water13-581DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cabbage, average, raw13-582DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cabbage, green, boiled in unsalted water13-511DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cabbage, green, raw13-510DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cabbage, white, boiled in unsalted water13-584DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cabbage, white, raw13-509DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Carrots, old, boiled in unsalted water13-497DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Carrots, old, raw13-496DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Carrots, young, boiled in unsalted water13-449DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Carrots, young, raw13-448DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Casserole, sweet potato and green banana, homemade15-714DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cauliflower with onions and chilli pepper, homemade15-718DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Celery, boiled in unsalted water13-637DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Celery, raw13-636DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cheese sauce, made with skimmed milk, homemade17-773WCD",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Cheese sauce, made with whole milk, homemade17-775WCD",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Chocolate, plain17-491SEA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Coffee, infusion, average17-833PAC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Complan powder, original and sweet17-729PAA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Complan powder, savoury17-730PAA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Courgette, raw13-627DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Flan, vegetable, homemade15-804DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Flour, gram11-896AA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Flour, soya11-898AA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Flour, wheat, white, plain, soft11-886AA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Grapefruit, flesh only, raw14-384FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Grapefruit, flesh only, raw, weighed with peel and pips14-385FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Jam, fruit with edible seeds17-073SC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Leeks, boiled in unsalted water13-625DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Leeks, raw13-624DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Lettuce, average, raw13-520DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Melon, watermelon, flesh only14-296FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Melon, watermelon, flesh only, weighed whole14-309FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Muffins, bran, homemade11-1095AP",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Mushrooms, white, fried in corn oil13-546DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Mushrooms, white, fried in rapeseed oil13-507DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Mushrooms, white, raw13-505DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Mushrooms, white, stewed in unsalted water13-506DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Nectarines, flesh and skin, raw14-380FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Nectarines, flesh and skin, raw, weighed with stones14-381FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oatcakes, homemade11-1100AM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, coconut17-031OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, corn17-033OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, palm17-039OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, rapeseed17-041OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, safflower17-042OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, soya17-044OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, sunflower17-045OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oil, vegetable, average17-686OC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oranges, flesh only14-327FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Oranges, flesh only, weighed with peel and pips14-360FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pancakes, savoury, made with skimmed milk, homemade11-1102AT",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pancakes, savoury, wholemeal, made with whole milk, homemade11-1103AT",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pancakes, sweet, made with skimmed milk, homemade11-1141AS",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pancakes, sweet, made with whole milk, homemade11-1142AS",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pasta, white, dried, raw11-716AD",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pasta, white, spaghetti, dried, boiled in unsalted water11-722AD",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Peanuts, dry roasted14-878GA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pears, average, flesh and skin, raw, weighed with core and stalk14-361FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pears, average, raw, flesh only14-365F",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pears, raw, flesh and skin14-321FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Peas, boiled in unsalted water13-439DF",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Peas, mange-tout, boiled in unsalted water13-641DF",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Peas, raw13-438DF",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pepper, capsicum, red, boiled in unsalted water13-525DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pepper, capsicum, red, raw13-524DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Peppers, capsicum, green, boiled in unsalted water13-548DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Peppers, capsicum, green, raw13-318DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pie, apple, wholemeal, pastry top and bottom, homemade11-1027AS",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pineapple, flesh only, raw14-376FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Pineapple, flesh only, raw, weighed with skin and top14-377FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Plums, average, flesh and skin, stewed with sugar, weighed with stones14-316FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Plums, average, flesh and skin, stewed without sugar14-315FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Plums, average, flesh and skin, stewed without sugar, weighed with stones14-317FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Plums, average, stewed with sugar, flesh and skin14-314FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Plums, dessert, flesh and skin, raw14-372FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Plums, dessert, flesh and skin, raw, weighed with stones14-374FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Potato chips, fried in commercial oil, from takeaway fish and chip shops13-485DAP",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Potatoes, duchesse15-850DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Potatoes, old, baked, flesh and skin13-491DAM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Potatoes, old, baked, flesh only13-620DAM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Potatoes, old, raw, flesh only13-489DAM",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Raisins, dried14-393FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Rice, brown, wholegrain, raw11-868AC",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Sauce, curry, onion, with butter, homemade15-879DR",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Spinach, frozen, boiled in unsalted water13-458DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Spinach, mature, boiled in unsalted water13-573DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Spinach, mature, raw13-572DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Strawberries, raw14-324FA",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Sweetcorn, kernels, boiled 'on the cob' in unsalted water13-508DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Sweetcorn, kernels, boiled 'on the cob' in unsalted water, weighed with core13-606DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Tarts, jam, wholemeal, homemade11-1086AP",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Tomatoes, canned, whole contents13-530DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Tomatoes, standard, fried in corn oil13-603DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Tomatoes, standard, fried in rapeseed oil13-602DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Tomatoes, standard, grilled, flesh and seeds only13-518DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Tomatoes, standard, raw13-517DG",
+            "Cost": 0.0,
+            "Banned": false
+        },
+        {
+            "Key": "Watercress, raw13-669DG",
+            "Cost": 0.0,
+            "Banned": false
+        }
+    ],
+    "populationSize": 9,
+    "numStartingPortionsPerDay": 2,
+    "minPortionMass": 2,
+    "maxPortionMass": 600,
+    "addFitnessForMass": false,
+    "algorithmType": "AlgGA",
+    "fitnessApproach": 1,
+    "mutationMassChangeMin": 2,
+    "mutationMassChangeMax": 11,
+    "changePortionMassMutationProb": 0.5,
+    "addOrRemovePortionMutationProb": 0.30000001192092898,
+    "selectionPressure": 0.4000000059604645,
+    "numCrossoverPoints": 2,
+    "selectionMethod": 1,
+    "colonyStagnationIters": 100,
+    "elitist": false,
+    "colonyPortions": 9,
+    "pheroImportance": 2.0,
+    "pheroEvapRate": 0.15000000596046449,
+    "acoAlpha": 2.200000047683716,
+    "acoBeta": 2.299999952316284,
+    "defaultPheromone": 1.0,
+    "pAccCoefficient": 1.0,
+    "gAccCoefficient": 1.0
+}

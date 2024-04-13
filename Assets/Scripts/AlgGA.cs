@@ -8,18 +8,19 @@ using System.Collections.Generic;
 /// </summary>
 public partial class AlgGA : Algorithm
 {
-    // Algorithm settings, based on preferences
-    protected int m_numParents = (int)(Prefs.populationSize * (Prefs.proportionParents / 2)) * 2; // Cannot be odd
-    protected int m_tournamentSize = Math.Min((int)(Prefs.populationSize * 0.2f), 2);
+
+    /// <summary>
+    /// The selection method used by the GA, as a function reference.
+    /// </summary>
     private Func<List<Day>, bool, Day> m_selectionMethod;
 
-
-    //
-    // Pareto fitness evaluation (if enabled)
-    //
     /// <summary>
-    /// (ParetoFitness exclusive)
-    /// A sorted list of mutually non-dominated sets for all days in the population.
+    /// Tournament size of the GA (if Tournament Selection in use). Minimum value is 1, maximum is the entire population.
+    /// </summary>
+    protected int m_tournamentSize = (int)MathF.Max(1, Prefs.populationSize * Prefs.selectionPressure);
+
+    /// <summary>
+    /// A sorted list of mutually non-dominated sets for all days in the population (if ParetoDominance in use).
     /// </summary>
     public readonly ParetoHierarchy Hierarchy = new();
 
@@ -28,30 +29,32 @@ public partial class AlgGA : Algorithm
     {
         if (!base.Init()) return false;
 
-
-        LoadStartingPopulation();
-
-
         // Handle potential errors
         string errorText = "";
 
-        if (Prefs.mutationMassChangeMin < 0 || Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
-            errorText = "Invalid parameter: mutation min < 0 or mutation min > mutation max.";
+        if (Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
+            errorText = $"Invalid parameters: mutationMassChangeMin ({Prefs.mutationMassChangeMin}) must be less than"
+                + $" or equal to mutationMassChangeMax ({Prefs.mutationMassChangeMax})";
 
-        if (Prefs.mutationMassChangeMax < 0 || Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
-            errorText = "Invalid parameter: mutation max < 0 or mutation max < mutation min.";
+        if (Prefs.changePortionMassMutationProb > 1)
+            errorText = $"Invalid parameter: changePortionMassMutationProb ({Prefs.changePortionMassMutationProb}) must be in the range [0,1]";
 
-        if (Prefs.changePortionMassMutationProb < 0 || Prefs.addOrRemovePortionMutationProb < 0)
-            errorText = "Invalid parameter: mutation probability was < 0.";
+        if (Prefs.addOrRemovePortionMutationProb > 1)
+            errorText = $"Invalid parameter: addOrRemovePortionMutationProb ({Prefs.addOrRemovePortionMutationProb}) must be in the range [0,1]";
 
-        if (m_numParents <= 0)
-            errorText = "Invalid parameter: numparents was <= 0.";
+        if (Prefs.selectionPressure > 1)
+            errorText = $"Invalid parameter: selectionPressure ({Prefs.selectionPressure}) must be in the range [0,1]";
+
+        if (Prefs.numCrossoverPoints < 1)
+            errorText = $"Invalid parameter: numCrossoverPoints ({Prefs.numCrossoverPoints}) must be greater than 0.";
 
         if (errorText != "")
         {
             Logger.Warn(errorText);
             return false;
         }
+
+        LoadStartingPopulation();
 
         // Initialise selection function
         switch (Prefs.selectionMethod)
@@ -114,6 +117,8 @@ public partial class AlgGA : Algorithm
 
     protected override void NextIteration()
     {
+        if (Prefs.populationSize == 1) return;
+
         // --- Elitism + Reproduction ---
         // Iterate over the number of demanded parents
         // MODEL: Each parent pair produces a pair of children.
@@ -125,17 +130,8 @@ public partial class AlgGA : Algorithm
             included.Sort();
         }
 
-        List<Day> allChildren = new();
-        for (int i = 0; i < m_numParents; i += 2)
-        {
-            Tuple<Day, Day> parents = PerformPairSelection(included, true);
-
-            // Get the children and add to the population.
-            Tuple<Day, Day> children = Reproduction(parents);
-            allChildren.Add(children.Item1);
-            allChildren.Add(children.Item2);
-        }
-
+        Tuple<Day, Day> parents = PairSelection(included, true);
+        Tuple<Day, Day> children = Reproduction(parents);
 
         // --- Elimination ---
         // For each parent, kill off 1 candidate. (Reproduction - Elimination) === 0
@@ -150,10 +146,10 @@ public partial class AlgGA : Algorithm
         }
 
         List<Day> allDead = new();
-        for (int i = 0; i < m_numParents; i++)
+        for (int i = 0; i < 2; i++)
         {
-            // Select and eliminate two days per parent (to keep population size stable)
-            Day selectedDay = PerformSelection(included, false);
+            // Select and eliminate one day per parent (to keep population size stable)
+            Day selectedDay = Selection(included, false);
             included.Remove(selectedDay);
 
             // Remove the selected day from the population
@@ -162,11 +158,9 @@ public partial class AlgGA : Algorithm
 
 
         // --- Population Update ---
-        // Updates are performed after selection to reduce Population class updates during it.
-        for (int i = 0; i < allChildren.Count; i++)
-        {
-            AddToPopulation(allChildren[i]);
-        }
+        AddToPopulation(children.Item1);  
+        AddToPopulation(children.Item2);
+        
         for (int i = 0; i < allDead.Count; i++)
         {
             RemoveFromPopulation(allDead[i]);
@@ -197,31 +191,20 @@ public partial class AlgGA : Algorithm
     /// <param name="included">The days that can be selected.</param>
     /// <param name="selectBest">`true` if selecting the best, `false` if selecting the worst.</param>
     /// <returns>The selected pair of days.</returns>
-    public Tuple<Day, Day> PerformPairSelection(List<Day> included, bool selectBest)
+    public Tuple<Day, Day> PairSelection(List<Day> included, bool selectBest)
     {
-        Day selectedDayA = PerformSelection(included, selectBest);
+        Day selectedDayA = Selection(included, selectBest);
         included.Remove(selectedDayA);
-        Day selectedDayB = PerformSelection(included, selectBest);
+        Day selectedDayB = Selection(included, selectBest);
         included.Remove(selectedDayB);
 
         return new(selectedDayA, selectedDayB);
     }
 
 
-    /// <summary>
-    /// Selects a single day from the population.
-    /// </summary>
-    /// <param name="included">The days that can be selected.</param>
-    /// <param name="selectBest">`true` if selecting the best, `false` if selecting the worst.</param>
-    /// <returns></returns>
-    private Day PerformSelection(List<Day> included, bool selectBest)
+    public Day Selection(List<Day> included, bool selectBest)
     {
-        if (included.Count == 0)
-        {
-            Logger.Warn("Included cannot be empty when performing selection.");
-            return null;
-        }
-        if (included.Count == 1) return included[0];
+        if (included.Count == 0) Logger.Warn("Cannot select a Day from an included list of length 0.");
 
         return m_selectionMethod(included, selectBest);
     }
@@ -235,10 +218,8 @@ public partial class AlgGA : Algorithm
     /// <param name="selectBest">`true` => Select the lowest fitness. `false` => Select the highest fitness.</param>
     public Day TournamentSelection(List<Day> included, bool selectBest)
     {
-        int tournamentSize = Math.Min(included.Count, m_tournamentSize);
-
-        if (tournamentSize == 0)
-            Logger.Warn("Tournament size must be positive and non-zero.");
+        if (included.Count == 1) return included[0];
+        int tournamentSize = Math.Min(m_tournamentSize, included.Count);
 
         List<Day> days = new(included);
         Day bestDay = null;
@@ -250,7 +231,7 @@ public partial class AlgGA : Algorithm
         // Return best da
         for (int i = 0; i < tournamentSize; i++)
         {
-            int index = MathTools.Rand.Next(days.Count);
+            int index = Rand.Next(days.Count);
             Day day = days[index];
             days.RemoveAt(index);
 
@@ -269,18 +250,22 @@ public partial class AlgGA : Algorithm
     /// <param name="selectBest">`true` => Select the lowest fitness. `false` => Select the highest fitness.</param>
     public Day RankSelection(List<Day> sortedIncluded, bool selectBest)
     {
+        if (sortedIncluded.Count == 1) return sortedIncluded[0];
+
         // Number of elements to select from
         int n = sortedIncluded.Count;
         float[] rankProbs = new float[n];
 
         // Get probability of each rank getting selected
-        for (int i = 0; i < rankProbs.Length; i++)
+        float bakerSP = Prefs.selectionPressure + 1;
+        for (int i = 0; i < n; i++)
         {
-            rankProbs[i] = (1.0f / n) * (Prefs.selectionPressure - (2 * Prefs.selectionPressure - 2) * (i - 1.0f) / (n - 1.0f));
+            rankProbs[i] = (1.0f / n) * (bakerSP - (2 * bakerSP - 2) * i / (n - 1.0f));
         }
 
         // Select a rank with weighted random. This rank will correspond to an element in both population and `included`.
-        int selectedRank = MathTools.GetFirstSurpassedProbability(rankProbs);
+        int selectedRank = MathTools.GetFirstSurpassedProbability(rankProbs, Rand);
+
         return sortedIncluded[selectedRank];
     }
 
@@ -292,15 +277,11 @@ public partial class AlgGA : Algorithm
     /// <param name="day">The day to mutate.</param>
     public void MutateDay(Day day)
     {
-        // Only mutate if day has more than 0 portions.
-        if (day.portions.Count == 0)
-            Logger.Warn("Mutation: The provided parent has no portions.");
-
         // Mutate existing portions (add/remove mass)
         for (int i = 0; i < day.portions.Count; i++)
         {
             // Exit early if the portion is not to be mutated
-            if ((float)MathTools.Rand.NextDouble() > Prefs.changePortionMassMutationProb / day.portions.Count)
+            if ((float)Rand.NextDouble() > Prefs.changePortionMassMutationProb / day.portions.Count)
                 continue;
 
             Tuple<bool, int> result = MutatePortion(day.portions[i]);
@@ -313,15 +294,15 @@ public partial class AlgGA : Algorithm
                 day.SetPortionMass(i, result.Item2);
         }
 
-        // Add or remove portions entirely as a mutation
-        bool addPortion = (float)MathTools.Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
-        bool removePortion = (float)MathTools.Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
+        // Add and/or remove portions entirely as a mutation
+        bool addPortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
+        bool removePortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb && day.portions.Count > 0;
 
         if (addPortion)
             day.AddPortion(RandomPortion);
 
         if (removePortion)
-            day.RemovePortion(MathTools.Rand.Next(day.portions.Count));
+            day.RemovePortion(Rand.Next(day.portions.Count));
     }
 
 
@@ -338,9 +319,9 @@ public partial class AlgGA : Algorithm
     private Tuple<bool, int> MutatePortion(Portion portion)
     {
         // The sign of the mass change (1 => add, -1 => subtract)
-        int sign = MathTools.Rand.Next(2) == 1 ? 1 : -1;
+        int sign = Rand.Next(2) == 1 ? 1 : -1;
         int mass = portion.Mass;
-        int massDiff = MathTools.Rand.Next(Prefs.mutationMassChangeMin, Prefs.mutationMassChangeMax);
+        int massDiff = Rand.Next(Prefs.mutationMassChangeMin, Prefs.mutationMassChangeMax);
 
         // If the new mass is zero or negative, the portion ceases to exist.
         if (mass + sign * massDiff <= 0)

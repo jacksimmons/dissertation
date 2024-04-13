@@ -5,10 +5,9 @@ using System;
 /// <summary>
 /// An empty class that implements the abstract Algorithm class, for testing.
 /// </summary>
-public class AlgTest : Algorithm
+public class AlgEmpty : Algorithm
 {
     protected override void NextIteration()
     {
-        throw new NotImplementedException();
     }
 }

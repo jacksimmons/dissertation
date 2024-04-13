@@ -139,5 +139,21 @@ public class SetupBehaviour : MonoBehaviour
     }
 
 
-    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be positive, non-zero and not excessively large).");
+    //
+    // UI helper methods
+    //
+
+    /// <summary>
+    /// Handles a boolean toggle button being pressed.
+    /// </summary>
+    /// <param name="pref">Reference to its preference to toggle.</param>
+    /// <param name="textToUpdate">The preference indicator to update with "x" if it is now `true` or "" if `false`.</param>
+    protected void OnToggleBtnPressed(ref bool pref, TMP_Text textToUpdate)
+    {
+        OnBoolInputChanged(ref pref);
+        textToUpdate.text = pref ? "x" : "";
+    }
+
+
+    private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be non-negative and not excessively large).");
 }

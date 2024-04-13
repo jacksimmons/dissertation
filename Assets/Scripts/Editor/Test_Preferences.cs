@@ -7,10 +7,9 @@ using System.Linq.Expressions;
 using UnityEngine;
 
 /// <summary>
-/// Tests for user intolerances - ensuring the necessary food groups are removed
-/// from the collection.
+/// Tests for user preferences.
 /// </summary>
-public class Test_Intolerance
+public class Test_Preferences
 {
     /// <summary>
     /// Gets the list of foods contained in the whole dataset (Nutrient.csv).
@@ -130,12 +129,5 @@ public class Test_Intolerance
                 containsB = true;
         }
         return containsA && containsB;
-    }
-
-
-    [Test]
-    public void BannedFoodsErroneousTest()
-    {
-        Assert.False(true);
     }
 }

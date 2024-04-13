@@ -186,7 +186,6 @@ public static class MathTools
 {
     // For grams stored as a float, gives precision of up to 1mg.
     public const float EPSILON = 1e-3f;
-    public static Random Rand = new();
 
 
     /// <summary>
@@ -225,14 +224,14 @@ public static class MathTools
     /// Returns the first index of a probability array to be surpassed by a random 0-EPSILON value when summing over all
     /// elements in the array.
     /// </summary>
-    public static int GetFirstSurpassedProbability(float[] probabilities)
+    public static int GetFirstSurpassedProbability(float[] probabilities, Random rand)
     {
         int length = probabilities.Length;
         if (length < 1)
             Logger.Warn("Invalid probability array had a length of < 1");
 
         // Clamp the probability to the range [EPSILON, 1 - EPSILON]
-        float probability = MathF.Max(MathF.Min((float)Rand.NextDouble(), 1 - EPSILON), EPSILON);
+        float probability = MathF.Max(MathF.Min((float)rand.NextDouble(), 1 - EPSILON), EPSILON);
 
         // Calculate which vertex was selected, through
         // a sum-of-probabilities check.
@@ -303,7 +302,7 @@ public static class MathTools
 /// </summary>
 public static class PlotTools
 {
-    private struct Graph
+    private readonly struct Graph
     {
         public int NumLines { get; }
         public int NumIters { get; }
@@ -493,15 +492,14 @@ public static class PlotTools
         if (!File.Exists(gnuplotScriptPath))
             File.Create(gnuplotScriptPath).Close();
 
-        // Find the maximum finite fitness of the graph (checked earlier that not all points are infinity)
+        // Find the maximum fitness of the graph
         float maxFitness = 0;
-
         for (int i = 0; i < graph.NumIters; i++)
         {
             for (int j = 0; j < graph.NumLines; j++)
             {
                 float fitness = graph.Iterations[i].Points[j];
-                if (fitness > maxFitness && float.IsFinite(fitness))
+                if (fitness > maxFitness)
                 {
                     maxFitness = fitness;
                 }

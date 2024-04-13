@@ -19,7 +19,7 @@ using UnityEngine;
 /// 
 /// The output fitness is always in the SummedFitness format, because ParetoDominance
 /// fitnesses are >> 2-dimensional and thus cannot be represented well on a 2D plot.
-public class ExperimentRunner : SetupBehaviour
+public class ExperimentBehaviour : SetupBehaviour
 {
     /// <summary>
     /// The input field controlling the number of iterations for each algorithm
@@ -226,6 +226,11 @@ public class ExperimentRunner : SetupBehaviour
             Logger.Warn("Max must be greater than zero.");
             return false;
         }
+        if (m_min > m_max)
+        {
+            Logger.Warn("Max must be greater than Min.");
+            return false;
+        }
 
         int numSteps = 1 + (int)((m_max - m_min) / m_step);
         if (numSteps > MAX_LINES_ON_GRAPH)
@@ -309,6 +314,7 @@ public class ExperimentRunner : SetupBehaviour
         }
         else
         {
+            Logger.Log("HI");
             pref.SetValue(Preferences.Instance, min);
         }
         int numSteps = 1 + Mathf.CeilToInt((max - min) / step);

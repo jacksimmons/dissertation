@@ -139,7 +139,7 @@ partial class AlgACO
         public void RunAnt()
         {
             float[] probabilities = GetAllVertexProbabilities(LastIndex);
-            int nextVertex = MathTools.GetFirstSurpassedProbability(probabilities);
+            int nextVertex = MathTools.GetFirstSurpassedProbability(probabilities, m_colony.Rand);
 
             // If the next vertex was selected, then add the
             // new portion and continue.
@@ -157,7 +157,7 @@ partial class AlgACO
             else if (m_pathIndices.Count < Preferences.Instance.colonyPortions)
             {
                 // Infinity edge encountered.
-                Logger.Warn("Infinity edge encountered in Ant.");
+                Logger.Log("Infinity edge encountered in Ant.");
             }
             
             // Otherwise, all vertices were added to the path, so exit.
@@ -168,6 +168,7 @@ partial class AlgACO
         /// Applies for movement from `prev`. A multiplier of -1 indicates the ant
         /// cannot go there.
         /// 
+        /// Reference: ECM3412 Lecture 8 2023
         /// (tau[i,j]^(alpha) * eta[i,j]^(beta)) /
         /// (sum_h(tau[i,h]^(alpha) * eta[i,h]^(beta))
         /// 

@@ -45,6 +45,12 @@ public class MenuStackHandler : MonoBehaviour
     [SerializeField]
     private GameObject m_popupPanel;
 
+    // Algorithm Runners
+    [SerializeField]
+    private AlgorithmBehaviour m_algorithmRunner;
+    [SerializeField]
+    private ExperimentBehaviour m_experimentRunner;
+
 
     private void Awake()
     {
@@ -122,10 +128,13 @@ public class MenuStackHandler : MonoBehaviour
     /// <summary>
     /// [Listener function, called by the popup panel]
     /// 
-    /// Disables the popup panel.
+    /// Disables the popup panel, and cancels all running algorithms.
     /// </summary>
     public void HidePopup()
     {
         m_popupPanel.SetActive(false);
+
+        // Go back a menu
+        OnBackPressed();
     }
 }

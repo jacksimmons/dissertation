@@ -44,7 +44,7 @@ public class Test_Dataset
         // Vitamins
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
-        for (int i = 0; i < Constraint.Count; i++)
+        for (int i = 0; i < Constraint.Count - 1; i++) // Cost constraint is not obtained from the dataset
         {
             Assert.AreEqual(nutrients[i], food.Nutrients[i], $"{Constraint.Values[i]} was incorrect.");
         }

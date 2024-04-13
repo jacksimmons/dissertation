@@ -135,7 +135,10 @@ public partial class Day
                 // Add mass if the day goes over the limit
                 if (Preferences.Instance.addFitnessForMass)
                 {
-                    sum += MathF.Max(m_day.Mass - Preferences.Instance.maxDayMass, 0);
+                    foreach (Portion p in m_day.portions)
+                    {
+                        sum += MathF.Max(p.Mass - Preferences.Instance.maxPortionMass, 0);
+                    }
                 }
 
                 m_value = sum;

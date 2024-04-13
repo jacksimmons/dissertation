@@ -1,3 +1,4 @@
+// Commented 8/4
 using System;
 using TMPro;
 using UnityEngine;
@@ -26,20 +27,34 @@ public class AlgorithmSetup : SetupBehaviour
     [SerializeField]
     private TMP_InputField m_maxStartMassInput;
     [SerializeField]
+    private Button m_addFitnessForMassBtn;
+    [SerializeField]
     private TMP_Text m_addFitnessForMassBtnTxt;
     [SerializeField]
     private TMP_Text m_algTypeText;
-    [SerializeField]
-    private Button m_fitnessApproachBtn;
-    [SerializeField]
-    private TMP_Text m_fitnessApproachTxt;
 
 
     // GA Settings
     [SerializeField]
-    private Button m_selectionMethodBtn;
+    private TMP_InputField m_mutationMassChangeMinInput;
+    [SerializeField]
+    private TMP_InputField m_mutationMassChangeMaxInput;
+    [SerializeField]
+    private TMP_InputField m_selectionPressureInput;
+    [SerializeField]
+    private TMP_InputField m_numCrossoverPointsInput;
+    [SerializeField]
+    private Button m_selectionMethodCycleBtn;
     [SerializeField]
     private TMP_Text m_selectionMethodTxt;
+    [SerializeField]
+    private Button m_fitnessApproachCycleBtn;
+    [SerializeField]
+    private TMP_Text m_fitnessApproachTxt;
+    [SerializeField]
+    private TMP_InputField m_changePortionMassMutationProbInput;
+    [SerializeField]
+    private TMP_InputField m_addOrRemovePortionMutationProbInput;
 
 
     // ACO Settings
@@ -62,6 +77,8 @@ public class AlgorithmSetup : SetupBehaviour
     private TMP_InputField m_pbestAccInput;
     [SerializeField]
     private TMP_InputField m_gbestAccInput;
+    [SerializeField]
+    private TMP_InputField m_inertialWeightInput;
 
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
@@ -74,13 +91,13 @@ public class AlgorithmSetup : SetupBehaviour
         // Set up listeners for all UI elements in the menu.
         //
 
-        // Iteration variable should be not be used in AddListener calls, hence the variable name.
+        // Setup listener for each of Goal, Min, Max and Weight input fields, for every nutrient UI block.
         for (int _i = 0; _i < m_nutrientFields.Length; _i++)
         {
             GameObject go;
             EConstraintType nutrient;
 
-            // _i usage scoped
+            // Scoped _i usage
             {
                 go = m_nutrientFields[_i];
 
@@ -89,7 +106,7 @@ public class AlgorithmSetup : SetupBehaviour
                 nutrient = (EConstraintType)_i;
             }
 
-            TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();   
+            TMP_InputField goalInput = go.transform.Find("GoalInput").GetComponent<TMP_InputField>();
             goalInput.onEndEdit.AddListener((string value) => OnGoalInputChanged(nutrient, value));
 
             TMP_InputField minInput = go.transform.Find("MinInput").GetComponent<TMP_InputField>();
@@ -106,15 +123,22 @@ public class AlgorithmSetup : SetupBehaviour
                 true, constraintTypeBtn.GetComponentInChildren<TMP_Text>()));
         }
 
+        // Setup all non-repeating input field listeners
         m_popSizeInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.populationSize, value));
         m_numStartingPortionsPerDayInput.onEndEdit.AddListener(
             (string value) => OnIntInputChanged(ref Prefs.numStartingPortionsPerDay, value));
         m_minStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.minPortionMass, value));
         m_maxStartMassInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.maxPortionMass, value));
+        m_addFitnessForMassBtn.onClick.AddListener(() => OnToggleBtnPressed(ref Prefs.addFitnessForMass, m_addFitnessForMassBtnTxt));
 
-        // Get guaranteed text component through prefab hierarchy
-        m_fitnessApproachBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.fitnessApproach, true, m_fitnessApproachTxt));
-        m_selectionMethodBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.selectionMethod, true, m_selectionMethodTxt));
+        m_mutationMassChangeMinInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.mutationMassChangeMin, value));
+        m_mutationMassChangeMaxInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.mutationMassChangeMax, value));
+        m_selectionPressureInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.selectionPressure, value));
+        m_numCrossoverPointsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.numCrossoverPoints, value));
+        m_fitnessApproachCycleBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.fitnessApproach, true, m_fitnessApproachTxt));
+        m_selectionMethodCycleBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.selectionMethod, true, m_selectionMethodTxt));
+        m_changePortionMassMutationProbInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.changePortionMassMutationProb, value));
+        m_addOrRemovePortionMutationProbInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.addOrRemovePortionMutationProb, value));
 
         m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pheroImportance, value));
         m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pheroEvapRate, value));
@@ -125,11 +149,18 @@ public class AlgorithmSetup : SetupBehaviour
 
         m_pbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pAccCoefficient, value));
         m_gbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.gAccCoefficient, value));
+        m_inertialWeightInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.inertialWeight, value));
 
         UpdateUI();
     }
 
 
+    /// <summary>
+    /// Specific listener method for when a Goal is changed.
+    /// The Goal field has extra features, such as when Kcal's Goal is updated, the program updates Protein, Fat and Carbs' goals accordingly.
+    /// </summary>
+    /// <param name="nutrient">The nutrient this is the goal for.</param>
+    /// <param name="value">The unparsed value from input.</param>
     private void OnGoalInputChanged(EConstraintType nutrient, string value)
     {
         OnFloatInputChanged(ref Prefs.constraints[(int)nutrient].Goal, value);
@@ -138,6 +169,11 @@ public class AlgorithmSetup : SetupBehaviour
     }
 
 
+    /// <summary>
+    /// Handles extra Goal-related features. If Protein, Fat or Carbs get their goal updated, Kcal must get its goal updated too, and vice
+    /// versa. Then saves the result.
+    /// </summary>
+    /// <param name="nutrient">The nutrient the goal was updated for.</param>
     private static void OnGoalChanged(EConstraintType nutrient)
     {
         switch (nutrient)
@@ -155,6 +191,9 @@ public class AlgorithmSetup : SetupBehaviour
     }
 
 
+    /// <summary>
+    /// Shorthand for the MathTools MacrosToCalories method.
+    /// </summary>
     private static void MacrosToCalories()
     {
         MathTools.MacrosToCalories(
@@ -166,6 +205,9 @@ public class AlgorithmSetup : SetupBehaviour
     }
 
 
+    /// <summary>
+    /// Shorthand for the MathTools CaloriesToMacros method.
+    /// </summary>
     private static void CaloriesToMacros()
     {
         MathTools.CaloriesToMacros(
@@ -174,14 +216,6 @@ public class AlgorithmSetup : SetupBehaviour
             ref Prefs.constraints[(int)EConstraintType.Fat].Goal,
             ref Prefs.constraints[(int)EConstraintType.Carbs].Goal
         );
-    }
-
-
-    public void OnToggleAddFitnessForMass()
-    {
-        Prefs.addFitnessForMass = !Prefs.addFitnessForMass;
-        Saving.SavePreferences();
-        m_addFitnessForMassBtnTxt.text = Prefs.addFitnessForMass ? "X" : "";
     }
 
 
@@ -231,8 +265,14 @@ public class AlgorithmSetup : SetupBehaviour
         m_addFitnessForMassBtnTxt.text = Prefs.addFitnessForMass ? "X" : "";
         m_algTypeText.text = Prefs.algorithmType;
 
+        m_mutationMassChangeMinInput.text = $"{Prefs.mutationMassChangeMin}";
+        m_mutationMassChangeMaxInput.text = $"{Prefs.mutationMassChangeMax}";
+        m_selectionPressureInput.text = $"{Prefs.selectionPressure}";
+        m_numCrossoverPointsInput.text = $"{Prefs.numCrossoverPoints}";
         m_fitnessApproachTxt.text = $"{Prefs.fitnessApproach}";
         m_selectionMethodTxt.text = $"{Prefs.selectionMethod}";
+        m_changePortionMassMutationProbInput.text = $"{Prefs.changePortionMassMutationProb}";
+        m_addOrRemovePortionMutationProbInput.text = $"{Prefs.addOrRemovePortionMutationProb}";
 
         m_pheroImportanceInput.text = p.pheroImportance.ToString();
         m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
@@ -243,6 +283,7 @@ public class AlgorithmSetup : SetupBehaviour
 
         m_pbestAccInput.text = p.pAccCoefficient.ToString();
         m_gbestAccInput.text = p.gAccCoefficient.ToString();
+        m_inertialWeightInput.text = p.inertialWeight.ToString();
     }
 
 
