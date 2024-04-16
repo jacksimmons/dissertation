@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
@@ -37,7 +36,7 @@ public class DatasetReader
     private readonly EConstraintType[] m_inorganicsColumns = new EConstraintType[19];
     private readonly EConstraintType[] m_vitaminsColumns = new EConstraintType[24];
 
-    
+
     public DatasetReader(Preferences prefs, string proximatesFile = "Proximates", string inorganicsFile = "Inorganics", string vitaminsFile
         = "Vitamins")
     {

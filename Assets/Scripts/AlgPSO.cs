@@ -24,6 +24,7 @@ public partial class AlgPSO : Algorithm
         // If the base Init failed, return false for failure.
         if (!base.Init()) return false;
 
+        // Handle invalid preferences
         if (Prefs.inertialWeight > 1)
         {
             Logger.Warn($"Invalid preference: inertialWeight ({Prefs.inertialWeight}) cannot be greater than 1.");

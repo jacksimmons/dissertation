@@ -1,6 +1,4 @@
-using System;
-
-
+// Commented 13/4
 partial class AlgPSO
 {
     /// <summary>
@@ -78,7 +76,7 @@ partial class AlgPSO
             ParticleVector c = new(a.m_vector.Length);
             for (int i = 0; i < c.m_vector.Length; i++)
             {
-                // This can lead to negative results, so use the Normalise function for masses.
+                // This can lead to negative results, so use the Normalise function before using masses.
                 c.m_vector[i] = a.m_vector[i] + (int)(multiplier * b.m_vector[i]);
             }
 
@@ -170,6 +168,10 @@ partial class AlgPSO
         }
 
 
+        /// <summary>
+        /// One step per individual is executed each iteration. A step handles all behaviour
+        /// of a particle after creation.
+        /// </summary>
         public void IndividualStep()
         {
             UpdatePosition();
@@ -197,6 +199,9 @@ partial class AlgPSO
         }
 
 
+        /// <summary>
+        /// Converts a position object into a Day, for use in the UI and by users.
+        /// </summary>
         private Day GetPositionDay()
         {
             Day day = new(m_swarm);

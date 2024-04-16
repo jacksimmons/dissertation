@@ -1,9 +1,5 @@
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using UnityEngine;
 
 /// <summary>
 /// Test suite for Food, Portion and Day classes.
@@ -92,7 +88,7 @@ public class Test_Food
 
         // Assert that the best day dominates the worst day
         Assert.IsTrue(bestDay < worstDay);
-        
+
         // Reload old preferences
         Saving.LoadPreferences();
     }

@@ -158,9 +158,9 @@ public partial class AlgGA : Algorithm
 
 
         // --- Population Update ---
-        AddToPopulation(children.Item1);  
+        AddToPopulation(children.Item1);
         AddToPopulation(children.Item2);
-        
+
         for (int i = 0; i < allDead.Count; i++)
         {
             RemoveFromPopulation(allDead[i]);

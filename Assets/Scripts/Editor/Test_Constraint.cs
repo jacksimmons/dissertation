@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using System;
 using UnityEngine;
 
 
@@ -81,7 +80,7 @@ public class Test_Constraint
         MinimiseConstraint mc0 = new(110, 0);
         MinimiseConstraint mc1 = new(110, 1);
         MinimiseConstraint mc2 = new(110, 2);
-        Test012Weights(mc0 , mc1, mc2);
+        Test012Weights(mc0, mc1, mc2);
 
         // Set goal to != 100, so that the test doesn't give a fitness of 0 for all.
         ConvergeConstraint cc0 = new(99, 90, 110, 0);
@@ -107,7 +106,7 @@ public class Test_Constraint
     {
         Constraint BuildConstraint(float min, float max, float weight, string type, float goal = 0)
         {
-            return Constraint.Build(new() { Min = min, Max = max, Weight = weight, Type = type});
+            return Constraint.Build(new() { Min = min, Max = max, Weight = weight, Type = type });
         }
         void HCThrowsOutOfRangeTest(float min, float max, float weight = 1)
         {

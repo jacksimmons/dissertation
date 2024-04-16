@@ -76,14 +76,14 @@ partial class AlgACO
         public void ResetPath()
         {
             if (m_partOfPopulation)
-            // Ensure to remove the path from the population before resetting it
+                // Ensure to remove the path from the population before resetting it
                 m_colony.RemoveFromPopulation(Path);
 
             // Instantiate a new path, to reset it
             Path = new(m_colony);
-            
+
             if (m_partOfPopulation)
-            // Add the reset path back into the population
+                // Add the reset path back into the population
                 m_colony.AddToPopulation(Path);
 
             // Reset the lookup for indices in the path
@@ -159,7 +159,7 @@ partial class AlgACO
                 // Infinity edge encountered.
                 Logger.Log("Infinity edge encountered in Ant.");
             }
-            
+
             // Otherwise, all vertices were added to the path, so exit.
         }
 

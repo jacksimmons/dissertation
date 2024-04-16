@@ -1,11 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Security.Policy;
 using NUnit.Framework;
-using UnityEditor;
-using UnityEngine;
-using UnityEngine.TestTools;
+using System.Collections.Generic;
 
 
 /// <summary>
@@ -14,7 +8,7 @@ using UnityEngine.TestTools;
 public class Test_Dataset
 {
     public static DatasetReader Reader = new(new(), "Editor/TestProximates", "Editor/TestInorganics", "Editor/TestVitamins");
-    
+
     /// <summary>
     /// Manual overwrite of the number of rows in the dataset, so the program
     /// knows when to stop reading rows specifically for the test dataset.

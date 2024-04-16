@@ -1,8 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -99,7 +94,7 @@ public class PopulationView : MonoBehaviour
                 ClearDayUI();
             }
         }
-        
+
 
         // Set the average stats text
         m_avgDayText.text = m_algRunner.Algorithm.GetAverageStatsLabel();
@@ -124,7 +119,7 @@ public class PopulationView : MonoBehaviour
         // Clear any existing listeners before the next step (e.g. from previous calls to this method).
         m_prevPortionBtn.onClick.RemoveAllListeners();
         m_nextPortionBtn.onClick.RemoveAllListeners();
-        
+
         // Add a listener to each of the portion buttons, so that they navigate through the portions when
         // a day is selected.
         m_prevPortionBtn.onClick.AddListener(() => OnPortionNavBtnPressed(day, false));
@@ -153,7 +148,7 @@ public class PopulationView : MonoBehaviour
             return;
         }
 
-        m_portionNumText.text = $"Portion {portionIndex+1}/{day.portions.Count}";
+        m_portionNumText.text = $"Portion {portionIndex + 1}/{day.portions.Count}";
         m_portionText.text = day.portions[portionIndex].Verbose();
     }
 

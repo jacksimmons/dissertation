@@ -237,10 +237,6 @@ public partial class AlgGA
         Portion left = new(portion.FoodType, cutoffMass);
         Portion right = new(portion.FoodType, portion.Mass - cutoffMass);
 
-        // If the portion didn't divide correctly, this indicates a negative mass was involved.
-        if (cutoffMass < 0 || portion.Mass - cutoffMass < 0)
-            Logger.Warn($"Invalid cutoff mass: Portion mass: {portion.Mass}, Cutoff mass: {cutoffMass}");
-
         return new(left, right);
     }
 }

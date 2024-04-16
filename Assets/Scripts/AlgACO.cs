@@ -120,40 +120,6 @@ public partial class AlgACO : Algorithm
     }
 
 
-    //private Tuple<int, int> GetBestMatrixEdge(float[,] mat, bool minimise = false)
-    //{
-    //    float best = minimise ? float.PositiveInfinity : 0;
-
-    //    // Default edge; if all are infinity return 0 to 1
-    //    int bestI = 0;
-    //    int bestJ = 1;
-
-    //    ActOnMatrix(mat, (int i, int j, float x) =>
-    //    {
-    //        if (minimise)
-    //        {
-    //            if (x < best)
-    //            {
-    //                best = x;
-    //                bestI = i;
-    //                bestJ = j;
-    //            }
-    //        }
-    //        else
-    //        {
-    //            if (x > best)
-    //            {
-    //                best = x;
-    //                bestI = i;
-    //                bestJ = j;
-    //            }
-    //        }
-    //    });
-
-    //    return new(bestI, bestJ);
-    //}
-
-
     protected override void NextIteration()
     {
         // Reset the simulation
@@ -165,49 +131,10 @@ public partial class AlgACO : Algorithm
         // Reset all ants
         ResetAnts();
 
-        // Run all ants
-        for (int i = 0; i < Prefs.populationSize; i++)
+        for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
             m_ants[i].RunAnt();
         }
-
-
-        // Generate ant solutions
-        // https://stackoverflow.com/questions/6529659/wait-for-queueuserworkitem-to-complete
-
-        //if (Prefs.acoUseThreads)
-        //{
-        //    ManualResetEvent completionEvent = new(false);
-        //    int threadsLeft = Preferences.Instance.populationSize;
-        //    for (int i = 0; i < Preferences.Instance.populationSize; i++)
-        //    {
-        //        Ant ant = m_ants[i];
-
-        //        /// <summary>
-        //        /// Handles an ant thread. Converts the object state into the parameters
-        //        /// required for running the ant.
-        //        /// </summary>
-        //        /// <param name="state">The state provided to the thread (parameters).</param>
-        //        void RunAntThread(object state)
-        //        {
-        //            Ant ant = state as Ant;
-        //            ant.RunAnt();
-
-        //            if (Interlocked.Decrement(ref threadsLeft) == 0) completionEvent.Set();
-        //        }
-
-        //        ThreadPool.QueueUserWorkItem(RunAntThread!, ant);
-        //    }
-
-        //    completionEvent.WaitOne();
-        //}
-        //else
-        //{
-        //    for (int i = 0; i < Preferences.Instance.populationSize; i++)
-        //    {
-        //        m_ants[i].RunAnt();
-        //    }
-        //}
 
         // Update pheromone
         UpdatePheromone();
@@ -223,7 +150,7 @@ public partial class AlgACO : Algorithm
     }
 
 
-    private void UpdatePheromone()
+    public void UpdatePheromone()
     {
         for (int i = 0; i < m_vertices.Length; i++)
         {
@@ -243,7 +170,7 @@ public partial class AlgACO : Algorithm
     }
 
 
-    private void DepositPheromone(Day path, float fitness)
+    public void DepositPheromone(Day path, float fitness)
     {
         if (path.portions.Count <= 1) return;
 
@@ -266,7 +193,7 @@ public partial class AlgACO : Algorithm
     /// 
     /// Generally improves algorithm performance.
     /// </summary>
-    private void UpdateSearchSpace(float[,] fitnesses, float[,] pheromone, Portion[] vertices)
+    public void UpdateSearchSpace(float[,] fitnesses, float[,] pheromone, Portion[] vertices)
     {
         float[] pheroSumIntoEachVert = new float[Prefs.colonyPortions];
         for (int i = 0; i < Prefs.colonyPortions; i++)

@@ -1,16 +1,10 @@
-﻿/// A constraint nudges (or forces, if a hard constraint is used) the algorithm towards a more
+﻿// Commented 16/4
+/// A constraint nudges (or forces, if a hard constraint is used) the algorithm towards a more
 /// desirable value for a parameter.
 /// In this project they represent 2D curves of a nutrient (x) against its optimality (y = f(x)).
 /// 
 /// The lower the value outputted by the curve function, the more optimal the value (x)
 /// is for this nutrient.
-/// 
-/// Abbreviations:
-/// - OF = Objective Function
-/// - x = Value of parameter [value]
-/// - S = Steepness
-/// - T = Tolerance either side of k (y tends to infinity at x = L - T or x = L + T)
-/// - L = Limit (Maximum, or Convergence point)
 using System;
 
 
@@ -53,7 +47,7 @@ public enum EConstraintType
 
 
 /// <summary>
-/// Stores parameters for any constraint. Note these are not Properties, to allow each parameter
+/// Stores parameters for any constraint. Note these are not C# Properties, to allow each parameter
 /// to be changed by ref.
 /// </summary>
 [Serializable]
@@ -105,9 +99,14 @@ public abstract class Constraint
     public abstract float BestValue { get; }
     public abstract float WorstValue { get; }
 
-    public readonly float weight;
+    protected readonly float m_weight;
 
 
+    /// <summary>
+    /// Constructs an instance of Constraint or one of its subclasses.
+    /// </summary>
+    /// <param name="data">The data with which to construct the Constraint instance.</param>
+    /// <returns>The instantiated Constraint.</returns>
     public static Constraint Build(ConstraintData data)
     {
         Type type = Type.GetType(data.Type)!;
@@ -136,29 +135,46 @@ public abstract class Constraint
     }
 
 
-    public Constraint(float weight)
+    protected Constraint(float weight)
     {
-        this.weight = weight;
+        m_weight = weight;
     }
 
 
     /// <summary>
-    /// Calculates fitness by multiplying the weight by the unweighted fitness value.
+    /// Calculates overall fitness by multiplying the weight by the unweighted fitness value.
+    /// <param name="amount">The amount of a given constraint.</param>
     /// </summary>
     public float GetFitness(float amount)
     {
-        return weight * GetUnweightedFitness(amount);
+        return m_weight * GetUnweightedFitness(amount);
     }
 
 
+    /// <summary>
+    /// Calculates the fitness for a given quantity, before applying the weight to
+    /// the calculation.
+    /// </summary>
+    /// <param name="amount">The quantity, in whatever units are used for the constraint type this
+    /// constraint maps to.</param>
     public abstract float GetUnweightedFitness(float amount);
 
 
-    // Property-like static variables for EConstraintType enum length, and EConstraintType enum values.
+    /// <summary>
+    /// The number of constraint types in the constraint type enum. Shorthand for getting the length each time.
+    /// </summary>
     public static int Count = Enum.GetValues(typeof(EConstraintType)).Length;
+    /// <summary>
+    /// Collection of all values contained in the constraint type enum. Shorthand for getting the values each time.
+    /// </summary>
     public static EConstraintType[] Values = (EConstraintType[])Enum.GetValues(typeof(EConstraintType));
 
 
+    /// <summary>
+    /// Returns the string unit suffix for a given nutrient type. For completeness,
+    /// will throw an error if an invalid cast to this enum is provided.
+    /// </summary>
+    /// <param name="nutrient">The nutrient type to get the unit of.</param>
     public static string GetUnit(EConstraintType nutrient)
     {
         return nutrient switch
@@ -217,9 +233,6 @@ public class HardConstraint : Constraint, IVerbose
 
     public override float GetUnweightedFitness(float amount)
     {
-        // Use approx less than to ensure the minimum and maximum values can be used in the range.
-        // Using standard < and > doesn't account for floating point inaccuracies, which can make
-        // Approx(amount, min) or Approx(amount, max) yield fitness == Infinity.
         if (amount < min || amount > max)
         {
             return float.PositiveInfinity;
@@ -234,6 +247,9 @@ public class HardConstraint : Constraint, IVerbose
     }
 
 
+    /// <summary>
+    /// An exponential-based graph for fitness.
+    /// </summary>
     protected static float ExponentialFitness(float amount, float min, float max, float goal)
     {
         float tolerance;
@@ -268,6 +284,9 @@ public class HardConstraint : Constraint, IVerbose
     }
 
 
+    /// <summary>
+    /// A mod(x)-based graph for fitness.
+    /// </summary>
     protected static float ManhattanFitness(float amount, float goal)
     {
         return Math.Abs(amount - goal);
@@ -344,25 +363,6 @@ public class MinimiseConstraint : HardConstraint, IVerbose
     {
         offset = data.Max;
     }
-
-
-    //public override float GetUnweightedFitness(float amount)
-    //{
-    //    // A negative-exponential graph gives an OF which tends to infinity
-    //    // as you approach the limit, L.
-    //    // Graph: y = -1 - (L/(x-L)), x <= L (minimise)
-    //    if (float.IsPositiveInfinity(base.GetUnweightedFitness(amount)))
-    //    {
-    //        return float.PositiveInfinity;
-    //    }
-
-    //    float f = MathF.Abs(-1 - max / (amount - max));
-
-    //    // If amount == max, sometimes this can give -Infinity, so assign a fitness of Infinity in this case.
-    //    if (float.IsNegativeInfinity(f)) return float.PositiveInfinity;
-
-    //    return f;
-    //}
 
 
     public override float GetUnweightedFitness(float amount)

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 
@@ -87,7 +86,7 @@ public class Preferences : ICached, IVerbose
     //
     // Food Groups
     //
-    
+
     public bool eatsLandMeat; // Carnivore, Lactose-Intolerant
     public bool eatsSeafood; // Carnivore, Pescatarian, LI
     public bool eatsAnimalProduce; // Vegetarian, LI
@@ -109,7 +108,7 @@ public class Preferences : ICached, IVerbose
     //
     // Constraints
     //
-    
+
     public ConstraintData[] constraints = new ConstraintData[Constraint.Count];
     public bool[] acceptMissingNutrientValue = new bool[Constraint.Count];
     public List<CustomFoodSettings> customFoodSettings = new();                      // List of structs, each of which contains a composite key and cost of the food it represents.
@@ -134,24 +133,24 @@ public class Preferences : ICached, IVerbose
     //
     // GA-specific settings
     //
-    
+
     public int mutationMassChangeMin;
     public int mutationMassChangeMax;
-    
+
     // Chance for any portion to be mutated in an algorithm pass.
     // Is divided by the number of portions in the calculation.
     public float changePortionMassMutationProb;
-    
+
     // Impacts determinism. Low value => High determinism, High value => Random chaos
     // 0 or 1 -> No convergence
     public float addOrRemovePortionMutationProb;
-    
+
     // Must be in the range [0, 1]
     public float selectionPressure;
-    
+
     // Set this to 1 for 1-pt crossover, 2 for 2-pt crossover, N for N-pt crossover.
     public int numCrossoverPoints;
-    
+
     // Selection method
     public ESelectionMethod selectionMethod;
 
@@ -174,7 +173,6 @@ public class Preferences : ICached, IVerbose
     // Probability calculation variables
     public float acoAlpha;      // Pheromone exponent
     public float acoBeta;       // Desirability exponent
-    public float defaultPheromone;
 
 
     //
@@ -238,7 +236,6 @@ public class Preferences : ICached, IVerbose
         pheroEvapRate = 0.1f;
         acoAlpha = 1f;      // Pheromone exponent
         acoBeta = 1f;       // Desirability exponent
-        defaultPheromone = 1f;
 
         pAccCoefficient = 1;
         gAccCoefficient = 1;
@@ -310,7 +307,7 @@ public class Preferences : ICached, IVerbose
 
     private void SetConstraint(EConstraintType nutrient, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
-        constraints[(int)nutrient] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight, NutrientName = $"{nutrient}"};
+        constraints[(int)nutrient] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight, NutrientName = $"{nutrient}" };
         Constraint.Build(constraints[(int)nutrient]); // Checks if all params are valid. If not, throws an error.
     }
 

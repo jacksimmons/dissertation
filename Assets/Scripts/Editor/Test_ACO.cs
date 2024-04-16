@@ -2,16 +2,25 @@ using NUnit.Framework;
 
 public class Test_ACO : Test_HasPopulation
 {
+    private static AlgACO Alg
+    {
+        get
+        {
+            AlgACO val = (AlgACO)Algorithm.Build(typeof(AlgACO));
+            val.Init();
+            return val;
+        }
+    }
+
+
     [Test]
     public void RunTests()
     {
         Preferences.Instance.Reset();
 
-        AlgACO aco = (AlgACO)Algorithm.Build(typeof(AlgACO));
-        aco.Init();
-
-        PheroTest(aco);
-        FitnessTest(aco);
+        PheroTest(Alg);
+        UpdateSearchSpaceTest(Alg);
+        FitnessTest(Alg);
     }
 
 
@@ -21,12 +30,7 @@ public class Test_ACO : Test_HasPopulation
     }
 
 
-    public void BoundaryTest()
-    {
-    }
-
-
-    public void ErroneousTest()
+    private void UpdateSearchSpaceTest(AlgACO aco)
     {
     }
 }

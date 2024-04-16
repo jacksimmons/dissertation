@@ -232,6 +232,9 @@ public class AlgorithmSetup : SetupBehaviour
     }
 
 
+    /// <summary>
+    /// Sets all of the UI elements' text components, to match the saved preferences.
+    /// </summary>
     private void UpdateUI()
     {
         Preferences p = Prefs;
@@ -262,7 +265,7 @@ public class AlgorithmSetup : SetupBehaviour
         m_numStartingPortionsPerDayInput.text = p.numStartingPortionsPerDay.ToString();
         m_minStartMassInput.text = p.minPortionMass.ToString();
         m_maxStartMassInput.text = p.maxPortionMass.ToString();
-        m_addFitnessForMassBtnTxt.text = Prefs.addFitnessForMass ? "X" : "";
+        m_addFitnessForMassBtnTxt.text = p.addFitnessForMass ? "X" : "";
         m_algTypeText.text = Prefs.algorithmType;
 
         m_mutationMassChangeMinInput.text = $"{Prefs.mutationMassChangeMin}";

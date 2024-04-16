@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using static Day;
 using System.Collections.ObjectModel;
+using static Day;
 
 
 /// <summary>

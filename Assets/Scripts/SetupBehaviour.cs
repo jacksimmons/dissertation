@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -95,7 +94,7 @@ public class SetupBehaviour : MonoBehaviour
     /// <param name="pref">The preference to cycle.</param>
     /// <param name="arr">The array to cycle through.</param>
     /// <param name="right">`true` if going right, `false` if going left.</param>
-    protected void OnCycleArray<T>(ref T pref, T[] arr, bool right) 
+    protected void OnCycleArray<T>(ref T pref, T[] arr, bool right)
     {
         pref = ArrayTools.CircularNextElement(arr, Array.IndexOf(arr, pref), right);
 
