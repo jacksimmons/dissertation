@@ -8,7 +8,6 @@ using System.Collections.Generic;
 /// </summary>
 public partial class AlgGA : Algorithm
 {
-
     /// <summary>
     /// The selection method used by the GA, as a function reference.
     /// </summary>
@@ -25,13 +24,12 @@ public partial class AlgGA : Algorithm
     public readonly ParetoHierarchy Hierarchy = new();
 
 
-    public override bool Init()
+    public override string Init()
     {
-        if (!base.Init()) return false;
-
-        // Handle potential errors
-        string errorText = "";
-
+		// ----- Preference error checking -----
+		string errorText = base.Init();
+		if (errorText != "") return errorText; // Parent initialisation, and ensure no errors have occurred.
+		
         if (Prefs.mutationMassChangeMin > Prefs.mutationMassChangeMax)
             errorText = $"Invalid parameters: mutationMassChangeMin ({Prefs.mutationMassChangeMin}) must be less than"
                 + $" or equal to mutationMassChangeMax ({Prefs.mutationMassChangeMax})";
@@ -50,9 +48,9 @@ public partial class AlgGA : Algorithm
 
         if (errorText != "")
         {
-            Logger.Warn(errorText);
-            return false;
+            return errorText;
         }
+		// ----- END -----
 
         LoadStartingPopulation();
 
@@ -66,11 +64,10 @@ public partial class AlgGA : Algorithm
                 m_selectionMethod = RankSelection;
                 break;
             default:
-                Logger.Warn("No valid selection method was selected.");
-                return false;
+                return "No valid selection method was picked.";
         }
 
-        return true;
+        return "";
     }
 
 
@@ -289,7 +286,7 @@ public partial class AlgGA : Algorithm
             // If the portion isn't to remain (the mutation led to a negative or 0 mass), remove it.
             // Otherwise, set the new mutated mass.
             if (!result.Item1)
-                day.RemovePortion(i);
+                day.TryRemovePortion(i);
             else
                 day.SetPortionMass(i, result.Item2);
         }
@@ -302,7 +299,7 @@ public partial class AlgGA : Algorithm
             day.AddPortion(RandomPortion);
 
         if (removePortion)
-            day.RemovePortion(Rand.Next(day.portions.Count));
+            day.TryRemovePortion(Rand.Next(day.portions.Count));
     }
 
 

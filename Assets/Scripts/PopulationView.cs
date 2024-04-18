@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 public class PopulationView : MonoBehaviour
 {
     [SerializeField]
@@ -62,7 +63,7 @@ public class PopulationView : MonoBehaviour
             bestDayBtn.GetComponent<Button>().onClick.RemoveAllListeners();
             bestDayBtn.GetComponent<Button>().onClick.AddListener(() => OnPopButtonPressed(bestDay));
 
-            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {m_algRunner.Algorithm.BestDay.FitnessVerbose()})";
+            bestDayBtn.GetComponentInChildren<TMP_Text>().text = $"Best day (Fitness {m_algRunner.Algorithm.BestDay.TotalFitness.Verbose()})";
         }
 
 

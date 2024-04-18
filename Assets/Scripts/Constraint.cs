@@ -111,6 +111,7 @@ public abstract class Constraint
     {
         Type type = Type.GetType(data.Type)!;
 
+		// ----- Parameter error checking -----
         bool initFailed = false;
         if (data.Weight <= 0)
         {
@@ -129,8 +130,12 @@ public abstract class Constraint
             Logger.Warn($"{data.NutrientName}: Invalid Constraint type: {data.Type}.");
             initFailed = true;
         }
+		// ----- END -----
 
+		// Ensure an exception isn't thrown by returning a NullConstraint for invalid parameters.
         if (initFailed) return new NullConstraint();
+		
+		// Otherwise, create the desired instance and cast it to Constraint.
         return (Constraint)Activator.CreateInstance(Type.GetType(data.Type)!, data)!;
     }
 

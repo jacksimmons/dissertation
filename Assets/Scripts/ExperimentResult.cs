@@ -1,18 +1,22 @@
+// Commented 18/4
 /// <summary>
 /// The stats of a single algorithm.
 /// </summary>
-public readonly struct AlgorithmResult : IVerbose
+public class AlgorithmResult : IVerbose
 {
-    public readonly Day BestDay { get; }
-    public readonly float BestFitness { get; }
-    public readonly float[] BestFitnessEachIteration { get; }
+    /// <summary>
+    /// For each index (iteration), contains a Day which had the lowest fitness ever seen up
+    /// to that iteration.
+    /// </summary>
+    public Day[] BestDayEachIteration { get; }
+
+    public Day BestDay => BestDayEachIteration[^1];
+    public float BestFitness => BestDay.TotalFitness.Value;
 
 
-    public AlgorithmResult(Algorithm alg, float[] bestFitnessEachIteration)
+    public AlgorithmResult(Day[] bestDayEachIteration)
     {
-        BestDay = alg.BestDay;
-        BestFitness = new Day.SummedFitness(BestDay).Value;
-        BestFitnessEachIteration = bestFitnessEachIteration;
+        BestDayEachIteration = bestDayEachIteration;
     }
 
 
@@ -26,41 +30,41 @@ public readonly struct AlgorithmResult : IVerbose
 /// <summary>
 /// The stats of a set of algorithms.
 /// </summary>
-public readonly struct AlgorithmSetResult : IVerbose
+public class AlgorithmSetResult : IVerbose
 {
-    public readonly AlgorithmResult[] Results { get; }
-    public readonly int BestIndex { get; }
-    public readonly AlgorithmResult BestResult => Results[BestIndex];
+    /// <summary>
+    /// An array of AlgorithmResults, one for each algorithm that ran in parallel.
+    /// </summary>
+    public AlgorithmResult[] Results { get; }
 
-    public readonly float[] AverageBestFitnessEachIteration { get; }
+    /// <summary>
+    /// The index of the AlgorithmResult that found the lowest fitness Day.
+    /// </summary>
+    private readonly int m_bestIndex;
+    public AlgorithmResult BestResult
+    {
+        get
+        {
+            if (Results.Length > 0)
+            {
+                return Results[m_bestIndex];
+            }
+            return null;
+        }
+    }
 
 
     public AlgorithmSetResult(AlgorithmResult[] results)
     {
-        if (results.Length < 1)
-        {
-            Logger.Warn($"Could not construct AlgorithmSetResult from {results.Length} AlgorithmResults.");
-        }
-
-        int numIters = results[0].BestFitnessEachIteration.Length;
-        int numAlgs = results.Length;
-
         Results = results;
-        AverageBestFitnessEachIteration = new float[numIters];
 
-        // Assign a default best
-        BestIndex = 0;
+        // Calculate best result
         for (int i = 0; i < results.Length; i++)
         {
             // Check if the result is the best so far
-            if (results[i].BestFitness < results[BestIndex].BestFitness)
+            if (results[i].BestFitness < results[m_bestIndex].BestFitness)
             {
-                BestIndex = i;
-            }
-
-            for (int j = 0; j < numIters; j++)
-            {
-                AverageBestFitnessEachIteration[j] += results[i].BestFitnessEachIteration[j] / numAlgs;
+                m_bestIndex = i;
             }
         }
     }
@@ -68,7 +72,11 @@ public readonly struct AlgorithmSetResult : IVerbose
 
     public string Verbose()
     {
-        return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\n";
+        if (BestResult != null)
+        {
+            return $"Best algorithm:\n-=-=-=-=-=-\n{BestResult.Verbose()}\n=-=-=-=-=-\n";
+        }
+        return "Null AlgorithmSetResult.";
     }
 }
 
@@ -77,17 +85,33 @@ public readonly struct AlgorithmSetResult : IVerbose
 /// The stats of a full experiment, which consists of a set of steps, each of which has its own
 /// algorithm set result.
 /// </summary>
-public readonly struct ExperimentResult : IVerbose
+public class ExperimentResult : IVerbose
 {
-    public readonly AlgorithmSetResult[] Sets { get; }
-    public readonly object[] Steps { get; }
+    /// <summary>
+    /// An array of AlgorithmSetResults, one for each step that ran. Each AlgorithmSetResult has
+    /// an array of AlgorithmResults, one for each algorithm that ran in parallel.
+    /// </summary>
+    public AlgorithmSetResult[] Sets { get; }
 
-    public readonly AlgorithmSetResult BestSet { get; }
-    public readonly object BestStep { get; }
+    /// <summary>
+    /// The values used at each step. One-to-one mapping with the above sets.
+    /// </summary>
+    public object[] Steps { get; }
 
-    // The average of the (average best fitness each iteration)s from each set.
-    public readonly float[] Avg2BestFitnessEachIteration { get; }
-    public readonly string Name { get; }
+    /// <summary>
+    /// The set with the lowest ALF (ALF = average over (lowest fitnesses of all algorithms))
+    /// </summary>
+    public AlgorithmSetResult BestSet { get; }
+
+    /// <summary>
+    /// The best value in the Steps array, for some a, Sets[a] = BestSet => Steps[a] = BestStep.
+    /// </summary>
+    public object BestStep { get; }
+
+    /// <summary>
+    /// The name used as part of the filename. Briefly outlines the experiment done.
+    /// </summary>
+    public string Name { get; }
 
 
     public ExperimentResult(AlgorithmSetResult[] sets, object[] steps, string name)
@@ -97,11 +121,7 @@ public readonly struct ExperimentResult : IVerbose
 
         Sets = sets;
         Steps = steps;
-
-        int numIters = sets[0].AverageBestFitnessEachIteration.Length;
-        int numSets = sets.Length;
-
-        Avg2BestFitnessEachIteration = new float[numIters];
+        Name = name;
 
         // Set default best
         BestSet = sets[0];
@@ -115,29 +135,12 @@ public readonly struct ExperimentResult : IVerbose
                 BestSet = sets[i];
                 BestStep = steps[i];
             }
-
-            for (int j = 0; j < numIters; j++)
-            {
-                Avg2BestFitnessEachIteration[j] += sets[i].AverageBestFitnessEachIteration[j] / numSets;
-            }
-
-            // Check if the average result is the best average so far
-            //if (sets[i].AverageBestFitness < BestSetOnAverage.AverageBestFitness)
-            //{
-            //    BestSetOnAverage = sets[i];
-            //    BestStepOnAverage = steps[i];
-            //}
-
-            // Add points to graph
-            //AverageBestFitnessEachStep[i] = new(steps[i], sets[i].AverageBestFitness);
         }
-        Name = name;
     }
 
 
     public string Verbose()
     {
-        return $"Best overall set:   \n==========\nStep: {BestStep}\nSet:\n{BestSet.Verbose()}    \n==========\n\n";
-        /*+ $"Best set on average:\n==========\nStep: {BestStepOnAverage}\nSet:\n{BestSetOnAverage.Verbose()}\n==========\n*/
+        return $"Best overall set:   \n==========\nStep: {BestStep}\nSet:\n{BestSet.Verbose()}\n==========\n\n";
     }
 }

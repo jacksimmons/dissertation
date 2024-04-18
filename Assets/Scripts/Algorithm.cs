@@ -98,7 +98,7 @@ public abstract class Algorithm
 
         // Generate the search space from these foods
         // MAX - MIN + 1 is the number of elements MIN <= x <= MAX. (E.g. 2 <= x <= 3 => x in {2, 3} (count 2) and 3 - 2 + 1 = 2)
-        int portionsPerFood = Prefs.maxPortionMass - Prefs.minPortionMass + 1;
+        int portionsPerFood = Math.Max(Prefs.maxPortionMass - Prefs.minPortionMass + 1, 0);
         m_portions = new Portion[Foods.Count * portionsPerFood];
         Portions = new(m_portions);
         for (int i = 0; i < Foods.Count; i++)
@@ -123,9 +123,9 @@ public abstract class Algorithm
 
     /// <summary>
     /// Handles any initialisation that cannot be done in the constructor.
-    /// Returns true if successful, false if there was an error.
+    /// Returns a string - this is empty if no errors, but is an error message otherwise.
     /// </summary>
-    public virtual bool Init()
+    public virtual string Init()
     {
         // Handle potential errors.
         string errorText = "";
@@ -142,14 +142,7 @@ public abstract class Algorithm
         if (Preferences.Instance.populationSize <= 0)
             errorText = $"Invalid parameter: populationSize ({Preferences.Instance.populationSize}) must be greater than 0.";
 
-        // By default, don't show error
-        if (errorText != "")
-        {
-            Logger.Warn(errorText);
-            return false;
-        }
-
-        return true;
+        return errorText;
     }
 
 
@@ -246,7 +239,7 @@ public abstract class Algorithm
     /// </summary>
     public virtual string EvaluateDay(Day day)
     {
-        return $"Fitness: {day.FitnessVerbose()}";
+        return $"Fitness: {day.TotalFitness.Verbose()}";
     }
 
 

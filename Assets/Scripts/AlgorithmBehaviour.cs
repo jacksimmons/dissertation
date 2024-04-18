@@ -52,8 +52,16 @@ public class AlgorithmBehaviour : MonoBehaviour
     /// </summary>
     public void RunIterations(int numIters)
     {
-        float ms = m_core.RunIterations(numIters);
-        UpdateAlgorithmUI(ms, numIters);
+        var result = m_core.RunIterations(numIters);
+        if (result.Item1 != "")
+        {
+            Logger.Warn(result.Item1);
+            return;
+        }
+        else
+        {
+            UpdateAlgorithmUI(result.Item2, numIters);
+        }
     }
 
 
@@ -62,6 +70,6 @@ public class AlgorithmBehaviour : MonoBehaviour
     /// </summary>
     public void PlotGraph()
     {
-        PlotTools.PlotLine(new(Algorithm, m_core.Plot.ToArray()));
+        PlotTools.PlotLine(new(m_core.BestDayEachIteration.ToArray()));
     }
 }

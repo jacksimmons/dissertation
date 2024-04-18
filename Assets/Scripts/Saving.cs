@@ -1,3 +1,4 @@
+// Commented 17/4
 using System.IO;
 using UnityEngine;
 
@@ -21,7 +22,8 @@ public static class Saving
         }
         catch
         {
-            Logger.Warn("Unable to save to Preferences.json. Please ensure you don't have it open in a text editor.");
+            Logger.Warn("Unable to save to Preferences.json. Please ensure you don't have it open in a text editor"
+			+ $" and that this program has read/write access at {Application.persistentDataPath + "/Preferences.json"}");
         }
     }
 
@@ -39,7 +41,8 @@ public static class Saving
         }
         catch
         {
-            Logger.Warn("Unable to load Preferences.json. Please ensure you don't have it open in a text editor.");
+            Logger.Warn("Unable to load Preferences.json. Please ensure you don't have it open in a text editor"
+			+ $" and that this program has read/write access at {Application.persistentDataPath + "/Preferences.json"}");
             return new();
         }
     }
@@ -55,7 +58,9 @@ public static class Saving
             cached.Cache();
 
         string dest = Application.persistentDataPath + "/" + filename;
-        if (!File.Exists(dest)) File.Create(dest).Close();
+        
+		// Ensure first that the file exists.
+		if (!File.Exists(dest)) File.Create(dest).Close();
 
         // If the provided object is null, delete the file.
         if (serializable == null)
@@ -64,6 +69,7 @@ public static class Saving
             return;
         }
 
+		// Save the file using Unity's JSON serialisation.
         string json = JsonUtility.ToJson(serializable, true);
         File.WriteAllText(dest, json);
     }
@@ -78,9 +84,11 @@ public static class Saving
 
         if (File.Exists(dest))
         {
+			// Read the file using Unity's JSON deserialisation.
             string json = File.ReadAllText(dest);
             T val = (T)JsonUtility.FromJson(json, typeof(T));
 
+			// Cache the instance for utility.
             if (val is ICached cached)
                 cached.Cache();
 
@@ -90,7 +98,7 @@ public static class Saving
         {
             // Restart the function after creating a new T save
             SaveToFile(new T(), filename);
-            Logger.Log("File does not exist! Returning empty object");
+            Logger.Log("Couldn't find Preferences file; saved a new one.");
             return LoadFromFile<T>(filename);
         }
     }

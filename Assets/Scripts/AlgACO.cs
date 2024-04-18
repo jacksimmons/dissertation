@@ -1,3 +1,4 @@
+// Commented 17/4
 using System;
 using System.Linq;
 
@@ -22,17 +23,35 @@ using System.Linq;
 /// </summary>
 public partial class AlgACO : Algorithm
 {
+	/// <summary>
+	/// The fitness adjacency matrix for the colony. Each index [i,j] is the fitness of the edge i-j.
+	/// Note that [i,j] is not necessarily equal to [j,i], because the graph is directed.
+	/// </summary>
     private readonly float[,] m_fitnesses = new float[Prefs.colonyPortions, Prefs.colonyPortions];
-    private readonly float[,] m_pheromone = new float[Prefs.colonyPortions, Prefs.colonyPortions];
-    private readonly Portion[] m_vertices = new Portion[Prefs.colonyPortions];
-    private readonly Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
+    
+	/// <summary>
+	/// The pheromone adjacency matrix for the colony. Similar to the fitness adjacency matrix, but for
+	/// the pheromone deposited on each edge.
+	/// </summary>
+	private readonly float[,] m_pheromone = new float[Prefs.colonyPortions, Prefs.colonyPortions];
+    
+	/// <summary>
+	/// The subspace of the portion search space currently being considered. This algorithm can only
+	/// consider discrete points that ants can travel between, so this is a necessary feature.
+	/// </summary>
+	private readonly Portion[] m_vertices = new Portion[Prefs.colonyPortions];
+    
+	/// <summary>
+	/// The ants that move around the vertices array.
+	/// </summary>
+	private readonly Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
 
 
-    public override bool Init()
+    public override string Init()
     {
-        if (!base.Init()) return false;
-
-        string errorText = "";
+        // ----- Preference error checking -----
+        string errorText = base.Init();
+        if (errorText != "") return errorText; // Parent initialisation, and ensure no errors have occurred.
 
         if (Preferences.Instance.acoAlpha <= 0)
             errorText = $"Invalid parameter: acoAlpha ({Preferences.Instance.acoAlpha}) must be greater than 0.";
@@ -51,9 +70,9 @@ public partial class AlgACO : Algorithm
 
         if (errorText != "")
         {
-            Logger.Warn(errorText);
-            return false;
+            return errorText;
         }
+		// ----- END -----
 
         // Create vertices
         for (int i = 0; i < Prefs.colonyPortions; i++)
@@ -77,7 +96,7 @@ public partial class AlgACO : Algorithm
             m_ants[i] = ant;
         }
 
-        return true;
+        return "";
     }
 
 
@@ -106,7 +125,7 @@ public partial class AlgACO : Algorithm
 
     /// <summary>
     /// Perform an action on every element in the matrix.
-    /// Matrix must have standard dimensions (Prefs.colonyPortions X Prefs.colonyPortions)
+    /// Matrix is expected to have lengths [Prefs.colonyPortions, Prefs.colonyPortions]
     /// </summary>
     protected static void ActOnMatrix(float[,] mat, Action<int, int, float> act)
     {
@@ -125,12 +144,13 @@ public partial class AlgACO : Algorithm
         // Reset the simulation
         if (IterNum % Prefs.colonyStagnationIters == 0)
         {
-            UpdateSearchSpace(m_fitnesses, m_pheromone, m_vertices);
+            UpdateSearchSpace(m_vertices);
         }
 
         // Reset all ants
         ResetAnts();
 
+		// Run all ants
         for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
             m_ants[i].RunAnt();
@@ -141,6 +161,10 @@ public partial class AlgACO : Algorithm
     }
 
 
+	/// <summary>
+	/// Resets the path of every ant in the colony. This process results
+	/// in the instantiation of a new Day object for each ant's path.
+	/// </summary>
     private void ResetAnts()
     {
         for (int i = 0; i < m_ants.Length; i++)
@@ -150,6 +174,12 @@ public partial class AlgACO : Algorithm
     }
 
 
+	/// <summary>
+	/// Performs all pheromone-related actions in an iteration. This involves
+	/// first evaporating the pheromone, and then adding ant-deposited pheromone,
+	/// once for each ant. If elitism is enabled, the global best solution also
+	/// deposits pheromone during this process.
+	/// </summary>
     public void UpdatePheromone()
     {
         for (int i = 0; i < m_vertices.Length; i++)
@@ -166,21 +196,8 @@ public partial class AlgACO : Algorithm
             m_ants[i].DepositPheromone();
         }
 
-        if (BestDayExists && Preferences.Instance.elitist) DepositPheromone(BestDay, BestFitness);
-    }
-
-
-    public void DepositPheromone(Day path, float fitness)
-    {
-        if (path.portions.Count <= 1) return;
-
-        float increment = Preferences.Instance.pheroImportance / fitness;
-        for (int j = 1; j < path.portions.Count; j++)
-        {
-            m_pheromone[j - 1, j] += increment;
-        }
-
-        m_pheromone[path.portions.Count - 1, 0] += increment;
+		// If elitist, let the global best solution deposit pheromone as well
+        if (BestDayExists && Preferences.Instance.elitist) Ant.DepositPheromone(BestDay, this);
     }
 
 
@@ -193,16 +210,13 @@ public partial class AlgACO : Algorithm
     /// 
     /// Generally improves algorithm performance.
     /// </summary>
-    public void UpdateSearchSpace(float[,] fitnesses, float[,] pheromone, Portion[] vertices)
+    public void UpdateSearchSpace(Portion[] vertices)
     {
+        // Calculate the amount of pheromone "flowing" into each vertex j, which is the sum of
+        // all entries in the pheromone adjacency matrix that go from i to j, where i is iterated
+        // over.
         float[] pheroSumIntoEachVert = new float[Prefs.colonyPortions];
-        for (int i = 0; i < Prefs.colonyPortions; i++)
-        {
-            for (int j = 0; j < Prefs.colonyPortions; j++)
-            {
-                pheroSumIntoEachVert[j] += pheromone[i, j];
-            }
-        }
+        ActOnMatrix(m_pheromone, (int i, int j, float p) => pheroSumIntoEachVert[j] += p);
 
         int worstIndex = Array.IndexOf(pheroSumIntoEachVert, pheroSumIntoEachVert.Min());
 
@@ -212,15 +226,13 @@ public partial class AlgACO : Algorithm
         // Calculate and assign new fitnesses
         for (int i = 0; i < Prefs.colonyPortions; i++)
         {
-            fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
-            fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);
+            m_fitnesses[i, worstIndex] = CalculateEdgeFitness(i, worstIndex);
+            m_fitnesses[worstIndex, i] = CalculateEdgeFitness(worstIndex, i);
 
-            pheromone[i, worstIndex] = (float)Rand.NextDouble();
-            pheromone[worstIndex, i] = (float)Rand.NextDouble();
+            m_pheromone[i, worstIndex] = (float)Rand.NextDouble();
+            m_pheromone[worstIndex, i] = (float)Rand.NextDouble();
         }
-
-
-        // Reset pheromone
-        ActOnMatrix(pheromone, (int i, int j, float _) => pheromone[i, j] = (float)Rand.NextDouble());
+		
+		// ! Check if pheromone needs resetting here
     }
 }

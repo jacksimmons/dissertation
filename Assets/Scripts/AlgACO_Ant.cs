@@ -31,7 +31,7 @@ partial class AlgACO
         /// <summary>
         /// The current path this ant is travelling along.
         /// </summary>
-        public Day Path;
+        private Day Path { get; set; }
         public int PathLength => Path.portions.Count;
         public float Fitness
         {
@@ -114,20 +114,31 @@ partial class AlgACO
 
 
         /// <summary>
-        /// Add pheromone to the matrix based on the fitness of the current path.
+        /// Add pheromone to the pheromone adjacency matrix based on the fitness of the current
+        /// path.
         /// </summary>
         public void DepositPheromone()
         {
+            DepositPheromone(Path, m_colony);
+        }
+
+
+        /// <summary>
+        /// Add pheromone to the pheromone adjacency matrix based on the fitness of the Day
+        /// path provided.
+        /// </summary>
+        public static void DepositPheromone(Day path, AlgACO colony)
+        {
             // A path with one vertex has no edges
-            if (Path.portions.Count <= 1) return;
+            if (path.portions.Count <= 1) return;
 
             // A value representing path fitness
-            float increment = Preferences.Instance.pheroImportance / Path.TotalFitness.Value;
+            float increment = Preferences.Instance.pheroImportance / path.TotalFitness.Value;
 
             // Increase pheromone for every edge on the path, based on the path's fitness
-            for (int j = 1; j < Path.portions.Count; j++)
+            for (int j = 1; j < path.portions.Count; j++)
             {
-                m_colony.m_pheromone[j - 1, j] += increment;
+                colony.m_pheromone[j - 1, j] += increment;
             }
         }
 

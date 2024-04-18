@@ -1,3 +1,4 @@
+// Commented 18/4
 using System;
 
 
@@ -12,7 +13,15 @@ public partial class Day
     }
 
 
+    /// <summary>
+    /// Less-than operator performed on two Days.
+    /// </summary>
     public static bool operator <(Day op1, Day op2) => op1.CompareTo(op2) < 0;
+
+
+    /// <summary>
+    /// Greater-than operator performed on two Days.
+    /// </summary>
     public static bool operator >(Day op1, Day op2) => op1.CompareTo(op2) > 0;
 
 
@@ -21,9 +30,20 @@ public partial class Day
     /// </summary>
     public class ConstraintFitness
     {
+        /// <summary>
+        /// The Day this object belongs to.
+        /// </summary>
         private Day m_day;
+
+        /// <summary>
+        /// The nutrient this object represents.
+        /// </summary>
         private EConstraintType m_nutrient;
 
+        // Convert this object into a tangible float value.
+        // When it is returned, a check is made to ensure it is up to date.
+        // If so, returns the cached value m_value. Otherwise, recalculates the value with
+        // the algorithm's corresponding constraint's GetFitness function.
         private float m_value;
         public float Value
         {
@@ -38,6 +58,11 @@ public partial class Day
                 return m_value;
             }
         }
+
+        /// <summary>
+        /// If this is false, Value must be recalculated. Otherwise the cached value m_value
+        /// can be used.
+        /// </summary>
         public bool UpToDate { get; private set; } = false;
 
 
@@ -89,6 +114,10 @@ public partial class Day
         }
 
 
+        /// <summary>
+        /// Marks a nutrient as outdated, meaning its value must be recalculated.
+        /// </summary>
+        /// <param name="nutrient">The nutrient to set as outdated.</param>
         public void SetNutrientOutdated(EConstraintType nutrient)
         {
             m_allUpToDate = false;
@@ -124,13 +153,15 @@ public partial class Day
             {
                 if (m_allUpToDate) return m_value;
 
+                // Sum over all nutrient fitnesses
                 float sum = 0;
                 for (int i = 0; i < m_nutrientFitnesses.Length; i++)
                 {
                     sum += m_nutrientFitnesses[i].Value;
                 }
 
-                // Add mass if the day goes over the limit
+                // Add fitness for all portions over the mass limit, corresponding to the amount over
+                // the limit.
                 if (Preferences.Instance.addFitnessForMass)
                 {
                     foreach (Portion p in m_day.portions)

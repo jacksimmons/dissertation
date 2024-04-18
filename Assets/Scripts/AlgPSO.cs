@@ -19,17 +19,17 @@ public partial class AlgPSO : Algorithm
     private Day m_gbestDay;
 
 
-    public override bool Init()
+    public override string Init()
     {
-        // If the base Init failed, return false for failure.
-        if (!base.Init()) return false;
+        // ----- Preference error checking -----
+        string errorText = base.Init();
+        if (errorText != "") return errorText; // Parent initialisation, and ensure no errors have occurred.
 
-        // Handle invalid preferences
         if (Prefs.inertialWeight > 1)
         {
-            Logger.Warn($"Invalid preference: inertialWeight ({Prefs.inertialWeight}) cannot be greater than 1.");
-            return false;
+            return $"Invalid preference: inertialWeight ({Prefs.inertialWeight}) cannot be greater than 1.";
         }
+		// ----- END -----
 
         // Initialise particles
         m_particles = new Particle[Prefs.populationSize];
@@ -41,7 +41,7 @@ public partial class AlgPSO : Algorithm
         // Initialise other data structures
         m_gbest = new(Foods.Count);
 
-        return true;
+        return "";
     }
 
 

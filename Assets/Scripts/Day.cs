@@ -1,20 +1,33 @@
+// Commented 18/4
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+
 
 /// <summary>
 /// A data structure representing a meal plan for one day.
 /// </summary>
 public partial class Day : IVerbose, IComparable<Day>
 {
-    private readonly List<Portion> _portions;
-    public readonly ReadOnlyCollection<Portion> portions;
+    /// <summary>
+    /// The algorithm whose population this belongs to.
+    /// </summary>
     private readonly Algorithm m_algorithm;
 
-    // Only change this array when one of the portions changes, eliminating the
-    // need to perform expensive Sum operations every iteration.
-    private readonly float[] m_constraintAmounts;
+    // The portions that compose the day; i.e. the food recommended by the plan.
+    private readonly List<Portion> _portions;
+    public readonly ReadOnlyCollection<Portion> portions;
 
+    /// <summary>
+    /// A cache for the total amount of each "nutrient" the Day has. Each value is the sum of all the Portion amounts
+    /// for that nutrient. Storing it this way prevents performing many expensive Sum() operations.
+    /// </summary>
+    private readonly float[] m_nutrientAmounts;
+
+    /// <summary>
+    /// The total mass of the Day. Equivalent to Sum() of all the Portions' masses, but caching this value here
+    /// means these Sum()s don't need to be performed.
+    /// </summary>
     public int Mass { get; private set; } = 0;
     public Fitness TotalFitness { get; }
 
@@ -40,7 +53,7 @@ public partial class Day : IVerbose, IComparable<Day>
         _portions = new();
         portions = new(_portions);
         m_algorithm = algorithm;
-        m_constraintAmounts = new float[Constraint.Count];
+        m_nutrientAmounts = new float[Constraint.Count];
     }
 
 
@@ -53,22 +66,27 @@ public partial class Day : IVerbose, IComparable<Day>
         portions = new(_portions);
         m_algorithm = day.m_algorithm;
         Mass = day.Mass;
-        m_constraintAmounts = day.m_constraintAmounts;
+        m_nutrientAmounts = day.m_nutrientAmounts;
     }
 
 
-    // --- Permitted portion list operations
+    // --- Exposed portion list operations
 
 
+    /// <summary>
+    /// Adds a portion to the Day, and updates "total" quantities, so that expensive Sum() operations
+    /// don't need to be carried out later.
+    /// </summary>
+    /// <param name="portion">The portion to add.</param>
     public void AddPortion(Portion portion)
     {
         bool merged = false;
 
-        // Merge new portion with an existing one if it has the same name.
+        // Merge new portion with an existing one if they represent the same food.
         for (int i = 0; i < portions.Count; i++)
         {
             Portion existing = portions[i];
-            if (existing.FoodType == portion.FoodType)
+            if (existing.FoodType.CompositeKey == portion.FoodType.CompositeKey)
             {
                 existing.Mass += portion.Mass;
                 merged = true;
@@ -85,19 +103,26 @@ public partial class Day : IVerbose, IComparable<Day>
 
 
     /// <summary>
-    /// Tries to remove the portion from the list. If it is the last remaining portion,
+    /// Tries to remove a portion from the list. If it is the last remaining portion,
     /// it will not be removed.
     /// </summary>
     /// <param name="index">The portion index to remove if it is not the only one left.</param>
-    public void RemovePortion(int index)
+    public void TryRemovePortion(int index)
     {
         SubtractPortionProperties(_portions[index]);
         _portions.RemoveAt(index);
     }
 
 
+    /// <summary>
+    /// Sets the mass of the portion at index `index` to `mass`.
+    /// </summary>
+    /// <param name="index">The index of the portion to set the mass of.</param>
+    /// <param name="mass">The new mass.</param>
     public void SetPortionMass(int index, int mass)
     {
+        // Calculate the change in mass, and add the properties (which can be positive or negative)
+        // of this mass change.
         int dmass = mass - _portions[index].Mass;
 
         Portion p = _portions[index];
@@ -106,6 +131,7 @@ public partial class Day : IVerbose, IComparable<Day>
 
         Portion diff = new(p.FoodType, dmass);
         AddPortionProperties(diff);
+        // ----- END -----
     }
 
 
@@ -113,12 +139,17 @@ public partial class Day : IVerbose, IComparable<Day>
     // --- based on a portion change.
 
 
+    /// <summary>
+    /// Adds the portion's properties to any corresponding "total" variables. Must be performed when
+    /// a new portion is added to ensure validity of the cache.
+    /// </summary>
+    /// <param name="portion">The portion whose properties must be added.</param>
     private void AddPortionProperties(Portion portion)
     {
         for (int i = 0; i < Constraint.Count; i++)
         {
             float diff = portion.GetConstraintAmount((EConstraintType)i);
-            m_constraintAmounts[i] += diff;
+            m_nutrientAmounts[i] += diff;
 
             if (diff > 0)
                 TotalFitness.SetNutrientOutdated((EConstraintType)i);
@@ -127,12 +158,17 @@ public partial class Day : IVerbose, IComparable<Day>
     }
 
 
+    /// <summary>
+    /// Subtracts the portion's properties to any corresponding "total" variables. Must be performed when
+    /// a portion is removed to ensure validity of the cache.
+    /// </summary>
+    /// <param name="portion">The portion whose properties must be subtracted.</param>
     private void SubtractPortionProperties(Portion portion)
     {
         for (int i = 0; i < Constraint.Count; i++)
         {
             float diff = portion.GetConstraintAmount((EConstraintType)i);
-            m_constraintAmounts[i] -= diff;
+            m_nutrientAmounts[i] -= diff;
 
             if (diff > 0)
                 TotalFitness.SetNutrientOutdated((EConstraintType)i);
@@ -148,19 +184,7 @@ public partial class Day : IVerbose, IComparable<Day>
     /// <returns>The quantity of the nutrient in the whole day.</returns>
     public float GetConstraintAmount(EConstraintType nutrient)
     {
-        return m_constraintAmounts[(int)nutrient];
-    }
-
-
-    public float GetManhattanDistanceToPerfect()
-    {
-        float manhattan = 0;
-        for (int i = 0; i < Constraint.Count; i++)
-        {
-            float amount = m_constraintAmounts[i];
-            manhattan += MathF.Abs(amount - m_algorithm.Constraints[i].BestValue);
-        }
-        return manhattan;
+        return m_nutrientAmounts[(int)nutrient];
     }
 
 
@@ -189,9 +213,6 @@ public partial class Day : IVerbose, IComparable<Day>
 
         return true;
     }
-
-
-    public string FitnessVerbose() => TotalFitness.Verbose();
 
 
     // --- Other methods

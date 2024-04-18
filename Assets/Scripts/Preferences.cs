@@ -20,8 +20,8 @@ public enum ESelectionMethod
 public interface ICached
 {
     /// <summary>
-    /// Saves the instance as the .Saved static member variable for its class.
-    /// This occurs during saving and loading to files.
+    /// Saves the instance as the a static variable for its class.
+    /// Called during serialisation and deserialisation of this class.
     /// </summary>
     public void Cache();
 }
@@ -193,6 +193,12 @@ public class Preferences : ICached, IVerbose
     public float inertialWeight;
 
 
+    //
+    // Experiment Settings
+    // 
+    public PlotTools.YAxis yAxis;
+
+
     public Preferences()
     {
         Reset();
@@ -240,6 +246,8 @@ public class Preferences : ICached, IVerbose
         pAccCoefficient = 1;
         gAccCoefficient = 1;
         inertialWeight = 1;
+
+        yAxis = PlotTools.YAxis.BestFitness;
 
         CalculateDefaultConstraints();
     }

@@ -80,6 +80,14 @@ public class AlgorithmSetup : SetupBehaviour
     [SerializeField]
     private TMP_InputField m_inertialWeightInput;
 
+
+    // Experiment Settings
+    [SerializeField]
+    private Button m_experimentYAxisCycleBtn;
+    [SerializeField]
+    private TMP_Text m_experimentYAxisTxt;
+
+
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
     private int m_currentPanelIndex = 0;
@@ -147,6 +155,8 @@ public class AlgorithmSetup : SetupBehaviour
         m_colonyPortionsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyPortions, value));
         m_stagnationItersInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyStagnationIters, value));
 
+        m_experimentYAxisCycleBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.yAxis, true, m_experimentYAxisTxt));
+
         m_pbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pAccCoefficient, value));
         m_gbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.gAccCoefficient, value));
         m_inertialWeightInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.inertialWeight, value));
@@ -158,6 +168,7 @@ public class AlgorithmSetup : SetupBehaviour
     /// <summary>
     /// Specific listener method for when a Goal is changed.
     /// The Goal field has extra features, such as when Kcal's Goal is updated, the program updates Protein, Fat and Carbs' goals accordingly.
+    /// The inverse is also true.
     /// </summary>
     /// <param name="nutrient">The nutrient this is the goal for.</param>
     /// <param name="value">The unparsed value from input.</param>
@@ -283,6 +294,8 @@ public class AlgorithmSetup : SetupBehaviour
         m_betaInput.text = p.acoBeta.ToString();
         m_colonyPortionsInput.text = p.colonyPortions.ToString();
         m_stagnationItersInput.text = p.colonyStagnationIters.ToString();
+
+        m_experimentYAxisTxt.text = p.yAxis.ToString();
 
         m_pbestAccInput.text = p.pAccCoefficient.ToString();
         m_gbestAccInput.text = p.gAccCoefficient.ToString();

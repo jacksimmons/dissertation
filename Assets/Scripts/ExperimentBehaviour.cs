@@ -1,3 +1,4 @@
+// Commented 27/3
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,8 +10,6 @@ using Unity.VisualScripting;
 using UnityEngine;
 
 
-
-// Commented 27/3
 /// <summary>
 /// A Unity script which handles the setup and execution of experiments.
 /// An experiment consists of a sequence of one or more steps, run serially.
@@ -141,8 +140,15 @@ public class ExperimentBehaviour : SetupBehaviour
         // Ensure parameters are correct
         if (!CheckParams()) return;
 
+        var setResult = RunAlgorithmSet(m_numAlgs, m_numIters);
+        // First safe point we can display an exception; so display and return.
+        if (setResult.Item1 != "")
+        {
+            Logger.Warn(setResult.Item1);
+            return;
+        }
 
-        PlotTools.PlotLines(RunAlgorithmSet(m_numAlgs, m_numIters));
+        PlotTools.PlotLines(setResult.Item2);
 
         sw.Stop();
         Logger.Log($"Execution time: {sw.ElapsedMilliseconds}ms");
@@ -164,7 +170,7 @@ public class ExperimentBehaviour : SetupBehaviour
         FieldInfo field = m_preferenceFields[m_selectedPreferenceFieldIndex];
 
         // Call the experiment method based on the type of preference selected
-        ExperimentResult result;
+        Tuple<string, ExperimentResult> result;
         if (field.FieldType == typeof(int) || field.FieldType == typeof(float))
         {
             if (!CheckNumericalParams()) return;
@@ -176,10 +182,17 @@ public class ExperimentBehaviour : SetupBehaviour
             result = RunBoolExperiment(m_numAlgs, m_numIters, field, field.Name);
         }
 
+        // First safe point to display the backpropagated exception (if there is one).
+        if (result.Item1 != "")
+        {
+            Logger.Warn(result.Item1);
+            return;
+        }
+
         // Reload original preferences
         Saving.LoadPreferences();
 
-        PlotTools.PlotExperiment(result, field.Name);
+        PlotTools.PlotExperiment(result.Item2, field.Name);
 
         sw.Stop();
         Logger.Log($"Execution time: {sw.ElapsedMilliseconds}ms");
@@ -246,15 +259,19 @@ public class ExperimentBehaviour : SetupBehaviour
     /// <summary>
     /// Handles the running of a single algorithm, outputting its stats.
     /// </summary>
-    /// <returns>Plottable single algorithm stats.</returns>
-    public AlgorithmResult RunAlgorithm(AlgorithmRunner runner, int numIters)
+    /// <returns>Backpropagated error (or empty string), as well as plottable single algorithm stats.</returns>
+    public Tuple<string, AlgorithmResult> RunAlgorithm(AlgorithmRunner runner, int numIters)
     {
-        runner.RunIterations(numIters);
+        var result = runner.RunIterations(numIters);
 
+        // Handle any backpropagated exceptions, and avoid constructing an AlgorithmResult based on the erroneous result.
+        if (result.Item1 != "")
+        {
+            return new(result.Item1, null);
+        }
 
-        // Return value
-        AlgorithmResult result = new(runner.Alg, runner.Plot.ToArray());
-        return result;
+        AlgorithmResult alg = new(runner.BestDayEachIteration.ToArray());
+        return new("", alg);
     }
 
 
@@ -263,9 +280,12 @@ public class ExperimentBehaviour : SetupBehaviour
     /// Handles running of a set of algorithms, outputting their collective stats.
     /// Increasing the numAlgs improves the reliability of the results (low precision but high accuracy).
     /// </summary>
-    /// <returns>Plottable stats for the set of algorithms.</returns>
-    public AlgorithmSetResult RunAlgorithmSet(int numAlgs, int numIters)
+    /// <returns>Backpropagated error (or empty string), and plottable stats for the set of algorithms.</returns>
+    public Tuple<string, AlgorithmSetResult> RunAlgorithmSet(int numAlgs, int numIters)
     {
+        // This is non-empty when an error has backpropagated to this function.
+        string errorText = "";
+
         ManualResetEvent completionEvent = new(false);
         int threadsLeft = numAlgs;
 
@@ -283,7 +303,15 @@ public class ExperimentBehaviour : SetupBehaviour
             {
                 object[] args = state as object[];
                 int index = (int)args[0];
-                results[index] = RunAlgorithm(runners[index], numIters);
+                
+                var result = RunAlgorithm(runners[index], numIters);
+                results[index] = result.Item2;
+
+                if (result.Item1 != "")
+                {
+                    errorText = result.Item1;
+                }
+
                 if (Interlocked.Decrement(ref threadsLeft) == 0) completionEvent.Set();
             }
 
@@ -291,7 +319,12 @@ public class ExperimentBehaviour : SetupBehaviour
         }
         completionEvent.WaitOne();
 
-        return new(results);
+        // If there was an error, avoid constructing an AlgorithmSetResult based on these results.
+        if (errorText != "")
+        {
+            return new(errorText, null);
+        }
+        return new(errorText, new(results));
     }
 
 
@@ -305,16 +338,18 @@ public class ExperimentBehaviour : SetupBehaviour
     /// <param name="pref">A reference to the preference field type.</param>
     /// <param name="min">The minimum value assigned initially.</param>
     /// <param name="max">The maximum value to be tested.</param>
-    /// <returns>Plottable stats from the experiment.</returns>
-    private ExperimentResult RunNumericalExperiment(int numAlgs, int numIters, FieldInfo pref, float min, float max, float step, string name)
+    /// <returns>Backpropagated error (or empty string), and plottable stats from the experiment.</returns>
+    private Tuple<string, ExperimentResult> RunNumericalExperiment(int numAlgs, int numIters, FieldInfo pref, float min, float max, float step, string name)
     {
+        // This is non-empty when an error has backpropagated to this function.
+        string errorText = "";
+
         if (pref.FieldType == typeof(int))
         {
             pref.SetValue(Preferences.Instance, Mathf.RoundToInt(min));
         }
         else
         {
-            Logger.Log("HI");
             pref.SetValue(Preferences.Instance, min);
         }
         int numSteps = 1 + Mathf.CeilToInt((max - min) / step);
@@ -329,7 +364,10 @@ public class ExperimentBehaviour : SetupBehaviour
                 int intVal = (int)pref.GetValue(Preferences.Instance);
 
                 // Run algorithm set then increment the preference
-                results[i] = RunAlgorithmSet(numAlgs, numIters);
+                var result = RunAlgorithmSet(numAlgs, numIters);
+                if (result.Item1 != "") errorText = result.Item1;
+                results[i] = result.Item2;
+
                 steps[i] = intVal;
                 pref.SetValue(Preferences.Instance, (int)Mathf.Min(intVal + Mathf.RoundToInt(step), max));
             }
@@ -338,13 +376,21 @@ public class ExperimentBehaviour : SetupBehaviour
                 float floatVal = (float)pref.GetValue(Preferences.Instance);
 
                 // Run algorithm set then increment the preference
-                results[i] = RunAlgorithmSet(numAlgs, numIters);
+                var result = RunAlgorithmSet(numAlgs, numIters);
+                if (result.Item1 != "") errorText = result.Item1;
+                results[i] = result.Item2;
+
                 steps[i] = floatVal;
                 pref.SetValue(Preferences.Instance, Mathf.Min(floatVal + step, max));
             }
         }
 
-        return new(results, steps, name);
+        // Handle backpropagated errors, and don't construct the ExperimentResult if there are any.
+        if (errorText != "")
+        {
+            return new(errorText, null);
+        }
+        return new(errorText, new(results, steps, name));
     }
 
 
@@ -353,22 +399,29 @@ public class ExperimentBehaviour : SetupBehaviour
     /// Handles running an algorithm set for boolean `true` and `false`.
     /// </summary>
     /// <param name="pref">A reference to the preference field type.</param>
-    /// <returns>Plottable stats from the experiment.</returns>
-    public ExperimentResult RunBoolExperiment(int numAlgs, int numIters, FieldInfo pref, string name)
+    /// <returns>Backpropagated error (or empty string), and plottable stats from the experiment.</returns>
+    public Tuple<string, ExperimentResult> RunBoolExperiment(int numAlgs, int numIters, FieldInfo pref, string name)
     {
+        // This is non-empty when an error has backpropagated to this function.
+        string errorText = "";
+
         AlgorithmSetResult[] results = new AlgorithmSetResult[2];
         object[] steps = new object[2];
 
         // Run a false experiment
         pref.SetValue(Preferences.Instance, false);
-        results[0] = RunAlgorithmSet(numAlgs, numIters);
+        var result = RunAlgorithmSet(numAlgs, numIters);
+        errorText = result.Item1;
+        results[0] = result.Item2;
         steps[0] = false;
 
         // Run a true experiment
         pref.SetValue(Preferences.Instance, true);
-        results[1] = RunAlgorithmSet(numAlgs, numIters);
+        result = RunAlgorithmSet(numAlgs, numIters);
+        errorText = result.Item1;
+        results[1] = result.Item2;
         steps[1] = true;
 
-        return new(results, steps, name);
+        return new(errorText, new(results, steps, name));
     }
 }

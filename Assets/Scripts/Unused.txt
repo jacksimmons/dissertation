@@ -750,3 +750,234 @@ public float GetFitness()
         // Reset old pref value and return
         pref = temp;
     }
+
+
+    //private void ProcessFileRow(DatasetFile file, FoodData data)
+    //{
+    //    FoodData currentFood = new()
+    //    {
+    //        Nutrients = new float[Constraint.Count]
+    //    };
+
+    //    string currentWord = "";
+
+    //    int currentWordIndex = 0;
+    //    int currentRowIndex = 0;
+
+    //    bool speechMarkOpened = false;
+
+
+    //    for (int i = 0; i < m_files[file].Length; i++)
+    //    {
+    //        char ch = m_files[file][i];
+    //        switch (ch)
+    //        {
+    //            case '\"':
+    //                // Permits any character to be added to the word, even ',' or '\n'.
+    //                // The speech marks themselves will be ignored.
+    //                speechMarkOpened = !speechMarkOpened;
+    //                break;
+    //            case '\r':
+    //                break;
+    //            case '\n':
+    //            case ',': // We have finished the current word.
+    //                      // If in speech marks, we have not yet finished the current word.
+    //                      // Comma and Newline both mark the end of a word; they differ in what happens next.
+    //                      // - Comma just starts a new word (new food property)
+    //                      // - Newline starts a new word AND new row (new food entirely)
+    //                if (speechMarkOpened)
+    //                {
+    //                    currentWord += ch;
+    //                    break;
+    //                }
+
+    //                // Parses the word into a float, if possible.
+    //                // Default value - "" or "N" get a value of -1.
+    //                if (!float.TryParse(currentWord, out float floatVal))
+    //                    floatVal = -1;
+
+    //                // If the word is just a title, ignore it
+    //                if (currentRowIndex >= FIRST_ROW)
+    //                {
+    //                    // Trace values are given a value of 0
+    //                    if (currentWord == "Tr")
+    //                        floatVal = 0;
+
+    //                    HandleColumnLookup(status, col, currentWordIndex, floatVal);
+
+    //                    // If the character was a newline, also save and reset the word
+    //                    if (ch == '\n')
+    //                    {
+    //                        // Save
+    //                        if (m_dataset.ContainsKey(currentFood.CompositeKey))
+    //                            m_dataset[currentFood.CompositeKey] = currentFood.MergeWith(m_dataset[currentFood.CompositeKey]);
+    //                        else
+    //                            m_dataset.Add(currentFood.CompositeKey, currentFood);
+
+    //                        // Reset
+    //                        currentFood = new()
+    //                        {
+    //                            Nutrients = new float[Constraint.Count]
+    //                        };
+    //                    }
+    //                }
+
+    //                if (ch == '\n')
+    //                {
+    //                    // Reset word, word counter and increment row counter if moving to a new row
+    //                    currentWord = "";
+    //                    currentWordIndex = 0;
+    //                    currentRowIndex++;
+    //                }
+    //                else
+    //                {
+    //                    // Reset for the next word
+    //                    currentWord = "";
+    //                    currentWordIndex++;
+    //                }
+    //                break;
+
+    //            default: // Regular character, i.e. part of the next value
+    //                currentWord += ch;
+    //                break;
+    //        }
+    //    }
+    //}
+	
+//using System.Collections.Generic;
+//using System.Collections.ObjectModel;
+//using System.Linq;
+
+
+///// <summary>
+///// A class which handles the data of a population of Days. Stores whether fitness is updated, which becomes false whenever
+///// the portions of a day are modified. If a fitness is not updated, the Population recalculates it, but only when it is
+///// requested.
+///// </summary>
+//public class Population
+//{
+//    private Dictionary<Day, float> m_dayFitnesses;
+//    private Dictionary<Day, bool> m_dayFitnessUpToDate;
+//    private float m_avgFitness;
+//    private bool m_avgFitnessUpToDate;
+
+//    public ReadOnlyDictionary<Day, float> DayFitnesses;
+//    private List<Day> m_sortedDays;
+//    private bool m_sortedDaysUpToDate = false;
+
+
+//    public Population()
+//    {
+//        m_dayFitnesses = new();
+//        m_dayFitnessUpToDate = new();
+//        DayFitnesses = new(m_dayFitnesses);
+//    }
+
+
+//    public void Add(Day day)
+//    {
+//        m_dayFitnesses[day] = -1;
+//        m_dayFitnessUpToDate[day] = false;
+//        FlagPopulationAsOutdated();
+//    }
+
+
+//    public void Remove(Day day)
+//    {
+//        m_dayFitnesses.Remove(day);
+//        m_dayFitnessUpToDate.Remove(day);
+//        FlagPopulationAsOutdated();
+//    }
+
+
+//    /// <summary>
+//    /// Flag a day as outdated so the population knows to recalculate its fitness
+//    /// when it is next needed.
+//    /// </summary>
+//    public void FlagAsOutdated(Day day)
+//    {
+//        m_dayFitnessUpToDate[day] = false;
+//        FlagPopulationAsOutdated();
+//    }
+
+
+//    /// <summary>
+//    /// Flag a population change as having occurred - various parameters must be
+//    /// recalculated when next needed.
+//    /// </summary>
+//    private void FlagPopulationAsOutdated()
+//    {
+//        m_avgFitnessUpToDate = false;
+//        m_sortedDaysUpToDate = false;
+//    }
+
+
+//    public float GetFitness(Day day)
+//    {
+//        if (m_dayFitnessUpToDate[day]) return m_dayFitnesses[day];
+
+//        // Need to update it first.
+//        return UpdateAndGetFitness(day);
+//    }
+
+
+//    private float UpdateAndGetFitness(Day day)
+//    {
+//        m_dayFitnesses[day] = day.GetFitness();
+//        m_dayFitnessUpToDate[day] = true;
+//        m_avgFitnessUpToDate = false;
+//        return m_dayFitnesses[day];
+//    }
+
+
+//    public float GetAvgFitness()
+//    {
+//        if (m_avgFitnessUpToDate) return m_avgFitness;
+
+//        m_avgFitness = m_dayFitnesses.Sum(x => m_dayFitnessUpToDate[x.Key] ? x.Value : UpdateAndGetFitness(x.Key));
+//        return m_avgFitness;
+//    }
+
+
+//    /// <summary>
+//    /// Sorts a list of days, in increasing fitness (0 is best).
+//    /// </summary>
+//    public List<Day> GetSortedPopulation(bool reversed = false)
+//    {
+//        // Can early exit, provided the sorted days member is up to date.
+//        if (m_sortedDaysUpToDate)
+//        {
+//            List<Day> sortedDays = new(m_sortedDays);
+//            if (reversed)
+//            {
+//                sortedDays.Reverse();
+//            }
+//            return sortedDays;
+//        }
+
+//        List<Day> sortedPop = DayFitnesses.Keys.ToList();
+//        SortDayList(sortedPop);
+
+//        // Update the flag
+//        m_sortedDays = new(sortedPop);
+//        m_sortedDaysUpToDate = true;
+
+//        // Reverse the list separate to m_sortedDays
+//        if (reversed) sortedPop.Reverse();
+
+//        return sortedPop;
+//    }
+
+//}
+
+
+
+    //private static float[] GetLine(int iResult, int numIters, Day[][] perResultBestDayEachIter)
+    //{
+    //    float[] pts = new float[numIters];
+    //    for (int j = 0; j < numIters; j++)
+    //    {
+    //        pts[j] = GetIterationBestFitness(j, perResultBestDayEachIter[iResult]);
+    //    }
+    //    return pts;
+    //}

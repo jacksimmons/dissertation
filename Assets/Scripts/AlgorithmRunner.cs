@@ -14,8 +14,8 @@ public class AlgorithmRunner
     public Algorithm Alg { get; private set; }
 
     // A plot containing Iteration for x and Best Fitness for y. Goes from Iteration 0 to Iteration NumIters.
-    private List<float> m_plot;
-    public ReadOnlyCollection<float> Plot { get; }
+    private List<Day> m_bestDayEachIteration;
+    public ReadOnlyCollection<Day> BestDayEachIteration { get; }
 
 
     // https://stackoverflow.com/questions/12306/can-i-serialize-a-c-sharp-type-object
@@ -28,39 +28,40 @@ public class AlgorithmRunner
         Alg = Algorithm.Build(Type.GetType(algType)!);
 
 
-        // Handle algorithm initialisation. If it fails, go back to the previous menu. (Which must be AlgorithmSetup)
-        if (!Alg.Init())
-        {
-            GameObject.FindWithTag("MenuStackHandler").GetComponent<MenuStackHandler>().OnBackPressed();
-            return;
-        }
-
-
         // Initialise plot variables
-        m_plot = new();
-        Plot = new(m_plot);
+        m_bestDayEachIteration = new();
+        BestDayEachIteration = new(m_bestDayEachIteration);
     }
 
 
     /// <summary>
     /// Runs a given number of iterations, and adds each iteration to the graph.
     /// </summary>
-    /// <returns>The time taken for the iterations to pass.</returns>
-    public float RunIterations(int numIters)
+    /// <returns> A tuple, of: 
+    /// string: An empty string, if there are no errors. An error message, otherwise.
+    /// int: Elapsed milliseconds.</returns>
+    public Tuple<string, long> RunIterations(int numIters)
     {
+        // Initialise the algorithm; if it fails, return the error message.
+        if (BestDayEachIteration.Count == 0)
+        {
+            string errorText = Alg.Init();
+            if (errorText != "")
+            {
+                return new(errorText, 0);
+            }
+        }
+
         Stopwatch sw = Stopwatch.StartNew();
 
         for (int i = 0; i < numIters; i++)
         {
             Alg.RunIteration();
-
-            // Always plot the graph using a summed-fitness measure.
-            Day.SummedFitness sf = new(Alg.BestDay);
-            m_plot.Add(sf.Value); // ith plot addition
+            m_bestDayEachIteration.Add(Alg.BestDay); // ith plot addition
         }
 
         sw.Stop();
 
-        return sw.ElapsedMilliseconds;
+        return new("", sw.ElapsedMilliseconds);
     }
 }
