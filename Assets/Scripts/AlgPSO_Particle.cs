@@ -1,4 +1,7 @@
 // Commented 13/4
+using System;
+
+
 partial class AlgPSO
 {
     /// <summary>
@@ -9,15 +12,15 @@ partial class AlgPSO
     protected class ParticleVector
     {
         /// <summary>
-        /// The underlying datastructure of the vector: an int array of length N.
+        /// The underlying datastructure of the vector: a float array of length N.
         /// </summary>
-        private readonly int[] m_vector;
+        private readonly float[] m_vector;
 
 
         /// <summary>
         /// Indexer property. Allows objects to be indexed like name[num].
         /// </summary>
-        public int this[int i]
+        public float this[int i]
         {
             get
             {
@@ -31,14 +34,14 @@ partial class AlgPSO
         /// </summary>
         public ParticleVector(int length)
         {
-            m_vector = new int[length];
+            m_vector = new float[length];
         }
 
 
         /// <summary>
         /// Constructor with a predetermined internal structure.
         /// </summary>
-        public ParticleVector(int[] vector)
+        public ParticleVector(float[] vector)
         {
             m_vector = vector;
         }
@@ -51,7 +54,7 @@ partial class AlgPSO
         {
             for (int i = 0; i < vec.m_vector.Length; i++)
             {
-                vec.m_vector[i] = (int)(vec.m_vector[i] * scalar);
+                vec.m_vector[i] = vec.m_vector[i] * scalar;
             }
 
             return vec;
@@ -77,7 +80,7 @@ partial class AlgPSO
             for (int i = 0; i < c.m_vector.Length; i++)
             {
                 // This can lead to negative results, so use the Normalise function before using masses.
-                c.m_vector[i] = a.m_vector[i] + (int)(multiplier * b.m_vector[i]);
+                c.m_vector[i] = a.m_vector[i] + multiplier * b.m_vector[i];
             }
 
             return c;
@@ -153,7 +156,7 @@ partial class AlgPSO
             m_swarm = swarm;
 
             // Randomly initialise the position
-            int[] pos = new int[m_swarm.Foods.Count];
+            float[] pos = new float[m_swarm.Foods.Count];
             for (int i = 0; i < m_swarm.Foods.Count; i++)
             {
                 pos[i] = m_swarm.Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
@@ -207,7 +210,7 @@ partial class AlgPSO
             Day day = new(m_swarm);
             for (int i = 0; i < m_swarm.Foods.Count; i++)
             {
-                int mass = m_position[i];
+                int mass = (int)MathF.Round(m_position[i]);
                 if (mass == 0) continue; // Don't add any empty portions
 
                 day.AddPortion(new(m_swarm.Foods[i], mass));

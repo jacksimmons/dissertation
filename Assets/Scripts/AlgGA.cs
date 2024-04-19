@@ -286,20 +286,20 @@ public partial class AlgGA : Algorithm
             // If the portion isn't to remain (the mutation led to a negative or 0 mass), remove it.
             // Otherwise, set the new mutated mass.
             if (!result.Item1)
-                day.TryRemovePortion(i);
+                day.RemovePortion(i);
             else
                 day.SetPortionMass(i, result.Item2);
         }
 
         // Add and/or remove portions entirely as a mutation
         bool addPortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb;
-        bool removePortion = (float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb && day.portions.Count > 0;
+        bool removePortion = ((float)Rand.NextDouble() < Prefs.addOrRemovePortionMutationProb) && day.portions.Count > 0;
 
         if (addPortion)
             day.AddPortion(RandomPortion);
 
         if (removePortion)
-            day.TryRemovePortion(Rand.Next(day.portions.Count));
+            day.RemovePortion(Rand.Next(day.portions.Count));
     }
 
 

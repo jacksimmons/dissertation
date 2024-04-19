@@ -77,8 +77,7 @@ public partial class AlgACO : Algorithm
         // Create vertices
         for (int i = 0; i < Prefs.colonyPortions; i++)
         {
-            Portion randP = RandomPortion;
-            m_vertices[i] = randP;
+            m_vertices[i] = RandomPortion;
         }
 
         // Calculate and assign edge fitnesses and pheromone

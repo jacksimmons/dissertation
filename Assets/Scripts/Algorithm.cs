@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using static UnityEditor.Progress;
 
 
 public abstract class Algorithm
@@ -25,13 +26,15 @@ public abstract class Algorithm
     private readonly List<Day> m_population;
     public readonly ReadOnlyCollection<Day> Population;
 
-    // A huge data structure storing all possible portions from the dataset in non-random order.
-    // Preferences.Instance.minPortionMass and Preferences.Instance.maxPortionMass can drastically change the
-    // size of this in memory. (By default, it is about 3M elements, or at least 3MB)
-    protected Portion[] m_portions = Array.Empty<Portion>();
-    public ReadOnlyCollection<Portion> Portions { get; }
-    protected Portion RandomPortion => m_portions[Rand.Next(m_portions.Length)];
-
+    protected Portion RandomPortion
+    {
+        get
+        {
+            Food food = m_foods[Rand.Next(0, Foods.Count)];
+            int mass = Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
+            return new(food, mass);
+        }
+    }
     private readonly Dictionary<EConstraintType, float> m_prevAvgPopStats = new(); // Stores the average constraint amount for the whole population from last iteration.
 
 
@@ -94,21 +97,6 @@ public abstract class Algorithm
         }
         // Update the foods list with the unbanned list.
         m_foods = allFoods;
-
-
-        // Generate the search space from these foods
-        // MAX - MIN + 1 is the number of elements MIN <= x <= MAX. (E.g. 2 <= x <= 3 => x in {2, 3} (count 2) and 3 - 2 + 1 = 2)
-        int portionsPerFood = Math.Max(Prefs.maxPortionMass - Prefs.minPortionMass + 1, 0);
-        m_portions = new Portion[Foods.Count * portionsPerFood];
-        Portions = new(m_portions);
-        for (int i = 0; i < Foods.Count; i++)
-        {
-            for (int j = 0; j < portionsPerFood; j++)
-            {
-                // The mass of the portion can be calculated by just adding the minimum mass to j.
-                m_portions[i * portionsPerFood + j] = new(Foods[i], j + Prefs.minPortionMass);
-            }
-        }
 
 
         // Load constraints from Preferences.

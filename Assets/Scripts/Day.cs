@@ -15,8 +15,13 @@ public partial class Day : IVerbose, IComparable<Day>
     private readonly Algorithm m_algorithm;
 
     // The portions that compose the day; i.e. the food recommended by the plan.
-    private readonly List<Portion> _portions;
+    private readonly List<Portion> m_portions;
     public readonly ReadOnlyCollection<Portion> portions;
+
+    /// <summary>
+    /// For every Food type the Day has, map the one and only Portion of this type.
+    /// </summary>
+    private Dictionary<Food, Portion> m_foodToPortion;
 
     /// <summary>
     /// A cache for the total amount of each "nutrient" the Day has. Each value is the sum of all the Portion amounts
@@ -50,10 +55,11 @@ public partial class Day : IVerbose, IComparable<Day>
     /// </summary>
     public Day(Algorithm algorithm) : this()
     {
-        _portions = new();
-        portions = new(_portions);
+        m_portions = new();
+        portions = new(m_portions);
         m_algorithm = algorithm;
         m_nutrientAmounts = new float[Constraint.Count];
+        m_foodToPortion = new();
     }
 
 
@@ -62,11 +68,12 @@ public partial class Day : IVerbose, IComparable<Day>
     /// </summary>
     public Day(Day day) : this()
     {
-        _portions = new(day.portions);
-        portions = new(_portions);
+        m_portions = new(day.portions);
+        portions = new(m_portions);
         m_algorithm = day.m_algorithm;
         Mass = day.Mass;
         m_nutrientAmounts = day.m_nutrientAmounts;
+        m_foodToPortion = day.m_foodToPortion;
     }
 
 
@@ -82,35 +89,33 @@ public partial class Day : IVerbose, IComparable<Day>
     {
         bool merged = false;
 
-        // Merge new portion with an existing one if they represent the same food.
-        for (int i = 0; i < portions.Count; i++)
+        // Merge new portion with any existing one.
+        if (m_foodToPortion.ContainsKey(portion.FoodType))
         {
-            Portion existing = portions[i];
-            if (existing.FoodType.CompositeKey == portion.FoodType.CompositeKey)
-            {
-                existing.Mass += portion.Mass;
-                merged = true;
-                _portions[i] = existing;
-                break;
-            }
+            Portion existing = m_foodToPortion[portion.FoodType];
+            existing.Mass += portion.Mass;
+            merged = true;
         }
 
         // Otherwise, add the portion (it has a unique food)
         if (!merged)
-            _portions.Add(portion);
+        {
+            m_portions.Add(portion);
+            m_foodToPortion.Add(portion.FoodType, portion);
+        }
         AddPortionProperties(portion);
     }
 
 
     /// <summary>
-    /// Tries to remove a portion from the list. If it is the last remaining portion,
-    /// it will not be removed.
+    /// Removes a portion from the list.
     /// </summary>
-    /// <param name="index">The portion index to remove if it is not the only one left.</param>
-    public void TryRemovePortion(int index)
+    /// <param name="index">The portion index to remove.</param>
+    public void RemovePortion(int index)
     {
-        SubtractPortionProperties(_portions[index]);
-        _portions.RemoveAt(index);
+        SubtractPortionProperties(m_portions[index]);
+        m_foodToPortion.Remove(m_portions[index].FoodType);
+        m_portions.RemoveAt(index);
     }
 
 
@@ -123,11 +128,11 @@ public partial class Day : IVerbose, IComparable<Day>
     {
         // Calculate the change in mass, and add the properties (which can be positive or negative)
         // of this mass change.
-        int dmass = mass - _portions[index].Mass;
+        int dmass = mass - m_portions[index].Mass;
 
-        Portion p = _portions[index];
+        Portion p = m_portions[index];
         p.Mass = mass;
-        _portions[index] = p;
+        m_portions[index] = p;
 
         Portion diff = new(p.FoodType, dmass);
         AddPortionProperties(diff);

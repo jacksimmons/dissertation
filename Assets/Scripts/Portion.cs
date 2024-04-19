@@ -3,7 +3,7 @@
 /// </summary>
 public struct Portion : IVerbose
 {
-    public readonly Food FoodType { get; }
+    public Food FoodType { get; }
 
     public int Mass { get; set; }
     private readonly float Multiplier => (float)Mass / Food.MASS;

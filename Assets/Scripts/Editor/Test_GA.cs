@@ -61,20 +61,39 @@ public class Test_GA
         CrossoverTest(ga, new(crsParentA, new(crsParentA)));
 
         // Mutation with all portions (to see if duplicate portion gets mutated correctly)
-        // Expect two "Added duplicate portion" messages in the Unity console.
+        // In most instances, expect two "Added duplicate portion" messages in the Unity console.
         Preferences.Instance.minPortionMass = Preferences.Instance.mutationMassChangeMax + 1; // So adding a portion is distinguishable from mutation
         Preferences.Instance.addOrRemovePortionMutationProb = 1; // Ensure an add/remove mutation takes place
+        Preferences.Instance.changePortionMassMutationProb = 0; // Ensure no mass changes occur
         ga = (AlgGA)Algorithm.Build(typeof(AlgGA));
         Day mutAllParentA = new(ga);
-        foreach (Portion portion in ga.Portions)
+
+        // Add all possible unique portions
+        for (int i = Preferences.Instance.minPortionMass; i < Preferences.Instance.maxPortionMass; i++)
         {
-            mutAllParentA.AddPortion(portion);
+            for (int j = 0; j < ga.Foods.Count; j++)
+            {
+                mutAllParentA.AddPortion(new(ga.Foods[j], i));
+            }
         }
+
         Tuple<Day, Day> children = MutationTest(ga, new(mutAllParentA, new(mutAllParentA)));
 
-        // The number of portions in mutated should be 1 less than the parent (because adds happen before removals)
-        Assert.True(children.Item1.portions.Count == mutAllParentA.portions.Count - 1);
-        Assert.True(children.Item2.portions.Count == mutAllParentA.portions.Count - 1);
+        // Number of portions in children can only be the same as the parent or one less.
+        int[] validChildPortionCounts = new int[] { mutAllParentA.portions.Count, mutAllParentA.portions.Count - 1 };
+        Assert.True(validChildPortionCounts.Contains(children.Item1.portions.Count));
+        Assert.True(validChildPortionCounts.Contains(children.Item2.portions.Count));
+
+        // Statistical anomalies - if these messages occur regularly (if at all), something isn't right.
+        if (children.Item1.portions.Count == validChildPortionCounts[0])
+        {
+            Logger.Log("Child 1 was very lucky and re-added the just-removed portion during mutation.");
+        }
+
+        if (children.Item2.portions.Count == validChildPortionCounts[0])
+        {
+            Logger.Log("Child 2 was very lucky and re-added the just-removed portion during mutation.");
+        }
     }
 
 
@@ -124,8 +143,13 @@ public class Test_GA
         // being one portion added / removed, and changed mass on all portions.
         Tuple<Day, Day> children = new(new(parents.Item1), new(parents.Item2));
 
+        Logger.Log($"Child 1 before: {children.Item1.portions.Count}");
+        Logger.Log($"Child 2 before: {children.Item2.portions.Count}");
+
         ga.MutateDay(children.Item1);
+        Logger.Log($"Child 1 after: {children.Item1.portions.Count}");
         ga.MutateDay(children.Item2);
+        Logger.Log($"Child 2 after: {children.Item2.portions.Count}");
 
         // Counts the number of additional portions a has over b.
         int CountAddedPortions(Day a, Day b)

@@ -24,11 +24,6 @@ public partial class AlgPSO : Algorithm
         // ----- Preference error checking -----
         string errorText = base.Init();
         if (errorText != "") return errorText; // Parent initialisation, and ensure no errors have occurred.
-
-        if (Prefs.inertialWeight > 1)
-        {
-            return $"Invalid preference: inertialWeight ({Prefs.inertialWeight}) cannot be greater than 1.";
-        }
 		// ----- END -----
 
         // Initialise particles
