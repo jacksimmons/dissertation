@@ -1,10 +1,17 @@
+// Commented 20/4
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 
+/// <summary>
+/// A Unity script for viewing the current population of an algorithm during its execution.
+/// </summary>
 public class PopulationView : MonoBehaviour
 {
+    /// <summary>
+    /// The Unity script which handles Unity to backend integration.
+    /// </summary>
     [SerializeField]
     private AlgorithmBehaviour m_algRunner;
 

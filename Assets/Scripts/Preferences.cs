@@ -1,3 +1,4 @@
+// Commented 20/4
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -17,6 +18,10 @@ public enum ESelectionMethod
 }
 
 
+/// <summary>
+/// Caching-based singleton pattern. Those who inherit from this must have a
+/// Cache method, which saves the instance to the singleton.
+/// </summary>
 public interface ICached
 {
     /// <summary>
@@ -31,8 +36,11 @@ public interface ICached
 /// A class which saves the user's preferences when serialized into a file.
 /// </summary>
 [Serializable]
-public class Preferences : ICached, IVerbose
+public sealed class Preferences : ICached, IVerbose
 {
+    /// <summary>
+    /// The preferences set by the user.
+    /// </summary>
     private static Preferences m_instance;
     public static Preferences Instance
     {
@@ -47,8 +55,11 @@ public class Preferences : ICached, IVerbose
     public void Cache() { m_instance = this; }
 
 
+    /// <summary>
+    /// The settings corresponding to a specific food type by key.
+    /// </summary>
     [Serializable]
-    public class CustomFoodSettings
+    public sealed class CustomFoodSettings
     {
         public string Key;
         public float Cost;
@@ -58,6 +69,9 @@ public class Preferences : ICached, IVerbose
     // PREFS MENU------------------
 
 
+    /// <summary>
+    /// The algorithm types the user can choose from.
+    /// </summary>
     public static readonly string[] ALG_TYPES =
     {
         typeof(AlgGA).FullName!,
@@ -66,6 +80,9 @@ public class Preferences : ICached, IVerbose
     };
 
 
+    /// <summary>
+    /// The types of constraint the user can choose from for each constraint type.
+    /// </summary>
     public static readonly string[] CONSTRAINT_TYPES =
     {
         typeof(HardConstraint).FullName!,
@@ -78,9 +95,21 @@ public class Preferences : ICached, IVerbose
     //
     // Calorie Goals
     //
-    public float dailyExerciseKcal;
-    public bool gainElseLoseWeight;
-    public float dailyLoseOrGainKcal;
+    public float BMR // Harris-Benedict equations (Frankenfield, 1998).
+    {
+        get
+        {
+            if (maleElseFemale)
+                return 66.4730f + 13.7516f * weightKg + 5.0033f * heightCm - 6.7550f * ageYears;
+            return 655.0955f + 9.5634f * weightKg + 1.8496f * heightCm - 4.6756f * ageYears;
+        }
+    }
+    public float dailyExerciseKcal; // Energy expenditure due to exercise (kcal)
+    public bool gainElseLoseWeight; // `true` if user wants to gain weight, `false` if they want to lose it
+    // If user wants to maintain weight, they can set this to either, and set the below preference to 0.
+    public float dailyLoseOrGainKcal; // Amount of energy user wants to gain/lose (kcal)
+    // Note that the above represents calories removed if user selected to lose weight, but will be calories
+    // added if they chose to gain weight.
 
 
     //
@@ -97,9 +126,9 @@ public class Preferences : ICached, IVerbose
     // User Info
     //
 
-    public bool maleElseFemale;
+    public bool maleElseFemale; // `true` if the user is AMAB, `false` if the user is AFAB.
     public bool isPregnant;
-    public bool needsVitD;
+    public bool needsVitD; // Whether user wants a Vit D supplement
     public int ageYears;
     public float weightKg;
     public float heightCm;
@@ -110,8 +139,13 @@ public class Preferences : ICached, IVerbose
     //
 
     public ConstraintData[] constraints = new ConstraintData[Constraint.Count];
+
+    /// <summary>
+    /// Each index `i` represents whether (EConstraintType)`i` can be accepted as missing in the dataset.
+    /// If this is false, the dataset will reject entries with missing data. If true, it won't.
+    /// </summary>
     public bool[] acceptMissingNutrientValue = new bool[Constraint.Count];
-    public List<CustomFoodSettings> customFoodSettings = new();                      // List of structs, each of which contains a composite key and cost of the food it represents.
+    public List<CustomFoodSettings> customFoodSettings = new();
 
 
     // ALG SETUP MENU--------------
@@ -122,11 +156,13 @@ public class Preferences : ICached, IVerbose
     //
 
     public int populationSize;
-    public int numStartingPortionsPerDay;
+    public int numStartingPortionsPerDay; // Number of random portions each day in the population starts with
     public int minPortionMass;
     public int maxPortionMass;
+    // For each portion, if it has mass over maxPortionMass, +1 fitness to the containing day per gram of
+    // mass maxPortionMass.
     public bool addFitnessForMass;
-    public string algorithmType;
+    public string algorithmType; // Fully qualified class name of the algorithm the user has selected.
     public EFitnessApproach fitnessApproach;
 
 
@@ -134,8 +170,8 @@ public class Preferences : ICached, IVerbose
     // GA-specific settings
     //
 
-    public int mutationMassChangeMin;
-    public int mutationMassChangeMax;
+    public int mutationMassChangeMin; // Minimum mass change +/- a portion can have during mutation.
+    public int mutationMassChangeMax; // Maximum mass change +/- a portion can have during mutation.
 
     // Chance for any portion to be mutated in an algorithm pass.
     // Is divided by the number of portions in the calculation.
@@ -258,15 +294,15 @@ public class Preferences : ICached, IVerbose
     /// </summary>
     public void CalculateDefaultConstraints()
     {
-        // Calculates daily calories based on the Harris-Benedict equations.
-        float GetDailyCalories()
-        {
-            if (maleElseFemale)
-                return 66.4730f + 13.7516f * weightKg + 5.0033f * heightCm - 6.7550f * ageYears;
-            return 655.0955f + 9.5634f * weightKg + 1.8496f * heightCm - 4.6756f * ageYears;
-        }
+        // Calculate maintenance calories.
+        float kcalGoal = BMR + dailyExerciseKcal;
 
-        float kcalGoal = GetDailyCalories();
+        // From maintenance, add or subtract the change goal.
+        if (gainElseLoseWeight)
+            kcalGoal += dailyLoseOrGainKcal;
+        else
+            kcalGoal -= dailyLoseOrGainKcal;
+
         SetConstraint(EConstraintType.Kcal, typeof(ConvergeConstraint), max: kcalGoal * 1.5f, weight: 2, goal: kcalGoal);
 
         // Auto-generate default p/f/c properties based on the above constraint
@@ -313,6 +349,9 @@ public class Preferences : ICached, IVerbose
     }
 
 
+    /// <summary>
+    /// Shorthand for building a constraint with a number of parameters.
+    /// </summary>
     private void SetConstraint(EConstraintType nutrient, Type constraintType, float max, float weight, float min = 0, float goal = 0)
     {
         constraints[(int)nutrient] = new() { Min = min, Max = max, Goal = goal, Type = constraintType.FullName!, Weight = weight, NutrientName = $"{nutrient}" };
@@ -320,6 +359,9 @@ public class Preferences : ICached, IVerbose
     }
 
 
+    /// <summary>
+    /// Sets the preferences such that only vegan foods are accepted.
+    /// </summary>
     public void MakeVegan()
     {
         eatsLandMeat = false;
@@ -328,6 +370,9 @@ public class Preferences : ICached, IVerbose
     }
 
 
+    /// <summary>
+    /// Sets the preferences such that only vegetarian foods are accepted.
+    /// </summary>
     public void MakeVegetarian()
     {
         eatsLandMeat = false;
@@ -335,6 +380,9 @@ public class Preferences : ICached, IVerbose
     }
 
 
+    /// <summary>
+    /// Sets the preferences such that only pescatarian foods are accepted.
+    /// </summary>
     public void MakePescatarian()
     {
         eatsLandMeat = false;

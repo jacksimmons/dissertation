@@ -51,7 +51,7 @@ public enum EConstraintType
 /// to be changed by ref.
 /// </summary>
 [Serializable]
-public class ConstraintData : IVerbose
+public sealed class ConstraintData : IVerbose
 {
     /// <summary>
     /// (Optional, default: 0) Any value below this gives a fitness of Infinity.
@@ -100,6 +100,16 @@ public abstract class Constraint
     public abstract float WorstValue { get; }
 
     protected readonly float m_weight;
+
+
+    /// <summary>
+    /// The number of constraint types in the constraint type enum. Shorthand for getting the length each time.
+    /// </summary>
+    public static int Count = Enum.GetValues(typeof(EConstraintType)).Length;
+    /// <summary>
+    /// Collection of all values contained in the constraint type enum. Shorthand for getting the values each time.
+    /// </summary>
+    public static EConstraintType[] Values = (EConstraintType[])Enum.GetValues(typeof(EConstraintType));
 
 
     /// <summary>
@@ -163,16 +173,6 @@ public abstract class Constraint
     /// <param name="amount">The quantity, in whatever units are used for the constraint type this
     /// constraint maps to.</param>
     public abstract float GetUnweightedFitness(float amount);
-
-
-    /// <summary>
-    /// The number of constraint types in the constraint type enum. Shorthand for getting the length each time.
-    /// </summary>
-    public static int Count = Enum.GetValues(typeof(EConstraintType)).Length;
-    /// <summary>
-    /// Collection of all values contained in the constraint type enum. Shorthand for getting the values each time.
-    /// </summary>
-    public static EConstraintType[] Values = (EConstraintType[])Enum.GetValues(typeof(EConstraintType));
 
 
     /// <summary>

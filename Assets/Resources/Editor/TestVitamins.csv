@@ -1,9 +1,18 @@
-Food Code,Food Name,Description,Group,Previous,Main data references,Footnote,Retinol (µg),Carotene (µg),Retinol Equivalent (µg),Vitamin D (µg),Vitamin E (mg),Vitamin K1 (µg),Thiamin (mg),Riboflavin (mg),Niacin (mg),Tryptophan/60 (mg),Niacin equivalent (mg),Vitamin B6 (mg),Vitamin B12 (µg),Folate (µg),Pantothenate (mg),Biotin (µg),Vitamin C (mg)
-,,,,,,,RET,CAREQU,RETEQU,VITD,VITE,VITK1,THIA,RIBO,NIAC,TRYP60,NIACEQU,VITB6,VITB12,FOLT,PANTO,BIOT,VITC
-,,,,,,,Retinol,Carotene,Total retinol equivalent,Total Vitamin D,Total Vitamin E,Phylloquinone,Thiamin,Riboflavin,Niacin,Tryptophan divided by 60,Niacin equivalent,Vitamin B6,Vitamin B12,Folate,Pantothenate,Biotin,Vitamin C
-Normal,Test1,Desc1,Group1,,Ref1,,,,1,9,10,11,2,3,,,4,5,7,6,,,8
-Boundary1,TestB1,DescB1,GroupB1,,,,,,0,0,0,0,0,0,,,0,0,0,0,,,0
-Boundary2,TestB2,DescB2,GroupB2,,,,,,Tr,Tr,Tr,Tr,Tr,Tr,,,Tr,Tr,Tr,Tr,,,Tr
-Erroneous1,TestE1,DescE1,GroupE1,,,,,,N,N,N,N,N,N,,,N,N,N,N,,,N
-Erroneous2,TestE2,DescE2,GroupE2,,,,,,-1,-1,-1,-1,-1,-1,,,-1,-1,-1,-1,,,-1
-Erroneous3,TestE3,DescE3,GroupE3,,,,,,-2,-2,-2,-2,-2,-2,,,-2,-2,-2,-2,,,-2
+Food Code,Food Name,Description,Group,Previous,Main data references,Footnote,Retinol (µg),Carotene (µg),Retinol Equivalent (µg),Vitamin D (µg),Vitamin E (mg),Vitamin K1 (µg),Thiamin (mg),Riboflavin (mg),Niacin (mg),Tryptophan/60 (mg),Niacin equivalent (mg),Vitamin B6 (mg),Vitamin B12 (µg),Folate (µg),Pantothenate (mg),Biotin (µg),Vitamin C (mg),,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,RET,CAREQU,RETEQU,VITD,VITE,VITK1,THIA,RIBO,NIAC,TRYP60,NIACEQU,VITB6,VITB12,FOLT,PANTO,BIOT,VITC,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,Retinol,Carotene,Total retinol equivalent,Total Vitamin D,Total Vitamin E,Phylloquinone,Thiamin,Riboflavin,Niacin,Tryptophan divided by 60,Niacin equivalent,Vitamin B6,Vitamin B12,Folate,Pantothenate,Biotin,Vitamin C,,,,,,,,,,,,,,,,,,,,,,
+Normal,Test1,Desc1,Group1,,,,,,1,9,10,11,2,3,,,4,5,7,6,,,8,,,,,,,,,,,,,,,,,,,,,,
+Boundary1,TestB1,DescB1,GroupB1,,,,,,0,0,0,0,0,0,,,0,0,0,0,,,0,,,,,,,,,,,,,,,,,,,,,,
+Boundary2,TestB2,DescB2,GroupB2,,,,,,Tr,Tr,Tr,Tr,Tr,Tr,,,Tr,Tr,Tr,Tr,,,Tr,,,,,,,,,,,,,,,,,,,,,,
+Erroneous1,TestE1,DescE1,GroupE1,,,,,,N,N,N,N,N,N,,,N,N,N,N,,,N,,,,,,,,,,,,,,,,,,,,,,
+Erroneous2,TestE2,DescE2,GroupE2,,,,,,-1,-1,-1,-1,-1,-1,,,-1,-1,-1,-1,,,-1,,,,,,,,,,,,,,,,,,,,,,
+Erroneous3,TestE3,DescE3,GroupE3,,,,,,-2,-2,-2,-2,-2,-2,,,-2,-2,-2,-2,,,-2,,,,,,,,,,,,,,,,,,,,,,
+MissingProximate1,TestM1,DescM1,GroupM1,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,1
+MissingProximate2,TestM2,DescM2,GroupM2,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,
+MissingProximateAll,TestM3,DescM3,GroupM3,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,
+MissingInorganic1,TestM4,DescM4,GroupM4,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,
+MissingInorganic2,TestM5,DescM5,GroupM5,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,
+MissingInorganicAll,TestM6,DescM6,GroupM6,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,
+MissingVitamin1,TestM7,DescM7,GroupM7,,,,,,N,1,1,1,1,1,,,1,1,1,1,,,1,,,,,,,,,,,,,,,,,,,,,,
+MissingVitamin2,TestM8,DescM8,GroupM8,,,,,,1,1,1,1,1,1,,,1,1,1,1,,,N,,,,,,,,,,,,,,,,,,,,,,
+MissingVitaminAll,TestM9,DescM9,GroupM9,,,,,,N,N,N,N,N,N,,,N,N,N,N,,,N,,,,,,,,,,,,,,,,,,,,,,

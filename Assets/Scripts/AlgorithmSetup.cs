@@ -9,7 +9,7 @@ using UnityEngine.UI;
 /// A Unity script which handles algorithm preference setup.
 /// In short, handles the Algorithm Setup panel.
 /// </summary>
-public class AlgorithmSetup : SetupBehaviour
+public sealed class AlgorithmSetup : SetupBehaviour
 {
     private static Preferences Prefs => Preferences.Instance;
 

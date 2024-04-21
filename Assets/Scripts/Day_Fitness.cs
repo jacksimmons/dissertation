@@ -141,7 +141,7 @@ public partial class Day
     /// Class for fitnesses calculated through combining fitnesses of each objective into
     /// one fitness, by summing.
     /// </summary>
-    public class SummedFitness : Fitness
+    public sealed class SummedFitness : Fitness
     {
         /// <summary>
         /// The previous, cached, value of the day's summed fitness.
@@ -200,7 +200,7 @@ public partial class Day
     /// <summary>
     /// Class for fitnesses calculated by Pareto comparison to other members of the population.
     /// </summary>
-    public class ParetoFitness : Fitness
+    public sealed class ParetoFitness : Fitness
     {
         public override float Value
         {

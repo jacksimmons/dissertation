@@ -8,7 +8,7 @@ using UnityEngine;
 /// Unity script for handling menu changes - when this happens, the
 /// current menu panel is deactivated, and the new one is activated.
 /// </summary>
-public class MenuStackHandler : MonoBehaviour
+public sealed class MenuStackHandler : MonoBehaviour
 {
     /// <summary>
     /// The base menu of the whole program (Main Menu). Is always at the bottom of the

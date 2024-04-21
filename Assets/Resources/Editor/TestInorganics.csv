@@ -1,9 +1,18 @@
 Food Code,Food Name,Description,Group,Previous,Main data references,Footnote,Sodium (mg),Potassium (mg),Calcium (mg),Magnesium (mg),Phosphorus (mg),Iron (mg),Copper (mg),Zinc (mg),Chloride (mg),Manganese (mg),Selenium (µg),Iodine (µg)
 ,,,,,,,NA,K,CA,MG,P,FE,CU,ZN,CL,MN,SE,I
 ,,,,,,,Sodium,Potassium,Calcium,Magnesium,Phosphorus,Iron,Copper,Zinc,Chloride,Manganese,Selenium,Iodine
-Normal,Test1,Desc1,Group1,,Ref1,,,,100,,,30,,,,,,20
+Normal,Test1,Desc1,Group1,,,,,,100,,,30,,,,,,20
 Boundary1,TestB1,DescB1,GroupB1,,,,,,0,,,0,,,,,,0
 Boundary2,TestB2,DescB2,GroupB2,,,,,,Tr,,,Tr,,,,,,Tr
 Erroneous1,TestE1,DescE1,GroupE1,,,,,,N,,,N,,,,,,N
 Erroneous2,TestE2,DescE2,GroupE2,,,,,,-1,,,-1,,,,,,-1
 Erroneous3,TestE3,DescE3,GroupE3,,,,,,-2,,,-2,,,,,,-2
+MissingProximate1,TestM1,DescM1,GroupM1,,,,,,1,,,1,,,,,,1
+MissingProximate2,TestM2,DescM2,GroupM2,,,,,,1,,,1,,,,,,1
+MissingProximateAll,TestM3,DescM3,GroupM3,,,,,,1,,,1,,,,,,1
+MissingInorganic1,TestM4,DescM4,GroupM4,,,,,,N,,,1,,,,,,1
+MissingInorganic2,TestM5,DescM5,GroupM5,,,,,,1,,,1,,,,,,N
+MissingInorganicAll,TestM6,DescM6,GroupM6,,,,,,N,,,N,,,,,,N
+MissingVitamin1,TestM7,DescM7,GroupM7,,,,,,1,,,1,,,,,,1
+MissingVitamin2,TestM8,DescM8,GroupM8,,,,,,1,,,1,,,,,,1
+MissingVitaminAll,TestM9,DescM9,GroupM9,,,,,,1,,,1,,,,,,1

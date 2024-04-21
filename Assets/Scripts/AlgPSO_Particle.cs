@@ -9,7 +9,7 @@ partial class AlgPSO
     /// extracted from the database. Each scalar in the vector represents an integer
     /// mass of its dimension (food type).
     /// </summary>
-    protected class ParticleVector
+    public class ParticleVector
     {
         /// <summary>
         /// The underlying datastructure of the vector: a float array of length N.

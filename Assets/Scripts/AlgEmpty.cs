@@ -3,7 +3,7 @@
 /// <summary>
 /// An empty class that implements the abstract Algorithm class, for testing.
 /// </summary>
-public class AlgEmpty : Algorithm
+public sealed class AlgEmpty : Algorithm
 {
     protected override void NextIteration()
     {

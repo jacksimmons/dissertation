@@ -1,15 +1,17 @@
+// Commented 20/4
 using System;
 using TMPro;
 using UnityEngine;
 
 
 /// <summary>
-/// A Unity script for handling preference changes in a more generic way.
+/// An abstract Unity script for handling UI-based setup, covering type-based input fields and
+/// toggle/cycle button helper methods.
 /// </summary>
-public class SetupBehaviour : MonoBehaviour
+public abstract class SetupBehaviour : MonoBehaviour
 {
     /// <summary>
-    /// Whether this class should save preferences when one of its input fields is changed.
+    /// Whether this instance should save preferences when one of its input fields is changed.
     /// </summary>
     protected bool m_saveOnInputChange = true;
 
@@ -31,6 +33,7 @@ public class SetupBehaviour : MonoBehaviour
     /// Sets the boolean value of a preference.
     /// </summary>
     /// <param name="pref">Reference to the preference to set.</param>
+    /// <param name="newValue">The new boolean value to set pref to.</param>
     protected void OnBoolInputChanged(ref bool pref, bool newValue)
     {
         pref = newValue;
@@ -41,16 +44,19 @@ public class SetupBehaviour : MonoBehaviour
 
 
     /// <summary>
-    /// Parses user input, then stores it in the given preference reference.
+    /// Parses user input, then stores it in the given preference reference. Only accepts
+    /// positive values, so that error handling is greatly simplified.
     /// </summary>
     /// <param name="pref">Reference to the relevant preference (to update).</param>
     /// <param name="value">The unparsed value. Guaranteed to contain a valid float, due to
     /// Unity's input field sanitation. Hence no need for TryParse.</param>
     protected void OnFloatInputChanged(ref float pref, string value)
     {
+        // Reject empty input
         if (value == "")
             return;
 
+        // Floats below 0 are rejected by this method.
         float newPref = float.TryParse(value, out newPref) ? newPref : -1;
         if (newPref < 0)
         {
@@ -58,6 +64,7 @@ public class SetupBehaviour : MonoBehaviour
             return;
         }
 
+        // Update the preference, if an error hasn't occurred.
         pref = newPref;
 
         if (m_saveOnInputChange)
@@ -70,9 +77,11 @@ public class SetupBehaviour : MonoBehaviour
     /// </summary>
     protected void OnIntInputChanged(ref int pref, string value)
     {
+        // Reject empty input
         if (value == "")
             return;
 
+        // Ints below 0 are rejected by this method.
         int newPref = int.TryParse(value, out newPref) ? newPref : -1;
         if (newPref < 0)
         {
@@ -80,6 +89,7 @@ public class SetupBehaviour : MonoBehaviour
             return;
         }
 
+        // Update the preference, if an error hasn't occurred.
         pref = newPref;
 
         if (m_saveOnInputChange)
@@ -154,5 +164,8 @@ public class SetupBehaviour : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Shorthand for displaying a generic preference error popup.
+    /// </summary>
     private static void PreferenceErrorPopup() => Logger.Warn($"Invalid preference value (must be non-negative and not excessively large).");
 }

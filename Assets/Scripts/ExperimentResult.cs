@@ -2,7 +2,7 @@
 /// <summary>
 /// The stats of a single algorithm.
 /// </summary>
-public class AlgorithmResult : IVerbose
+public sealed class AlgorithmResult : IVerbose
 {
     /// <summary>
     /// For each index (iteration), contains a Day which had the lowest fitness ever seen up
@@ -30,7 +30,7 @@ public class AlgorithmResult : IVerbose
 /// <summary>
 /// The stats of a set of algorithms.
 /// </summary>
-public class AlgorithmSetResult : IVerbose
+public sealed class AlgorithmSetResult : IVerbose
 {
     /// <summary>
     /// An array of AlgorithmResults, one for each algorithm that ran in parallel.
@@ -85,7 +85,7 @@ public class AlgorithmSetResult : IVerbose
 /// The stats of a full experiment, which consists of a set of steps, each of which has its own
 /// algorithm set result.
 /// </summary>
-public class ExperimentResult : IVerbose
+public sealed class ExperimentResult : IVerbose
 {
     /// <summary>
     /// An array of AlgorithmSetResults, one for each step that ran. Each AlgorithmSetResult has

@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// <summary>
 /// A Unity script for handling the Plot Viewing menu.
 /// </summary>
-public class PlotViewBehaviour : MonoBehaviour
+public sealed class PlotViewBehaviour : MonoBehaviour
 {
     /// <summary>
     /// Label showing the filename of the plot on screen.

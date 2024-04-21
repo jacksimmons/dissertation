@@ -7,7 +7,7 @@ using static Day;
 /// <summary>
 /// A class representing a sorted list of MNDSet objects.
 /// </summary>
-public class ParetoHierarchy
+public sealed class ParetoHierarchy
 {
     private List<MNDSet> m_sets;
 
@@ -98,7 +98,7 @@ public class ParetoHierarchy
 /// Class representing a mutually non-dominated set of ParetoFitness
 /// objects.
 /// </summary>
-public class MNDSet
+public sealed class MNDSet
 {
     private List<ParetoFitness> m_fitnesses;
     public ReadOnlyCollection<ParetoFitness> Fitnesses;

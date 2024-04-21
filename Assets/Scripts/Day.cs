@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 /// <summary>
 /// A data structure representing a meal plan for one day.
 /// </summary>
-public partial class Day : IVerbose, IComparable<Day>
+public sealed partial class Day : IVerbose, IComparable<Day>
 {
     /// <summary>
     /// The algorithm whose population this belongs to.

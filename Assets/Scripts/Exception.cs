@@ -7,4 +7,4 @@ using System;
 /// Can be used to detect when a warning log would have occurred in normal execution,
 /// if the UI isn't running.
 /// </summary>
-public class WarnException : Exception { }
+public sealed class WarnException : Exception { }

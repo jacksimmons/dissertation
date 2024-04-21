@@ -1,13 +1,13 @@
-// Commented 8/4
+// Commented 20/4
 using System.Linq;
 using TMPro;
 using UnityEngine;
 
 
 /// <summary>
-/// Handles the stepping through an algorithm through the UI, and an AlgorithmRunner instance.
+/// Handles communication between Unity (frontend) and the backend.
 /// </summary>
-public class AlgorithmBehaviour : MonoBehaviour
+public sealed class AlgorithmBehaviour : MonoBehaviour
 {
     public Algorithm Algorithm
     {
@@ -15,17 +15,25 @@ public class AlgorithmBehaviour : MonoBehaviour
     }
 
     [SerializeField]
-    private MenuStackHandler m_menu;
-    [SerializeField]
     private TMP_Text m_iterTimeTakenText;
     [SerializeField]
     private TMP_Text m_iterNumText;
+
+    /// <summary>
+    /// The Unity script handling the population view UI.
+    /// </summary>
     [SerializeField]
     private PopulationView m_populationView;
 
+    /// <summary>
+    /// The object which handles execution of the algorithm.
+    /// </summary>
     private AlgorithmRunner m_core;
 
 
+    /// <summary>
+    /// Initialises the AlgorithmRunner and the UI.
+    /// </summary>
     public void Init()
     {
         m_core = new();
@@ -33,12 +41,21 @@ public class AlgorithmBehaviour : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Resets the UI elements corresponding to the algorithm, to their default values.
+    /// </summary>
     private void ResetAlgorithmUI()
     {
         UpdateAlgorithmUI(0, 0);
     }
 
 
+    /// <summary>
+    /// Updates all UI elements corresponding to the algorithm - the population view,
+    /// and the execution stats.
+    /// </summary>
+    /// <param name="time_ms">The time, in ms, taken to execute the iterations.</param>
+    /// <param name="iters">The number of iterations that were just executed.</param>
     private void UpdateAlgorithmUI(float time_ms, int iters)
     {
         m_populationView.UpdatePopView();

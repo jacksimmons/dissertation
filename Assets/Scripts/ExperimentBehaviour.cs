@@ -18,7 +18,7 @@ using UnityEngine;
 /// 
 /// The output fitness is always in the SummedFitness format, because ParetoDominance
 /// fitnesses are >> 2-dimensional and thus cannot be represented well on a 2D plot.
-public class ExperimentBehaviour : SetupBehaviour
+public sealed class ExperimentBehaviour : SetupBehaviour
 {
     /// <summary>
     /// The input field controlling the number of iterations for each algorithm
@@ -411,14 +411,22 @@ public class ExperimentBehaviour : SetupBehaviour
         // Run a false experiment
         pref.SetValue(Preferences.Instance, false);
         var result = RunAlgorithmSet(numAlgs, numIters);
-        errorText = result.Item1;
+
+        if (result.Item1 != "")
+        {
+            errorText = result.Item1;
+        }
         results[0] = result.Item2;
         steps[0] = false;
 
         // Run a true experiment
         pref.SetValue(Preferences.Instance, true);
         result = RunAlgorithmSet(numAlgs, numIters);
-        errorText = result.Item1;
+
+        if (result.Item1 != "")
+        {
+            errorText = result.Item1;
+        } 
         results[1] = result.Item2;
         steps[1] = true;
 

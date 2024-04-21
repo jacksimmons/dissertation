@@ -12,6 +12,7 @@ public class Test_Dataset
     /// <summary>
     /// Manual overwrite of the number of rows in the dataset, so the program
     /// knows when to stop reading rows specifically for the test dataset.
+    /// This will therefore also ignore the Test_Preferences rows.
     /// </summary>
     private const int TEST_DATASET_TOTAL_ROWS = 9;
 

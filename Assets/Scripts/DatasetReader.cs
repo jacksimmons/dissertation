@@ -23,7 +23,7 @@ public enum DatasetFile
 /// streams have the next line (up to a '\n') read and the read pointer incremented, before
 /// moving onto the next line.
 /// </summary>
-public class DatasetReader
+public sealed class DatasetReader
 {
     private const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
     public const int FOOD_ROWS = 2_887; // Dataset is 2890 rows, 3 of which are titles; 2890-3=2887
@@ -144,7 +144,7 @@ public class DatasetReader
                     if (m_prefs.acceptMissingNutrientValue[i])
                     {
                         // User has opted to ignore missing values for this nutrient.
-                        data.Nutrients[i] = 0;
+                        data.Nutrients[i] = -1;
                         continue;
                     }
                     goto NextFood;
