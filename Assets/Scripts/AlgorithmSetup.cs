@@ -81,13 +81,6 @@ public sealed class AlgorithmSetup : SetupBehaviour
     private TMP_InputField m_inertialWeightInput;
 
 
-    // Experiment Settings
-    [SerializeField]
-    private Button m_experimentYAxisCycleBtn;
-    [SerializeField]
-    private TMP_Text m_experimentYAxisTxt;
-
-
     [SerializeField]
     private GameObject[] m_algSetupCategoryPanels;
     private int m_currentPanelIndex = 0;
@@ -154,8 +147,6 @@ public sealed class AlgorithmSetup : SetupBehaviour
         m_betaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.acoBeta, value));
         m_colonyPortionsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyPortions, value));
         m_stagnationItersInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyStagnationIters, value));
-
-        m_experimentYAxisCycleBtn.onClick.AddListener(() => OnCycleEnumWithLabel(ref Prefs.yAxis, true, m_experimentYAxisTxt));
 
         m_pbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pAccCoefficient, value));
         m_gbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.gAccCoefficient, value));
@@ -294,8 +285,6 @@ public sealed class AlgorithmSetup : SetupBehaviour
         m_betaInput.text = p.acoBeta.ToString();
         m_colonyPortionsInput.text = p.colonyPortions.ToString();
         m_stagnationItersInput.text = p.colonyStagnationIters.ToString();
-
-        m_experimentYAxisTxt.text = p.yAxis.ToString();
 
         m_pbestAccInput.text = p.pAccCoefficient.ToString();
         m_gbestAccInput.text = p.gAccCoefficient.ToString();

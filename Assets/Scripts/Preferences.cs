@@ -235,6 +235,9 @@ public sealed class Preferences : ICached, IVerbose
     public PlotTools.YAxis yAxis;
 
 
+    /// <summary>
+    /// Create a baseline preferences instance.
+    /// </summary>
     public Preferences()
     {
         Reset();
@@ -242,7 +245,8 @@ public sealed class Preferences : ICached, IVerbose
 
 
     /// <summary>
-    /// Resets all preferences to their default values.
+    /// Resets all preferences to their default values. This yields the baseline configuration, which
+    /// is used in the experiments.
     /// </summary>
     public void Reset()
     {
@@ -283,7 +287,7 @@ public sealed class Preferences : ICached, IVerbose
         gAccCoefficient = 1;
         inertialWeight = 1;
 
-        yAxis = PlotTools.YAxis.BestFitness;
+        yAxis = PlotTools.YAxis.BestDayFitness;
 
         CalculateDefaultConstraints();
     }
@@ -513,6 +517,8 @@ public sealed class Preferences : ICached, IVerbose
         if (lowerName.Contains("gelatine") && !eatsLandMeat) return false;
         if (lowerName.Contains("beef") && !eatsLandMeat) return false;
         if (lowerName.Contains("pork") && !eatsLandMeat) return false;
+
+        if (IsFoodBanned(compositeKey)) return false;
 
         return true;
     }

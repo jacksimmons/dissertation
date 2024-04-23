@@ -21,9 +21,9 @@ public class Test_Preferences
     private void AssertDatasetOutputAllowed(Preferences prefs)
     {
         DatasetReader dr = new(prefs);
-        List<Food> foods = dr.ProcessFoods();
+        dr.ProcessFoods();
 
-        foreach (Food food in foods)
+        foreach (Food food in dr.Output)
         {
             Assert.IsTrue(prefs.IsFoodAllowed(food.FoodGroup, food.Name, food.CompositeKey));
         }
@@ -227,13 +227,13 @@ public class Test_Preferences
     private void ConstraintMissingTest(Preferences prefs, string name)
     {
         DatasetReader reader = new(prefs, "Editor/TestProximates", "Editor/TestInorganics", "Editor/TestVitamins");
-        List<Food> foods = reader.ProcessFoods(TEST_PREFERENCES_TOTAL_ROWS);
+        reader.ProcessFoods(TEST_PREFERENCES_TOTAL_ROWS);
 
         // Ensure the dataset contains the row with a missing value for the allowed-missing constraint.
         bool rowWithMissingConstraintFound = false;
-        for (int i = 0; i < foods.Count; i++)
+        for (int i = 0; i < reader.Output.Count; i++)
         {
-            if (foods[i].Name == name)
+            if (reader.Output[i].Name == name)
             {
                 rowWithMissingConstraintFound = true;
                 break;

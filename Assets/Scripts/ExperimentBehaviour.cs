@@ -8,6 +8,7 @@ using System.Threading;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 /// <summary>
@@ -20,6 +21,12 @@ using UnityEngine;
 /// fitnesses are >> 2-dimensional and thus cannot be represented well on a 2D plot.
 public sealed class ExperimentBehaviour : SetupBehaviour
 {
+    /// <summary>
+    /// The .dat file for the baseline experiments (one experiment per enum value in PlotTools.YAxis).
+    /// </summary>
+    [SerializeField]
+    private TextAsset[] m_baselineDat;
+
     /// <summary>
     /// The input field controlling the number of iterations for each algorithm
     /// to run.
@@ -72,6 +79,15 @@ public sealed class ExperimentBehaviour : SetupBehaviour
     private TMP_InputField m_stepInp;
     private float m_step = -1;
 
+    /// <summary>
+    /// The cycle button which controls the metric used as the y-axis.
+    /// </summary>
+    [SerializeField]
+    private Button m_experimentYAxisCycleBtn;
+    [SerializeField]
+    private TMP_Text m_experimentYAxisTxt;
+
+
     private readonly static Type[] s_typesThatCanBeExperimentedOn =
     {
         typeof(int),
@@ -101,7 +117,6 @@ public sealed class ExperimentBehaviour : SetupBehaviour
             }
         }
 
-
         // Assign accepted preferences fields
         m_preferenceFields = validFields.ToArray();
 
@@ -113,6 +128,9 @@ public sealed class ExperimentBehaviour : SetupBehaviour
         m_minInp.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref m_min, value));
         m_maxInp.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref m_max, value));
         m_stepInp.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref m_step, value));
+
+        m_experimentYAxisTxt.text = Preferences.Instance.yAxis.ToString();
+        m_experimentYAxisCycleBtn.onClick.AddListener(() => OnExperimentYAxisCycleBtnPressed());
     }
 
 
@@ -123,6 +141,16 @@ public sealed class ExperimentBehaviour : SetupBehaviour
     {
         m_selectedPreferenceFieldIndex = ArrayTools.CircularNextIndex(m_selectedPreferenceFieldIndex, m_preferenceFields.Length, right);
         m_preferenceCycleTxt.text = $"{m_preferenceFields[m_selectedPreferenceFieldIndex].Name}";
+    }
+
+
+    public void OnExperimentYAxisCycleBtnPressed()
+    {
+        OnCycleEnumWithLabel(ref Preferences.Instance.yAxis, true, m_experimentYAxisTxt);
+        Saving.Write(m_baselineDat[(int)Preferences.Instance.yAxis].text, "baseline.json");
+
+        // Manually save preferences, because by default this script doesn't save to disk (m_saveOnInputChange = false)
+        Saving.SavePreferences();
     }
 
 

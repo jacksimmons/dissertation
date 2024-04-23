@@ -2151,8 +2151,6 @@ MonoBehaviour:
   m_pbestAccInput: {fileID: 1882718571}
   m_gbestAccInput: {fileID: 1607369575}
   m_inertialWeightInput: {fileID: 885787582}
-  m_experimentYAxisCycleBtn: {fileID: 173456145}
-  m_experimentYAxisTxt: {fileID: 173456144}
   m_algSetupCategoryPanels:
   - {fileID: 419240990}
   - {fileID: 2105260647}
@@ -2176,7 +2174,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e787b12ff27067542bd7caea19c4387b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_menu: {fileID: 1560447284}
   m_iterTimeTakenText: {fileID: 399146378}
   m_iterNumText: {fileID: 1033546729}
   m_populationView: {fileID: 375471627}
@@ -2464,7 +2461,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_AnchorMin.x
@@ -2472,7 +2469,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_SizeDelta.x
@@ -2512,11 +2509,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 113.39496
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -294.35715
+      value: -310.11334
       objectReference: {fileID: 0}
     - target: {fileID: 8406666749750460738, guid: 2e98cb95bc7d49949a3a5d227fd001ae, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -5882,7 +5879,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e787b12ff27067542bd7caea19c4387b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_menu: {fileID: 1560447284}
   m_iterTimeTakenText: {fileID: 399146378}
   m_iterNumText: {fileID: 1033546729}
   m_populationView: {fileID: 375471627}
@@ -9257,6 +9253,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14c137e1c27862f48b25041804242441, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_preferenceCategoryPanels:
+  - {fileID: 79137807}
+  - {fileID: 322121335}
+  - {fileID: 405109827}
+  - {fileID: 1289174118}
   m_dailyExerciseKcalInput: {fileID: 869364125}
   m_gainElseLoseWeightBtnTxt: {fileID: 1099225303}
   m_dailyLoseOrGainKcalInput: {fileID: 1380395505}
@@ -9270,11 +9271,6 @@ MonoBehaviour:
   m_seafoodPrefBtnTxt: {fileID: 556804012}
   m_animalProductsPrefBtnTxt: {fileID: 2142609124}
   m_lactosePrefBtnTxt: {fileID: 12734785}
-  m_preferenceCategoryPanels:
-  - {fileID: 79137807}
-  - {fileID: 322121335}
-  - {fileID: 405109827}
-  - {fileID: 1289174118}
   m_foodSettingTemplate: {fileID: 6995004226180549405, guid: 15a48d3f3ec3eab4189151924be4b9d6, type: 3}
   m_enabledFoodsContent: {fileID: 1057903681}
   m_enabledFoodsCountTxt: {fileID: 337867969}
@@ -15153,12 +15149,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 392dfa984512ce64abe59f28e0c9b606, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_baselineDat:
+  - {fileID: 4900000, guid: a3da5ca58dddf554e847ef36cdedf06d, type: 3}
+  - {fileID: 4900000, guid: 0de6096044673b0439806e63f4e061b6, type: 3}
   m_numItersInp: {fileID: 411412635}
   m_numAlgsInp: {fileID: 845034524}
   m_preferenceCycleTxt: {fileID: 7167492}
   m_minInp: {fileID: 177700289}
   m_maxInp: {fileID: 825823660}
   m_stepInp: {fileID: 1265657375}
+  m_experimentYAxisCycleBtn: {fileID: 173456145}
+  m_experimentYAxisTxt: {fileID: 173456144}
 --- !u!1001 &1198620381
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18363,7 +18364,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 50, y: -338.702}
+  m_AnchoredPosition: {x: 50, y: -381.5247}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1451523317

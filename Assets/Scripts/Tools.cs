@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Random = System.Random;
@@ -311,67 +312,92 @@ public static class MathTools
 public static class PlotTools
 {
     /// <summary>
-    /// A struct representing lines that can be drawn with gnuplot.
+    /// A struct representing a collection of mean lines.
     /// </summary>
     private readonly struct Graph
     {
-        public int NumLines { get; }
-        public int NumIters { get; }
+        public int NumLines => MeanLines.Length;
+        public int NumIters => MeanLines[0].NumIters;
 
-        public string[] LineNames { get; }
-        public Iteration[] Iterations { get; }
-        public float[] Average { get; }
+        public MeanLine[] MeanLines { get; }
 
 
-        public Graph(int numLines, int numIters, float[] average)
+        public Graph(int numMeanLines)
         {
-            NumLines = numLines;
-            NumIters = numIters;
-
-            LineNames = new string[numLines];
-            Iterations = new Iteration[numIters];
-            Average = average;
-
-            for (int i = 0; i < numIters; i++)
-            {
-                Iterations[i] = new(numLines);
-            }
-
-            for (int j = 0; j < numLines; j++)
-            {
-                LineNames[j] = $"Algorithm {j}";
-            }
+            MeanLines = new MeanLine[numMeanLines];
         }
 
 
-        public void PopulateGraph(float[][] coords)
+        /// <summary>
+        /// Converts MeanLines to a list of lines in plottable format.
+        /// First index = the line it corresponds to.
+        /// Second index = the iteration it corresponds to.
+        /// Value = the y value.
+        /// </summary>
+        /// <returns>Plottable form of the graph.</returns>
+        public float[][] ToPlottable()
         {
-            // Populate graph
-            for (int i = 0; i < NumIters; i++)
-            {
-                for (int j = 0; j < NumLines; j++)
-                {
-                    Iterations[i].Points[j] = coords[j][i];
-
-                    if (i == NumIters - 1)
-                        LineNames[j] = $"Algorithm {j} (Final Value: {Iterations[i].Points[j]})";
-                }
-            }
+            return MeanLines.Select(x => x.Means).ToArray();
         }
     }
 
 
     /// <summary>
-    /// A graphical representation of an algorithm iteration. Stores a point for each line drawn.
+    /// A struct representing a mean line - a collection of lines that represent the makings of a mean line.
+    /// The mean line is constructed from the mean of these individual lines at each iteration, with error
+    /// bars for standard deviation.
     /// </summary>
-    private struct Iteration
+    private struct MeanLine
     {
-        public float[] Points { get; }
+        public int NumAlgs { get; }
+        public readonly int NumIters => Means.Length;
+        public string LineLabel { get; set; }
+
+        /// <summary>
+        /// i corresponds to x = i - 1, Iterations[i] corresponds to y = Iterations[i].
+        /// </summary>
+        public float[] Means { get; }
+        public float[] StandardDeviations { get; }
 
 
-        public Iteration(int numLines)
+        public MeanLine(float[] means, float[][] lines)
         {
-            Points = new float[numLines];
+            if (lines == null)
+                NumAlgs = 0;
+            else
+                NumAlgs = lines.Length;
+            
+            Means = means;
+            StandardDeviations = new float[Means.Length];
+
+            LineLabel = $"{NumAlgs}-alg mean (Final Value: {means[^1]})";
+
+
+            // Calculate standard deviation for each iteration in Means, if lines was provided. If lines == null,
+            // don't add error bars.
+            if (lines == null) return;
+            for (int i = 0; i < Means.Length; i++)
+            {
+                float[] pts = new float[NumAlgs];
+                for (int j = 0; j < NumAlgs; j++)
+                {
+                    pts[j] = lines[j][i];
+                }
+
+                // Calculate population standard deviation (stdDev = sqrt(sum(pow(point - mean), 2)) / numLines)
+                float mean = means[i];
+                float stdDev = MathF.Sqrt(pts.Sum(y => MathF.Pow(y - mean, 2)) / NumAlgs);
+
+                StandardDeviations[i] = stdDev;
+
+                Logger.Log(stdDev);
+            }
+        }
+
+
+        public static MeanLine FromBaseline(Baseline b)
+        {
+            return new(b.average, null);
         }
     }
 
@@ -379,7 +405,27 @@ public static class PlotTools
     /// <summary>
     /// Values that are supported on the Y-Axis.
     /// </summary>
-    public enum YAxis { BestFitness, BestMass };
+    public enum YAxis { BestDayFitness, BestDayMass };
+
+
+    /// <summary>
+    /// Represents a baseline, these can only be created by modifying the code.
+    /// This was used to create the baselines, and is used to deserialise the serialised baselines used
+    /// in experiments.
+    /// </summary>
+    [Serializable]
+    private struct Baseline
+    {
+        public const int ALGS = 10;
+        public const int ITERS = 1000;
+        public float[] average;
+
+
+        public Baseline(float[] average)
+        {
+            this.average = average;
+        }
+    }
 
 
     /// <summary>
@@ -394,7 +440,7 @@ public static class PlotTools
 
 
     /// <summary>
-    /// Plots multiple lines on a graph. Plots the lines, then an average line as well.
+    /// Plots multiple lines as a single mean with error bars (standard deviation).
     /// </summary>
     /// <param name="algs">The output of several algorithms ran in parallel, with identical
     /// configurations.</param>
@@ -405,15 +451,19 @@ public static class PlotTools
 
         // First index gives the AlgorithmResult, Second index gives the Iteration number.
         // Value at [i][j] is the best day for the ith result, at the jth iteration.
-        Day[][] allResultsBestDayEachIter = algs.Results.Select(r => r.BestDayEachIteration).ToArray();
+        Day[][] allAlgsBestDayEachIter = algs.Results.Select(r => r.BestDayEachIteration).ToArray();
 
         // Create a new graph, with an average line created from a 1-step experiment.
-        Graph graph = new(numAlgs, numIters, Get2DArrAverage(allResultsBestDayEachIter));
+        float[][] lines = allAlgsBestDayEachIter.Select(r => r.Select(d => DayToYCoordinate(d)).ToArray()).ToArray();
+        MeanLine ml = new(Get2DArrAverage(allAlgsBestDayEachIter), lines);
 
-        // Simply converts the Day[][] array into a float[][] array, where the float is GetDayValue applied to
-        // the Day previously at the same location. This makes it possible to output the array to gnuplot.
-        graph.PopulateGraph(allResultsBestDayEachIter.Select(r => r.Select(d => DayToYCoordinate(d)).ToArray()).ToArray());
+        //// Simply converts the Day[][] array into a float[][] array, where the float is GetDayValue applied to
+        //// the Day previously at the same location. This makes it possible to output the array to gnuplot.
 
+        // Create graph with just the mean line
+        Graph graph = new(1);
+        graph.MeanLines[0] = ml;
+         
         PlotGraph(graph);
     }
 
@@ -449,8 +499,8 @@ public static class PlotTools
     {
         return Preferences.Instance.yAxis switch
         {
-            YAxis.BestMass => day.Mass,
-            YAxis.BestFitness or _ => day.TotalFitness.Value,
+            YAxis.BestDayMass => day.Mass,
+            YAxis.BestDayFitness or _ => day.TotalFitness.Value,
         };
     }
 
@@ -466,26 +516,25 @@ public static class PlotTools
         int numSteps = exp.Sets.Length;
 
         // Convert ExperimentResult into a 3D array.
-        Day[][][] allStepsAllResultsBestDayEachIter = exp.Sets.Select(e => e.Results.Select(r => r.BestDayEachIteration).ToArray()).ToArray();
+        Day[][][] allStepsAllAlgsBestDayEachIter = exp.Sets.Select(e => e.Results.Select(r => r.BestDayEachIteration).ToArray()).ToArray();
 
         // Reduce the above arr 3D -> 2D, by first taking the average for each result (over all its iterations)
         // This merges the 2nd and 3rd dimensions to be one dimension, of same length as the 2nd dimension was.
-        float[][] allStepsResultAvgBestDayEachIter = allStepsAllResultsBestDayEachIter.Select(x => Get2DArrAverage(x)).ToArray();
+        float[][] allStepsAvgBestDayEachIter = allStepsAllAlgsBestDayEachIter.Select(x => Get2DArrAverage(x)).ToArray();
 
-        // Further reduce the above arr 2D -> 1D, by averaging all steps (each of which already has its results averaged).
-        float[] stepAvgResultAvgBestDayEachIter = new float[numIters];
-        for (int i = 0; i < stepAvgResultAvgBestDayEachIter.Length; i++)
+        // Further reduce the above arr to a graph
+        Graph graph = new(exp.Steps.Length);
+        for (int i = 0; i < exp.Steps.Length; i++)
         {
             // Sum iteration i for all results
-            stepAvgResultAvgBestDayEachIter[i] = allStepsResultAvgBestDayEachIter.Select(x => x[i]).Sum() / numSteps;
+            float[][] lines = allStepsAllAlgsBestDayEachIter[i].Select(x => x.Select(y => DayToYCoordinate(y)).ToArray()).ToArray();
+            MeanLine line = new(allStepsAvgBestDayEachIter[i], lines);
+            graph.MeanLines[i] = line;
         }
-
-        Graph graph = new(numSteps, numIters, stepAvgResultAvgBestDayEachIter);
-        graph.PopulateGraph(allStepsResultAvgBestDayEachIter);
 
         for (int i = 0; i < graph.NumLines; i++)
         {
-            graph.LineNames[i] = $"Step {i} [{exp.Steps[i]}] Average Best (Final Value: {graph.Iterations[numIters - 1].Points[i]})";
+            graph.MeanLines[i].LineLabel += $" Step Value: {exp.Steps[i]}";
         }
 
         PlotGraph(graph, preference);
@@ -501,8 +550,19 @@ public static class PlotTools
         string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
         string graphFilePath = $"{Application.persistentDataPath}/Plots/{title}{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
 
-        ConstructDataFile(graph, dataFilePath);
-        ConstructGnuplotFile(graph, graphFilePath, gnuplotFilePath, dataFilePath);
+        // To create baselines, intercept code here and serialise the graph average.
+        //Saving.SaveToFile<Baseline>(new(graph.Average), "baseline.json");
+        //return;
+
+        MeanLine baseline = new();
+        // If this was an experiment, then add the baseline (which is always added before this by ExperimentBehaviour)
+        if (title != "")
+        {
+            baseline = MeanLine.FromBaseline(Saving.LoadFromFile<Baseline>("baseline.json"));
+        }
+
+        ConstructDataFile(graph, baseline, dataFilePath, title);
+        ConstructGnuplotFile(graph, baseline, graphFilePath, gnuplotFilePath, dataFilePath, title);
         RunGnuplot(gnuplotFilePath);
     }
 
@@ -510,7 +570,7 @@ public static class PlotTools
     /// <summary>
     /// Constructs the .dat file which the gnuplot file will extract a png graph from.
     /// </summary>
-    private static void ConstructDataFile(Graph graph, string dataFilePath)
+    private static void ConstructDataFile(Graph graph, MeanLine baseline, string dataFilePath, string title)
     {
         // Create data file
         if (!File.Exists(dataFilePath))
@@ -519,64 +579,30 @@ public static class PlotTools
         // Only add best fitness changes to the file (and a point for the last iteration)
         string dataFileContent = "";
 
-        float[] bestFitnessesSoFar = new float[graph.NumLines];
-        for (int i = 0; i < graph.NumLines; i++)
-        {
-            bestFitnessesSoFar[i] = float.PositiveInfinity;
-        }
-
-        string prevDataFileLine = "";
-
         // Iterate over iteration
         // ith iteration for all lines
         for (int i = 0; i < graph.NumIters; i++)
         {
+            // Only plot every graph.NumIters / 10 or when iteration is 1 => 11 points
+            if (!((i + 1) % (graph.NumIters / 10) == 0 || i == 1)) continue;
+
             // The next line of the .dat file.
             string dataFileLine = $"{i + 1}";
 
-            // Iterate over line num
-            // jth line for the ith iteration
-            int numLinesNotImproved = 0;
             for (int j = 0; j < graph.NumLines; j++)
             {
-                float fitness = graph.Iterations[i].Points[j];
-                dataFileLine += float.IsPositiveInfinity(fitness) ? " inf" : $" {graph.Iterations[i].Points[j]}";
-
-                // Only add lines which improve on the best day found so far (as well as the line before them)
-                // Need to add the line before improvements, so that a diagonal line isn't drawn when it should be
-                // horizontal.
-
-                // E.g. (1, 1000) (2, 1000) ... (9, 1000) (10, 500)
-                // Simplifying to (1, 1000) (10, 500) would be wrong as it would look like "\" when it should be "¬"
-                // But (1, 1000) (9, 1000) (10, 500) is completely fine.
-
-                // Reduces plotting time and doesn't decrease accuracy.
-                if (fitness < bestFitnessesSoFar[j] || i + 1 == graph.NumIters)
-                {
-                    bestFitnessesSoFar[j] = fitness;
-                }
-                else
-                {
-                    numLinesNotImproved++;
-                }
+                MeanLine ml = graph.MeanLines[j];
+                dataFileLine += float.IsPositiveInfinity(ml.Means[i]) ? " inf" : $" {ml.Means[i]}";
+                dataFileLine += float.IsPositiveInfinity(ml.StandardDeviations[i]) ? " inf" : $" {ml.StandardDeviations[i]}";
             }
 
-            if (graph.Average != null)
+            if (title != "" && i <= Baseline.ITERS)
             {
-                dataFileLine += float.IsPositiveInfinity(graph.Average[i]) ? " inf" : $" {graph.Average[i]}";
+                dataFileLine += float.IsPositiveInfinity(baseline.Means[i]) ? " inf" : $" {baseline.Means[i]}";
             }
 
             dataFileLine += '\n';
-
-            // Only add the line string (and the one before it) if at least one of the algs has improved on its best
-            // fitness.
-            if (numLinesNotImproved < graph.NumLines)
-            {
-                dataFileContent += prevDataFileLine;
-                dataFileContent += dataFileLine;
-            }
-
-            prevDataFileLine = dataFileLine;
+            dataFileContent += dataFileLine;
         }
 
         // Write .dat data file
@@ -595,50 +621,73 @@ public static class PlotTools
     /// <summary>
     /// Constructs the gnuplot script file which will create the graph using gnuplot, and output it as png.
     /// </summary>
-    private static void ConstructGnuplotFile(Graph graph, string graphPath, string gnuplotScriptPath, string dataPath)
+    private static void ConstructGnuplotFile(Graph graph, MeanLine baseline, string graphPath, string gnuplotScriptPath, string dataPath, string title)
     {
         // Create gnuplot script file
         if (!File.Exists(gnuplotScriptPath))
             File.Create(gnuplotScriptPath).Close();
 
-        // Iterate over every line in every iteration, to find the maximum fitness of the graph
-        // - if this is above 50k it is ignored, so as to not make the graph too low-resolution.
-        float maxFitness = 0;
-        for (int i = 0; i < graph.NumIters; i++)
-        {
-            for (int j = 0; j < graph.NumLines; j++)
-            {
-                float fitness = graph.Iterations[i].Points[j];
-                if (fitness > maxFitness)
-                {
-                    maxFitness = fitness;
-                }
-            }
-        }
+        // Iterate over every line in every iteration, to find the maximum y-value of the graph
+        //float maxY = 0;
+        //for (int i = 0; i < graph.NumIters; i++)
+        //{
+        //    for (int j = 0; j < graph.NumLines; j++)
+        //    {
+        //        float y = graph.MeanLines[j].Means[i];
+        //        if (y > maxY)
+        //        {
+        //            maxY = y;
+        //        }
+        //    }
+        //}
 
         // The contents of the file, which were inferred from gnuplot's documentation.
         string gnuplotFile
+        // Set output type and location
         = "set terminal png enhanced\n"
         + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), graphPath).Replace("\\", "/")}\"\n"
+
+        // Set axis ranges
         + $"set xrange [0: {graph.NumIters}]\n"
-        + $"set yrange [0: {MathF.Min(maxFitness, 50_000)}]\n" // Graph becomes very cramped when including y > 50_000
+        // Graph becomes very cramped when considering a wide range of y values
+        + $"set yrange [0: 10_000]\n"
+
+        // Set titles
         + $"set title \"Graph of {Preferences.Instance.yAxis} against Iteration Number\"\n"
         + "set xlabel \"Iteration\"\n"
         + "set ylabel \"Best Fitness\"\n"
-        + "set style line 1 lc \"red\"\n"
+
+        // Set nice colours for lines
+        + "set style line 1 lc \"#ff0000\"\n"
+        + "set style line 2 lc \"#ff8700\"\n"
+        + "set style line 3 lc \"#ffd300\"\n"
+        + "set style line 4 lc \"#deff0a\"\n"
+        + "set style line 5 lc \"#a1ff0a\"\n"
+        + "set style line 6 lc \"#0aff99\"\n"
+        + "set style line 7 lc \"#0aefff\"\n"
+        + "set style line 8 lc \"#147df5\"\n"
+        + "set style line 9 lc \"#580aff\"\n"
+        + "set style line 10 lc \"#be0aff\"\n"
+        + "set style line 11 lc \"#cccccc\"\n"
+        + "set style line 12 lc \"#999999\"\n"
+        + "set style line 13 lc \"#666666\"\n"
+        + "set style line 14 lc \"#333333\"\n"
+        + "set style line 15 lc \"#964B00\"\n"
+        + "set style line 16 lc \"#008080\"\n"
         + "plot ";
 
         string dataRelativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/");
-        
-        // Add all of the lines to the file
+
+        // Add line plots
         for (int l = 0; l < graph.NumLines; l++)
         {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{l + 2} with lines title \"{graph.LineNames[l]}\",\\\n";
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{2 + l * 2}:{3 + l * 2} with errorlines ls {l + 1} title \"{Preferences.Instance.yAxis} [{graph.MeanLines[l].LineLabel}]\",\\\n";
         }
-        // Add the average to the file (if one exists)
-        if (graph.Average != null)
+
+        // Add the baseline to the graph
+        if (title != "")
         {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{graph.NumLines + 2} with lines ls 1 title \"Average (Final Value: {graph.Average[graph.NumIters - 1]})\",\\\n";
+            gnuplotFile += $"\"{dataRelativePath}\" using 1:{1 + graph.NumLines * 2 + 1} with lines ls 16 title \"Baseline [{baseline.LineLabel}]\",\\\n";
         }
 
         // Write .gnuplot script file

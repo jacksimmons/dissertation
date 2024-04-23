@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// </summary>
 public class Test_Dataset
 {
-    public static DatasetReader Reader = new(new(), "Editor/TestProximates", "Editor/TestInorganics", "Editor/TestVitamins");
+    public static DatasetReader Reader => new(new(), "Editor/TestProximates", "Editor/TestInorganics", "Editor/TestVitamins");
 
     /// <summary>
     /// Manual overwrite of the number of rows in the dataset, so the program
@@ -26,8 +26,9 @@ public class Test_Dataset
     [Test]
     public void NormalTest()
     {
-        List<Food> foods = Reader.ProcessFoods(TEST_DATASET_TOTAL_ROWS);
-        Food food = foods[0];
+        DatasetReader dr = Reader;
+        dr.ProcessFoods(TEST_DATASET_TOTAL_ROWS);
+        Food food = dr.Output[0];
 
         Assert.AreEqual(food.Name, "Test1", $"Test name was incorrect.");
 
@@ -52,13 +53,11 @@ public class Test_Dataset
     [Test]
     public void AppliedTest()
     {
-        // Preferences that are very unrestrictive
-        Preferences p = new Preferences();
-
-        List<Food> foods = new DatasetReader(p).ProcessFoods();
+        DatasetReader dr = Reader;
+        dr.ProcessFoods();
 
         // These unrestrictive preferences should yield at least 100 foods
-        Assert.IsTrue(foods.Count > 100);
+        Assert.IsTrue(dr.Output.Count > 100);
     }
 
 
@@ -80,10 +79,11 @@ public class Test_Dataset
     [Test]
     public void BoundaryTest()
     {
-        List<Food> foods = Reader.ProcessFoods(TEST_DATASET_TOTAL_ROWS);
+        DatasetReader dr = Reader;
+        dr.ProcessFoods(TEST_DATASET_TOTAL_ROWS);
 
-        EqualFloatTest(foods[1], 0);
-        EqualFloatTest(foods[2], 0);
+        EqualFloatTest(dr.Output[1], 0);
+        EqualFloatTest(dr.Output[2], 0);
     }
 
 
@@ -93,9 +93,10 @@ public class Test_Dataset
     [Test]
     public void ErroneousTest()
     {
-        List<Food> foods = Reader.ProcessFoods(TEST_DATASET_TOTAL_ROWS);
+        DatasetReader dr = Reader;
+        dr.ProcessFoods(TEST_DATASET_TOTAL_ROWS);
 
         // Assert that the three erroneous foods were not added.
-        Assert.IsTrue(foods.Count == 3);
+        Assert.IsTrue(dr.Output.Count == 3);
     }
 }

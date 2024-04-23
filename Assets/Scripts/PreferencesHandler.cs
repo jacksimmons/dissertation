@@ -225,9 +225,7 @@ public sealed class PreferencesHandler : SetupBehaviour
     /// </summary>
     public void SetEnabledFoodsUI()
     {
-        // Clear all existing buttons
-        DatasetReader dr = new(Instance);
-        m_enabledFoods = dr.ProcessFoods();
+        m_enabledFoods = new(DatasetReader.Instance.Output);
         m_enabledFoodsCountTxt.text = $"Enabled foods: {m_enabledFoods.Count}/{DatasetReader.FOOD_ROWS}";
 
         // Remove any existing buttons

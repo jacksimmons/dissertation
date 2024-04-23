@@ -16,7 +16,6 @@ public abstract class Algorithm
 
     // All of the foods that were extracted from the dataset (aligning with user diet preferences), minus the foods
     // the user specifically banned.
-    private readonly List<Food> m_foods;
     public readonly ReadOnlyCollection<Food> Foods;
 
     public readonly ReadOnlyCollection<Constraint> Constraints; // User-defined constraints, one for each constraint type.
@@ -30,7 +29,7 @@ public abstract class Algorithm
     {
         get
         {
-            Food food = m_foods[Rand.Next(0, Foods.Count)];
+            Food food = Foods[Rand.Next(0, Foods.Count)];
             int mass = Rand.Next(Prefs.minPortionMass, Prefs.maxPortionMass);
             return new(food, mass);
         }
@@ -80,23 +79,8 @@ public abstract class Algorithm
 
     protected Algorithm()
     {
-        // Load foods from the dataset, and store any errors that occurred.
-        DatasetReader dr = new(Prefs);
-        m_foods = new(dr.ProcessFoods());
-        Foods = new(m_foods);
-
-        // Remove any banned foods from the extracted list
-        List<Food> allFoods = new(m_foods);
-        foreach (Food food in allFoods)
-        {
-            // If the FoodData of `food` from the Dataset is in the banned list...
-            if (Prefs.IsFoodBanned(food.CompositeKey))
-            {
-                m_foods.Remove(food);
-            }
-        }
-        // Update the foods list with the unbanned list.
-        m_foods = allFoods;
+        // Load foods from the dataset
+        Foods = new(DatasetReader.Instance.Output);
 
 
         // Load constraints from Preferences.

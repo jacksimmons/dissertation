@@ -1,5 +1,7 @@
 // Commented 17/4
+using NUnit.Framework.Internal;
 using System.IO;
+using System.Runtime.Serialization;
 using UnityEngine;
 
 
@@ -11,7 +13,7 @@ using UnityEngine;
 public static class Saving
 {
     /// <summary>
-    /// Saves the current static Preferences instance to disk.
+    /// Saves the current static Preferences instance to disk. If successful, sets the DatasetReader instance as outdated.
     /// </summary>
     public static void SavePreferences()
     {
@@ -19,6 +21,7 @@ public static class Saving
         {
             SaveToFile(Preferences.Instance, "Preferences.json");
             Logger.Log("Saved preferences.");
+            DatasetReader.SetInstanceOutdated();
         }
         catch
         {
@@ -52,33 +55,43 @@ public static class Saving
     /// Serialises objects and saves them to a given file location.
     /// Also calls .Cache() on the object beforehand if it : ICached.
     /// </summary>
-    private static void SaveToFile<T>(T serializable, string filename)
+    public static void SaveToFile<T>(T serializable, string filename)
     {
         if (serializable is ICached cached)
             cached.Cache();
 
-        string dest = Application.persistentDataPath + "/" + filename;
-        
-		// Ensure first that the file exists.
-		if (!File.Exists(dest)) File.Create(dest).Close();
-
-        // If the provided object is null, delete the file.
+        // If the provided object is null, don't continue.
         if (serializable == null)
         {
-            File.Delete(dest);
             return;
         }
 
-		// Save the file using Unity's JSON serialisation.
+        // Save the file using Unity's JSON serialisation.
         string json = JsonUtility.ToJson(serializable, true);
-        File.WriteAllText(dest, json);
+        Write(json, filename);
+    }
+
+    /// <summary>
+    /// Writes to a location in the persistent data path.
+    /// </summary>
+    /// <param name="text">The text to write.</param>
+    /// <param name="filename">The file within Application.persistentDataPath folder.</param>
+    public static void Write(string text, string filename)
+    {
+        string dest = Application.persistentDataPath + "/" + filename;
+
+        // Ensure first that the file exists.
+        if (!File.Exists(dest)) File.Create(dest).Close();
+
+        // Now write the contents to the file.
+        File.WriteAllText(dest, text);
     }
 
     /// <summary>
     /// Deserialises a serialised object stored in a file.
     /// Calls .Cache() on the object if it : ICached.
     /// </summary>
-    private static T LoadFromFile<T>(string filename) where T : new()
+    public static T LoadFromFile<T>(string filename) where T : new()
     {
         string dest = Application.persistentDataPath + "/" + filename;
 

@@ -25,6 +25,30 @@ public enum DatasetFile
 /// </summary>
 public sealed class DatasetReader
 {
+    private static DatasetReader m_instance;
+    public static DatasetReader Instance
+    {
+        get
+        {
+            // Instantiate with preferences singleton.
+            if (m_instance == null)
+            {
+                m_instance = new(Preferences.Instance);
+                m_instance.ProcessFoods();
+            }
+
+            return m_instance;
+        }
+    }
+
+    /// <summary>
+    /// This is called whenever the preferences are outdated, since the dataset must be reloaded.
+    /// </summary>
+    public static void SetInstanceOutdated()
+    {
+        m_instance = null;
+    }
+
     private const int FIRST_ROW = 3; // The first 3 rows are just titles, so skip them
     public const int FOOD_ROWS = 2_887; // Dataset is 2890 rows, 3 of which are titles; 2890-3=2887
     private const int TOTAL_ROWS = FIRST_ROW + FOOD_ROWS;
@@ -36,6 +60,8 @@ public sealed class DatasetReader
 	// --- Parsed Data ---
     private List<FoodData> m_dataset;
     public ReadOnlyCollection<FoodData> Dataset { get; }
+    private List<Food> m_output;
+    public ReadOnlyCollection<Food> Output { get; }
 
 	// These arrays store an element for each column in their corresponding dataset file.
 	// Each element is a named EConstraintType value, if the column corresponds to desired data.
@@ -71,8 +97,12 @@ public sealed class DatasetReader
         string[] files = new string[] { proximatesData, inorganicsData, vitaminsData };
         m_files = new(files);
         m_prefs = prefs;
+        
         m_dataset = new();
         Dataset = new(m_dataset);
+
+        m_output = new();
+        Output = new(m_output);
 
         static void FillNutrientArray(EConstraintType[] array, EConstraintType value)
         {
@@ -119,7 +149,7 @@ public sealed class DatasetReader
     /// are allowed by the user's preferences.
     /// <param name="fileLength">The length (in rows) of the files (their lengths must be equal).</param>
     /// </summary>
-    public List<Food> ProcessFoods(int fileLength = TOTAL_ROWS)
+    public void ProcessFoods(int fileLength = TOTAL_ROWS)
     {
         ProcessFiles(fileLength);
         List<Food> foods = new();
@@ -157,7 +187,7 @@ public sealed class DatasetReader
         NextFood: continue;
         }
 
-        return foods;
+        m_output = foods;
     }
 	
 	
