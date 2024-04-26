@@ -53,7 +53,7 @@ public class Test_Dataset
     [Test]
     public void AppliedTest()
     {
-        DatasetReader dr = Reader;
+        DatasetReader dr = new(new());
         dr.ProcessFoods();
 
         // These unrestrictive preferences should yield at least 100 foods

@@ -10,7 +10,7 @@ partial class AlgACO
     /// A nested class of AlgACO, which navigates around a matrix of portion vertices,
     /// trying to find the fittest route through each.
     /// </summary>
-    protected class Ant
+    public class Ant
     {
         /// <summary>
         /// The algorithm this ant belongs to.
@@ -149,7 +149,7 @@ partial class AlgACO
         /// </summary>
         public void RunAnt()
         {
-            float[] probabilities = GetAllVertexProbabilities(LastIndex);
+            float[] probabilities = GetAllVertexProbabilities();
             int nextVertex = MathTools.GetFirstSurpassedProbability(probabilities, m_colony.Rand);
 
             // If the next vertex was selected, then add the
@@ -188,10 +188,9 @@ partial class AlgACO
         /// probObjs[j] / sum_h(probObjs[h])
         /// 
         /// </summary>
-        /// <param name="prev">Last selected portion index.</param>
         /// <returns>An array containing the "probability" value for each vertex
         /// by index.</returns>
-        public float[] GetAllVertexProbabilities(int prev)
+        public float[] GetAllVertexProbabilities()
         {
             float[] probObjs = new float[Prefs.colonyPortions];
 
@@ -199,13 +198,13 @@ partial class AlgACO
             for (int h = 0; h < Prefs.colonyPortions; h++)
             {
                 // If the portion is not yet to be visited, leave it as 0.
-                if (h == prev) continue;
+                if (h == LastIndex) continue;
                 if (PathContains(h)) continue;
 
                 // Get fitness and pheromone values
-                float f = m_colony.m_fitnesses[prev, h];
+                float f = m_colony.m_fitnesses[LastIndex, h];
                 if (float.IsPositiveInfinity(f)) continue;
-                float p = m_colony.m_pheromone[prev, h];
+                float p = m_colony.m_pheromone[LastIndex, h];
 
                 // Calculate the value based on alpha and beta
                 probObjs[h] = MathF.Pow(p, Preferences.Instance.acoAlpha)

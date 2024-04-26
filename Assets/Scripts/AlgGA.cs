@@ -324,7 +324,7 @@ public partial class AlgGA : Algorithm
         if (mass + sign * massDiff <= 0)
             return new(false, mass);
 
-        // Otherwise, add to the portion's mass.
+        // Otherwise, add to the portion's mass
         mass += sign * massDiff;
         return new(true, mass);
     }

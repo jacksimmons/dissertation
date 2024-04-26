@@ -160,8 +160,8 @@ public partial class Day
                     sum += m_nutrientFitnesses[i].Value;
                 }
 
-                // Add fitness for all portions over the mass limit, corresponding to the amount over
-                // the limit.
+                // Add fitness for all portions over the mass limit, +1 fitness per unit mass
+                // over the limit.
                 if (Preferences.Instance.addFitnessForMass)
                 {
                     foreach (Portion p in m_day.portions)

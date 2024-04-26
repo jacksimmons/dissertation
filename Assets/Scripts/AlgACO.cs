@@ -1,5 +1,6 @@
 // Commented 17/4
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 
@@ -45,6 +46,7 @@ public partial class AlgACO : Algorithm
 	/// The ants that move around the vertices array.
 	/// </summary>
 	private readonly Ant[] m_ants = new Ant[Preferences.Instance.populationSize];
+    public ReadOnlyCollection<Ant> Ants { get; private set; }
 
 
     public override string Init()
@@ -88,6 +90,7 @@ public partial class AlgACO : Algorithm
         });
 
         // Create ants
+        Ants = new(m_ants);
         for (int i = 0; i < Preferences.Instance.populationSize; i++)
         {
             // Ants all start at the same portion
@@ -101,8 +104,7 @@ public partial class AlgACO : Algorithm
 
     /// <summary>
     /// The fitness of an edge is the difference in fitness that occurs when adding the second food.
-    /// 
-    /// This means the edges are NOT bi-directional.
+    /// This means for each bi-directional edge AB, A->B and B->A have different weights.
     /// </summary>
     /// <param name="i">The previous vertex.</param>
     /// <param name="j">The new vertex.</param>

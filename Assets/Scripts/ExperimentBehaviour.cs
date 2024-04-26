@@ -22,7 +22,7 @@ using UnityEngine.UI;
 public sealed class ExperimentBehaviour : SetupBehaviour
 {
     /// <summary>
-    /// The .dat file for the baseline experiments (one experiment per enum value in PlotTools.YAxis).
+    /// The .dat file for the baseline experiments (one per algorithm per enum value in PlotTools.YAxis).
     /// </summary>
     [SerializeField]
     private TextAsset[] m_baselineDat;
@@ -106,7 +106,6 @@ public sealed class ExperimentBehaviour : SetupBehaviour
         BindingFlags flags = BindingFlags.Instance | BindingFlags.Public;
         List<FieldInfo> fields = Type.GetType("Preferences").GetFields(flags).ToList();
 
-
         // Only accept fields which have a type that can be experimented on (no arrays, for example).
         List<FieldInfo> validFields = new();
         foreach (FieldInfo field in fields)
@@ -134,6 +133,20 @@ public sealed class ExperimentBehaviour : SetupBehaviour
     }
 
 
+    /// <summary>
+    /// Returns the corresponding baseline to the current preferences as a MeanLine.
+    /// </summary>
+    public MeanLine GetBaseline()
+    {
+        int algTypeIndex = Array.IndexOf(Preferences.ALG_TYPES, Preferences.Instance.algorithmType);
+        string json = m_baselineDat[algTypeIndex * 2 + (int)Preferences.Instance.yAxis].text;
+
+        // Extract json into a Baseline => Convert baseline into meanline => return.
+        MeanLine ml = MeanLine.FromBaseline((Baseline)JsonUtility.FromJson(json, typeof(Baseline)));
+        return ml;
+    }
+
+
     //
     // UI Listener Methods
     //
@@ -147,7 +160,6 @@ public sealed class ExperimentBehaviour : SetupBehaviour
     public void OnExperimentYAxisCycleBtnPressed()
     {
         OnCycleEnumWithLabel(ref Preferences.Instance.yAxis, true, m_experimentYAxisTxt);
-        Saving.Write(m_baselineDat[(int)Preferences.Instance.yAxis].text, "baseline.json");
 
         // Manually save preferences, because by default this script doesn't save to disk (m_saveOnInputChange = false)
         Saving.SavePreferences();
@@ -176,7 +188,7 @@ public sealed class ExperimentBehaviour : SetupBehaviour
             return;
         }
 
-        PlotTools.PlotLines(setResult.Item2);
+        PlotTools.PlotLines(setResult.Item2, GetBaseline());
 
         sw.Stop();
         Logger.Log($"Execution time: {sw.ElapsedMilliseconds}ms");
@@ -217,10 +229,11 @@ public sealed class ExperimentBehaviour : SetupBehaviour
             return;
         }
 
+        // Plot the graph
+        PlotTools.PlotExperiment(result.Item2, field.Name, GetBaseline());
+
         // Reload original preferences
         Saving.LoadPreferences();
-
-        PlotTools.PlotExperiment(result.Item2, field.Name);
 
         sw.Stop();
         Logger.Log($"Execution time: {sw.ElapsedMilliseconds}ms");

@@ -312,130 +312,13 @@ public static class MathTools
 public static class PlotTools
 {
     /// <summary>
-    /// A struct representing a collection of mean lines.
-    /// </summary>
-    private readonly struct Graph
-    {
-        public int NumLines => MeanLines.Length;
-        public int NumIters => MeanLines[0].NumIters;
-
-        public MeanLine[] MeanLines { get; }
-
-
-        public Graph(int numMeanLines)
-        {
-            MeanLines = new MeanLine[numMeanLines];
-        }
-
-
-        /// <summary>
-        /// Converts MeanLines to a list of lines in plottable format.
-        /// First index = the line it corresponds to.
-        /// Second index = the iteration it corresponds to.
-        /// Value = the y value.
-        /// </summary>
-        /// <returns>Plottable form of the graph.</returns>
-        public float[][] ToPlottable()
-        {
-            return MeanLines.Select(x => x.Means).ToArray();
-        }
-    }
-
-
-    /// <summary>
-    /// A struct representing a mean line - a collection of lines that represent the makings of a mean line.
-    /// The mean line is constructed from the mean of these individual lines at each iteration, with error
-    /// bars for standard deviation.
-    /// </summary>
-    private struct MeanLine
-    {
-        public int NumAlgs { get; }
-        public readonly int NumIters => Means.Length;
-        public string LineLabel { get; set; }
-
-        /// <summary>
-        /// i corresponds to x = i - 1, Iterations[i] corresponds to y = Iterations[i].
-        /// </summary>
-        public float[] Means { get; }
-        public float[] StandardDeviations { get; }
-
-
-        public MeanLine(float[] means, float[][] lines)
-        {
-            if (lines == null)
-                NumAlgs = 0;
-            else
-                NumAlgs = lines.Length;
-            
-            Means = means;
-            StandardDeviations = new float[Means.Length];
-
-            LineLabel = $"{NumAlgs}-alg mean (Final Value: {means[^1]})";
-
-
-            // Calculate standard deviation for each iteration in Means, if lines was provided. If lines == null,
-            // don't add error bars.
-            if (lines == null) return;
-            for (int i = 0; i < Means.Length; i++)
-            {
-                float[] pts = new float[NumAlgs];
-                for (int j = 0; j < NumAlgs; j++)
-                {
-                    pts[j] = lines[j][i];
-                }
-
-                // Calculate population standard deviation (stdDev = sqrt(sum(pow(point - mean), 2)) / numLines)
-                float mean = means[i];
-                float stdDev = MathF.Sqrt(pts.Sum(y => MathF.Pow(y - mean, 2)) / NumAlgs);
-
-                StandardDeviations[i] = stdDev;
-
-                Logger.Log(stdDev);
-            }
-        }
-
-
-        public static MeanLine FromBaseline(Baseline b)
-        {
-            return new(b.average, null);
-        }
-    }
-
-
-    /// <summary>
-    /// Values that are supported on the Y-Axis.
-    /// </summary>
-    public enum YAxis { BestDayFitness, BestDayMass };
-
-
-    /// <summary>
-    /// Represents a baseline, these can only be created by modifying the code.
-    /// This was used to create the baselines, and is used to deserialise the serialised baselines used
-    /// in experiments.
-    /// </summary>
-    [Serializable]
-    private struct Baseline
-    {
-        public const int ALGS = 10;
-        public const int ITERS = 1000;
-        public float[] average;
-
-
-        public Baseline(float[] average)
-        {
-            this.average = average;
-        }
-    }
-
-
-    /// <summary>
     /// Plots a single line on a graph. It will be displayed as the line, and then an average (which will
     /// be identical to it).
     /// </summary>
     /// <param name="alg">The output of an algorithm.</param>
-    public static void PlotLine(AlgorithmResult alg)
+    public static void PlotLine(AlgorithmResult alg, MeanLine baseline)
     {
-        PlotLines(new(new AlgorithmResult[] { alg }));
+        PlotLines(new(new AlgorithmResult[] { alg }), baseline);
     }
 
 
@@ -444,7 +327,7 @@ public static class PlotTools
     /// </summary>
     /// <param name="algs">The output of several algorithms ran in parallel, with identical
     /// configurations.</param>
-    public static void PlotLines(AlgorithmSetResult algs)
+    public static void PlotLines(AlgorithmSetResult algs, MeanLine baseline)
     {
         int numIters = algs.Results[0].BestDayEachIteration.Length;
         int numAlgs = algs.Results.Length;
@@ -457,14 +340,13 @@ public static class PlotTools
         float[][] lines = allAlgsBestDayEachIter.Select(r => r.Select(d => DayToYCoordinate(d)).ToArray()).ToArray();
         MeanLine ml = new(Get2DArrAverage(allAlgsBestDayEachIter), lines);
 
-        //// Simply converts the Day[][] array into a float[][] array, where the float is GetDayValue applied to
-        //// the Day previously at the same location. This makes it possible to output the array to gnuplot.
-
         // Create graph with just the mean line
         Graph graph = new(1);
         graph.MeanLines[0] = ml;
-         
-        PlotGraph(graph);
+
+        graph.MeanLines[0].LineLabel = $"Mean for configuration " + graph.MeanLines[0].LineLabel;
+
+        PlotGraph(graph, baseline);
     }
 
 
@@ -499,8 +381,8 @@ public static class PlotTools
     {
         return Preferences.Instance.yAxis switch
         {
-            YAxis.BestDayMass => day.Mass,
-            YAxis.BestDayFitness or _ => day.TotalFitness.Value,
+            Graph.YAxis.BestDayMass => day.Mass,
+            Graph.YAxis.BestDayFitness or _ => day.TotalFitness.Value,
         };
     }
 
@@ -510,7 +392,7 @@ public static class PlotTools
     /// It also plots an "average" line which is the average of the averages.
     /// </summary>
     /// <param name="exp">The result to plot.</param>
-    public static void PlotExperiment(ExperimentResult exp, string preference)
+    public static void PlotExperiment(ExperimentResult exp, string preference, MeanLine baseline)
     {
         int numIters = exp.Sets[0].Results[0].BestDayEachIteration.Length;
         int numSteps = exp.Sets.Length;
@@ -526,42 +408,35 @@ public static class PlotTools
         Graph graph = new(exp.Steps.Length);
         for (int i = 0; i < exp.Steps.Length; i++)
         {
-            // Sum iteration i for all results
             float[][] lines = allStepsAllAlgsBestDayEachIter[i].Select(x => x.Select(y => DayToYCoordinate(y)).ToArray()).ToArray();
+
+            // Sum iteration i for all results
             MeanLine line = new(allStepsAvgBestDayEachIter[i], lines);
             graph.MeanLines[i] = line;
         }
 
         for (int i = 0; i < graph.NumLines; i++)
         {
-            graph.MeanLines[i].LineLabel += $" Step Value: {exp.Steps[i]}";
+            graph.MeanLines[i].LineLabel = $"Mean for value {exp.Steps[i]} " + graph.MeanLines[i].LineLabel;
         }
 
-        PlotGraph(graph, preference);
+        PlotGraph(graph, baseline, preference);
     }
 
 
     /// <summary>
     /// Handles all method calls necessary to plot a graph to file.
     /// </summary>
-    private static void PlotGraph(Graph graph, string title = "")
+    private static void PlotGraph(Graph graph, MeanLine baseline, string title = "")
     {
         string dataFilePath = Application.persistentDataPath + "/plot.dat";
         string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
         string graphFilePath = $"{Application.persistentDataPath}/Plots/{title}{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
 
-        // To create baselines, intercept code here and serialise the graph average.
-        //Saving.SaveToFile<Baseline>(new(graph.Average), "baseline.json");
+        //Saving.SaveToFile<Baseline>(new(graph.MeanLines[0].Means, graph.MeanLines[0].StandardDeviations), "baseline.json");
         //return;
 
-        MeanLine baseline = new();
-        // If this was an experiment, then add the baseline (which is always added before this by ExperimentBehaviour)
-        if (title != "")
-        {
-            baseline = MeanLine.FromBaseline(Saving.LoadFromFile<Baseline>("baseline.json"));
-        }
-
-        ConstructDataFile(graph, baseline, dataFilePath, title);
+        ConstructDataFile(graph, baseline, dataFilePath);
         ConstructGnuplotFile(graph, baseline, graphFilePath, gnuplotFilePath, dataFilePath, title);
         RunGnuplot(gnuplotFilePath);
     }
@@ -570,7 +445,7 @@ public static class PlotTools
     /// <summary>
     /// Constructs the .dat file which the gnuplot file will extract a png graph from.
     /// </summary>
-    private static void ConstructDataFile(Graph graph, MeanLine baseline, string dataFilePath, string title)
+    private static void ConstructDataFile(Graph graph, MeanLine baseline, string dataFilePath)
     {
         // Create data file
         if (!File.Exists(dataFilePath))
@@ -584,7 +459,7 @@ public static class PlotTools
         for (int i = 0; i < graph.NumIters; i++)
         {
             // Only plot every graph.NumIters / 10 or when iteration is 1 => 11 points
-            if (!((i + 1) % (graph.NumIters / 10) == 0 || i == 1)) continue;
+            if (!((i + 1) % (graph.NumIters / 10) == 0 || i + 1 == 1)) continue;
 
             // The next line of the .dat file.
             string dataFileLine = $"{i + 1}";
@@ -596,9 +471,11 @@ public static class PlotTools
                 dataFileLine += float.IsPositiveInfinity(ml.StandardDeviations[i]) ? " inf" : $" {ml.StandardDeviations[i]}";
             }
 
-            if (title != "" && i <= Baseline.ITERS)
+            // Add the baseline if an experiment
+            if (i <= Baseline.ITERS)
             {
                 dataFileLine += float.IsPositiveInfinity(baseline.Means[i]) ? " inf" : $" {baseline.Means[i]}";
+                dataFileLine += float.IsPositiveInfinity(baseline.StandardDeviations[i]) ? " inf" : $" {baseline.StandardDeviations[i]}";
             }
 
             dataFileLine += '\n';
@@ -627,6 +504,9 @@ public static class PlotTools
         if (!File.Exists(gnuplotScriptPath))
             File.Create(gnuplotScriptPath).Close();
 
+        // Correct datapath string for gnuplot syntax
+        dataPath = dataPath.Replace("\\", "/");
+
         // Iterate over every line in every iteration, to find the maximum y-value of the graph
         //float maxY = 0;
         //for (int i = 0; i < graph.NumIters; i++)
@@ -641,21 +521,21 @@ public static class PlotTools
         //    }
         //}
 
-        // The contents of the file, which were inferred from gnuplot's documentation.
+            // The contents of the file, which were inferred from gnuplot's documentation.
         string gnuplotFile
         // Set output type and location
-        = "set terminal png enhanced\n"
-        + $"set output \"{Path.GetRelativePath(Directory.GetCurrentDirectory(), graphPath).Replace("\\", "/")}\"\n"
+        = "set terminal png size 640,480\n"
+        + $"set output \"{graphPath.Replace("\\", "/")}\"\n"
 
         // Set axis ranges
         + $"set xrange [0: {graph.NumIters}]\n"
         // Graph becomes very cramped when considering a wide range of y values
-        + $"set yrange [0: 10_000]\n"
+        + $"set yrange [100: 10000]\n"
 
         // Set titles
         + $"set title \"Graph of {Preferences.Instance.yAxis} against Iteration Number\"\n"
         + "set xlabel \"Iteration\"\n"
-        + "set ylabel \"Best Fitness\"\n"
+        + $"set ylabel \"{Preferences.Instance.yAxis}\"\n"
 
         // Set nice colours for lines
         + "set style line 1 lc \"#ff0000\"\n"
@@ -673,22 +553,25 @@ public static class PlotTools
         + "set style line 13 lc \"#666666\"\n"
         + "set style line 14 lc \"#333333\"\n"
         + "set style line 15 lc \"#964B00\"\n"
-        + "set style line 16 lc \"#008080\"\n"
+        + "set style line 16 lc \"#000000\"\n"
         + "plot ";
-
-        string dataRelativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), dataPath).Replace("\\", "/");
 
         // Add line plots
         for (int l = 0; l < graph.NumLines; l++)
         {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{2 + l * 2}:{3 + l * 2} with errorlines ls {l + 1} title \"{Preferences.Instance.yAxis} [{graph.MeanLines[l].LineLabel}]\",\\\n";
+            // If less than or equal to 2 lines, add error bars. Otherwise add a line without error bars.
+            string errorBars;
+            if (graph.NumLines <= 2)
+                errorBars = $":{3 + l * 2} with errorlines";
+            else
+                errorBars = $"with lines";
+
+            // Regardless of if error bars were added, still uses the format 1:(2 + l*2):(3 + l*2), just excludes the third index if no error bars.s
+            gnuplotFile += $"\"{dataPath}\" using 1:{2 + l * 2}{errorBars} ls {l + 1} title \"{graph.MeanLines[l].LineLabel}\",\\\n";
         }
 
         // Add the baseline to the graph
-        if (title != "")
-        {
-            gnuplotFile += $"\"{dataRelativePath}\" using 1:{1 + graph.NumLines * 2 + 1} with lines ls 16 title \"Baseline [{baseline.LineLabel}]\",\\\n";
-        }
+        gnuplotFile += $"\"{dataPath}\" using 1:{1 + graph.NumLines * 2 + 1}:{1 + graph.NumLines * 2 + 2} with errorlines ls 16 title \"Baseline {baseline.LineLabel}\",\\\n";
 
         // Write .gnuplot script file
         try
@@ -710,7 +593,21 @@ public static class PlotTools
     {
         // Run gnuplot
         Process p = new();
-        p.StartInfo = new(Application.dataPath + "\\gnuplot\\bin\\gnuplot.exe", gnuplotScriptPath);
+
+        // This gives the folder /Assets in Editor, and /Builds/Build_X/Dissertation_Data folder in Player
+        string gnuplotExecutablePath = Application.dataPath;
+        
+        // If standalone, navigate back from the Builds/Build_X/Dissertation_Data folder (3 backwards navigations)
+        // Then, navigate to Assets to put it in the same folder as the Editor's data path.
+        if (!Application.isEditor)
+        {
+            gnuplotExecutablePath += "\\..\\..\\..\\Assets";
+        }
+
+        // Now we are in the folder containing Assets
+        gnuplotExecutablePath += "\\gnuplot\\bin\\gnuplot.exe";
+
+        p.StartInfo = new(gnuplotExecutablePath, gnuplotScriptPath);
         p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden; // Hide the window
         p.Start();
     }

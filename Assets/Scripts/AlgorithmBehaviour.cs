@@ -30,6 +30,12 @@ public sealed class AlgorithmBehaviour : MonoBehaviour
     /// </summary>
     private AlgorithmRunner m_core;
 
+    /// <summary>
+    /// The experiment GameObject in the scene's script.
+    /// </summary>
+    [SerializeField]
+    private ExperimentBehaviour m_experiment;
+
 
     /// <summary>
     /// Initialises the AlgorithmRunner and the UI.
@@ -87,6 +93,6 @@ public sealed class AlgorithmBehaviour : MonoBehaviour
     /// </summary>
     public void PlotGraph()
     {
-        PlotTools.PlotLine(new(m_core.BestDayEachIteration.ToArray()));
+        PlotTools.PlotLine(new(m_core.BestDayEachIteration.ToArray()), m_experiment.GetBaseline());
     }
 }

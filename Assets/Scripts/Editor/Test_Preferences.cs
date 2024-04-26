@@ -143,9 +143,8 @@ public class Test_Preferences
     public void BannedFoodsNormalTest()
     {
         // Load sensible constraints to test on
-        Preferences prefs = new();
-
-        prefs.customFoodSettings = new();
+        Instance.Reset();
+        Instance.customFoodSettings = new();
 
         // Get list of foods before banning
         List<Food> foods = Algorithm.Build(typeof(AlgGA)).Foods.ToList();
@@ -154,10 +153,12 @@ public class Test_Preferences
         // Ban 2nd and 3rd foods
         Food bannedA = foods[2];
         Food bannedB = foods[3];
-        prefs.customFoodSettings.Add(new() { Key = bannedA.CompositeKey, Banned = true });
-        prefs.customFoodSettings.Add(new() { Key = bannedB.CompositeKey, Banned = true });
+        Instance.customFoodSettings.Add(new() { Key = bannedA.CompositeKey, Banned = true });
+        Instance.customFoodSettings.Add(new() { Key = bannedB.CompositeKey, Banned = true });
 
         // Get the foods with bans applied
+        // Need to manually set instance outdated, as usually this is set when preferences are saved to disk.
+        DatasetReader.SetInstanceOutdated();
         List<Food> newFoods = Algorithm.Build(typeof(AlgGA)).Foods.ToList();
         int numFoodsAfterBan = newFoods.Count;
 

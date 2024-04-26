@@ -8,7 +8,7 @@ using Unity.VisualScripting;
 /// <summary>
 /// Tests for Genetic Algorithm functions.
 /// </summary>
-public class Test_GA
+public class Test_GA : Test_HasPopulation
 {
     [Test]
     public void RunTests()
@@ -21,12 +21,22 @@ public class Test_GA
         NormalTest(ga);
         BoundaryTest(ga);
         ErroneousTest();
+
+        // Try fitness test for summed fitness
+        FitnessTest(ga);
+
+        // Build a new GA with pareto dominance, try the fitness test again
+        Preferences.Instance.fitnessApproach = EFitnessApproach.ParetoDominance;
+        ga = (AlgGA)Algorithm.Build(typeof(AlgGA));
         FitnessTest(ga);
 
         Saving.LoadPreferences();
     }
 
 
+    /// <summary>
+    /// Tests GA methods under normal conditions.
+    /// </summary>
     private void NormalTest(AlgGA ga)
     {
         // Selection
@@ -42,6 +52,9 @@ public class Test_GA
     }
 
 
+    /// <summary>
+    /// Tests GA methods with boundary parameters.
+    /// </summary>
     private void BoundaryTest(AlgGA ga)
     {
         // Selection of just 2
@@ -97,6 +110,9 @@ public class Test_GA
     }
 
 
+    /// <summary>
+    /// Tests erroneous conditions are caught by GA methods.
+    /// </summary>
     private void ErroneousTest()
     {
         // Selection from an empty list; test on both selection methods
@@ -262,24 +278,5 @@ public class Test_GA
         // Assertations succeed means:
         // childFoodToMass ⊆ parentFoodToMass && dicts have the same number of keys, therefore:
         // childFoodToMass[k] == parentFoodToMass[k] for k in either dict.
-    }
-
-
-    private void FitnessTest(AlgGA alg)
-    {
-        foreach (Day day in alg.Population)
-        {
-            float fitness = day.TotalFitness.Value;
-
-            // Fitness can only be positive or 0.
-            Assert.IsTrue(fitness >= 0);
-
-            for (int i = 0; i < Constraint.Count; i++)
-            {
-                // Fitness for each nutrient can only be positive or 0.
-                float nutrientFitness = alg.Constraints[i].GetFitness(day.GetConstraintAmount((EConstraintType)i));
-                Assert.IsTrue(nutrientFitness >= 0);
-            }
-        }
     }
 }

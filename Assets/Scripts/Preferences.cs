@@ -163,7 +163,6 @@ public sealed class Preferences : ICached, IVerbose
     // mass maxPortionMass.
     public bool addFitnessForMass;
     public string algorithmType; // Fully qualified class name of the algorithm the user has selected.
-    public EFitnessApproach fitnessApproach;
 
 
     //
@@ -189,6 +188,8 @@ public sealed class Preferences : ICached, IVerbose
 
     // Selection method
     public ESelectionMethod selectionMethod;
+
+    public EFitnessApproach fitnessApproach;
 
 
     //
@@ -232,7 +233,7 @@ public sealed class Preferences : ICached, IVerbose
     //
     // Experiment Settings
     // 
-    public PlotTools.YAxis yAxis;
+    public Graph.YAxis yAxis;
 
 
     /// <summary>
@@ -287,7 +288,7 @@ public sealed class Preferences : ICached, IVerbose
         gAccCoefficient = 1;
         inertialWeight = 1;
 
-        yAxis = PlotTools.YAxis.BestDayFitness;
+        yAxis = Graph.YAxis.BestDayFitness;
 
         CalculateDefaultConstraints();
     }

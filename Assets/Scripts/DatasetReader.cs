@@ -25,7 +25,7 @@ public enum DatasetFile
 /// </summary>
 public sealed class DatasetReader
 {
-    private static DatasetReader m_instance;
+    private static DatasetReader m_instance = null;
     public static DatasetReader Instance
     {
         get
@@ -187,7 +187,11 @@ public sealed class DatasetReader
         NextFood: continue;
         }
 
-        m_output = foods;
+        // Copy across foods into Output
+        foreach (Food food in foods)
+        {
+            m_output.Add(food);
+        }
     }
 	
 	

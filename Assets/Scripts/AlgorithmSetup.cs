@@ -59,6 +59,12 @@ public sealed class AlgorithmSetup : SetupBehaviour
 
     // ACO Settings
     [SerializeField]
+    private TMP_InputField m_stagnationItersInput;
+    [SerializeField]
+    private Button m_elitistToggleBtn;
+    [SerializeField]
+    private TMP_Text m_elitistToggleBtnTxt;
+    [SerializeField]
     private TMP_InputField m_pheroImportanceInput;
     [SerializeField]
     private TMP_InputField m_pheroEvapRateInput;
@@ -68,8 +74,6 @@ public sealed class AlgorithmSetup : SetupBehaviour
     private TMP_InputField m_betaInput;
     [SerializeField]
     private TMP_InputField m_colonyPortionsInput;
-    [SerializeField]
-    private TMP_InputField m_stagnationItersInput;
 
 
     // PSO Settings
@@ -141,12 +145,13 @@ public sealed class AlgorithmSetup : SetupBehaviour
         m_changePortionMassMutationProbInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.changePortionMassMutationProb, value));
         m_addOrRemovePortionMutationProbInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.addOrRemovePortionMutationProb, value));
 
+        m_stagnationItersInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyStagnationIters, value));
+        m_elitistToggleBtn.onClick.AddListener(() => OnToggleBtnPressed(ref Prefs.elitist, m_elitistToggleBtnTxt));
         m_pheroImportanceInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pheroImportance, value));
         m_pheroEvapRateInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pheroEvapRate, value));
         m_alphaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.acoAlpha, value));
         m_betaInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.acoBeta, value));
         m_colonyPortionsInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyPortions, value));
-        m_stagnationItersInput.onEndEdit.AddListener((string value) => OnIntInputChanged(ref Prefs.colonyStagnationIters, value));
 
         m_pbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.pAccCoefficient, value));
         m_gbestAccInput.onEndEdit.AddListener((string value) => OnFloatInputChanged(ref Prefs.gAccCoefficient, value));
@@ -279,12 +284,13 @@ public sealed class AlgorithmSetup : SetupBehaviour
         m_changePortionMassMutationProbInput.text = $"{Prefs.changePortionMassMutationProb}";
         m_addOrRemovePortionMutationProbInput.text = $"{Prefs.addOrRemovePortionMutationProb}";
 
+        m_stagnationItersInput.text = p.colonyStagnationIters.ToString();
+        m_elitistToggleBtnTxt.text = p.elitist ? "X" : "";
         m_pheroImportanceInput.text = p.pheroImportance.ToString();
         m_pheroEvapRateInput.text = p.pheroEvapRate.ToString();
         m_alphaInput.text = p.acoAlpha.ToString();
         m_betaInput.text = p.acoBeta.ToString();
         m_colonyPortionsInput.text = p.colonyPortions.ToString();
-        m_stagnationItersInput.text = p.colonyStagnationIters.ToString();
 
         m_pbestAccInput.text = p.pAccCoefficient.ToString();
         m_gbestAccInput.text = p.gAccCoefficient.ToString();
