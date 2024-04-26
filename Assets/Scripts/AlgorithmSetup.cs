@@ -21,8 +21,6 @@ public sealed class AlgorithmSetup : SetupBehaviour
     [SerializeField]
     private TMP_InputField m_popSizeInput;
     [SerializeField]
-    private TMP_InputField m_numStartingPortionsPerDayInput;
-    [SerializeField]
     private TMP_InputField m_minStartMassInput;
     [SerializeField]
     private TMP_InputField m_maxStartMassInput;
@@ -35,6 +33,8 @@ public sealed class AlgorithmSetup : SetupBehaviour
 
 
     // GA Settings
+    [SerializeField]
+    private TMP_InputField m_numStartingPortionsPerDayInput;
     [SerializeField]
     private TMP_InputField m_mutationMassChangeMinInput;
     [SerializeField]

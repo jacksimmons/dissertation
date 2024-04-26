@@ -156,7 +156,6 @@ public sealed class Preferences : ICached, IVerbose
     //
 
     public int populationSize;
-    public int numStartingPortionsPerDay; // Number of random portions each day in the population starts with
     public int minPortionMass;
     public int maxPortionMass;
     // For each portion, if it has mass over maxPortionMass, +1 fitness to the containing day per gram of
@@ -169,6 +168,7 @@ public sealed class Preferences : ICached, IVerbose
     // GA-specific settings
     //
 
+    public int numStartingPortionsPerDay; // Number of random portions each day in the population starts with
     public int mutationMassChangeMin; // Minimum mass change +/- a portion can have during mutation.
     public int mutationMassChangeMax; // Maximum mass change +/- a portion can have during mutation.
 

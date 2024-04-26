@@ -379,10 +379,18 @@ public static class PlotTools
     /// <returns></returns>
     private static float DayToYCoordinate(Day day)
     {
+        float fitness = day.TotalFitness.Value;
+
+        // If using ParetoDominance, convert it to SummedFitness for graphical representation.
+        if (Preferences.Instance.fitnessApproach == EFitnessApproach.ParetoDominance)
+        {
+            fitness = new Day.SummedFitness(day).Value;
+        }
+
         return Preferences.Instance.yAxis switch
         {
             Graph.YAxis.BestDayMass => day.Mass,
-            Graph.YAxis.BestDayFitness or _ => day.TotalFitness.Value,
+            Graph.YAxis.BestDayFitness or _ => fitness,
         };
     }
 
