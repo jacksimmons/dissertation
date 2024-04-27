@@ -109,16 +109,20 @@ public class PopulationView : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// [Listener Method]
+    /// When a button in the population is pressed.
+    /// </summary>
+    /// <param name="day">The Day of the button pressed.</param>
     private void OnPopButtonPressed(Day day)
     {
+        // Update the UI displaying overall Day stats.
         m_currentlyDisplayedDay = day;
         UpdateDayUI(day);
 
-        if (day.portions.Count > 0)
-        {
-            m_currentPortionIndex = 0;
-            UpdatePortionUI(day, 0);
-        }
+        // Update the UI displaying Portion data.
+        m_currentPortionIndex = 0;
+        UpdatePortionUI(day, 0);
 
         // Activate the portion navigation buttons
         m_prevPortionBtn.gameObject.SetActive(true);
@@ -154,7 +158,7 @@ public class PopulationView : MonoBehaviour
         if (day.portions.Count == 0)
         {
             m_portionNumText.text = $"Portion 0/0";
-            m_portionText.text = "This Day has no portions.";
+            m_portionText.text = "This Day has no portions.\n\n\n\n\n\n\n----------";
             return;
         }
 
