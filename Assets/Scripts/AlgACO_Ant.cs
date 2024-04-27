@@ -160,6 +160,7 @@ partial class AlgACO
             if (nextVertex != -1)
             {
                 AddIndex(nextVertex);
+
                 // Located the goal portion
                 if (nextVertex == Preferences.Instance.colonyPortions - 1)
                     return;

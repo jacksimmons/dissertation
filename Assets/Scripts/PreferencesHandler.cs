@@ -1,5 +1,6 @@
 // Commented 20/4
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -75,6 +76,12 @@ public sealed class PreferencesHandler : SetupBehaviour
 
 
     private void Awake()
+    {
+        Init();
+    }
+
+
+    private void Init()
     {
         // For each UI element, display existing user preferences.
         SetDietPreferenceUI();
@@ -406,5 +413,30 @@ public sealed class PreferencesHandler : SetupBehaviour
 
         // Update allowance label accordingly.
         tmpText.text = Instance.acceptMissingNutrientValue[(int)nutrient] ? "x" : "";
+    }
+
+
+    /// <summary>
+    /// Deletes your data from your system.
+    /// </summary>
+    public void DeletePreferences()
+    {
+        string fn = Application.persistentDataPath + "/Preferences.json";
+        try
+        {
+            if (File.Exists(fn))
+            {
+                File.Delete(fn);
+            }
+        }
+        catch
+        {
+            Logger.Warn("A filesystem error occurred when trying to delete your preferences." +
+                $"\nTo delete them manually, you can go to '{fn}'.");
+        }
+
+        // Regenerate default Preferences then reload UI.
+        Saving.LoadPreferences();
+        Init();
     }
 }
