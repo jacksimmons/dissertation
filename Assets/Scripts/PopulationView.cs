@@ -150,9 +150,17 @@ public class PopulationView : MonoBehaviour
     /// <param name="portionIndex">The provided portion index.</param>
     private void UpdatePortionUI(Day day, int portionIndex)
     {
-        if (portionIndex > day.portions.Count)
+        // Handle empty day
+        if (day.portions.Count == 0)
         {
-            Logger.Warn("Day has no portions (it was unexpectedly modified).");
+            m_portionNumText.text = $"Portion 0/0";
+            m_portionText.text = "This Day has no portions.";
+            return;
+        }
+
+        // Handle non-empty day but invalid index
+        if (portionIndex >= day.portions.Count || portionIndex < 0)
+        {
             return;
         }
 
@@ -163,12 +171,16 @@ public class PopulationView : MonoBehaviour
 
     private void OnPortionNavBtnPressed(Day day, bool right)
     {
+        // If the day is empty, return immediately, as it is not possible to navigate between portions.
+        if (day.portions.Count == 0) return;
+
         int nextIndex;
         if (right)
         {
             nextIndex = ++m_currentPortionIndex;
             if (nextIndex >= day.portions.Count)
                 nextIndex = m_currentPortionIndex = 0;
+            
             UpdatePortionUI(day, nextIndex);
             return;
         }

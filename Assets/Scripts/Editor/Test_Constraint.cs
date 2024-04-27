@@ -4,6 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Test suite for the Constraint class and its subclasses.
+/// Note that these tests are also covered by the UI tests.
 /// </summary>
 public class Test_Constraint
 {
