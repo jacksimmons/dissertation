@@ -8300,8 +8300,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 172.865, y: 0}
-  m_SizeDelta: {x: 383.78223, y: 37.533997}
+  m_AnchoredPosition: {x: 172.87, y: 0}
+  m_SizeDelta: {x: 345.73, y: 37.534}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &590528389
 MonoBehaviour:
@@ -8323,7 +8323,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Enabled Foods (After applying your diet preferences)
+  m_text: 'Enabled Foods (Overridden by diet)
 
 '
   m_isRightToLeft: 0
