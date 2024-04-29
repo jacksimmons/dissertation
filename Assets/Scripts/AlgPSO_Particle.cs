@@ -259,8 +259,13 @@ partial class AlgPSO
             ParticleVector gbestMinusPos = ParticleVector.Subtract(m_swarm.m_gbest, m_position);
 
             m_velocity = ParticleVector.Mult(m_velocity, Prefs.inertialWeight);
-            m_velocity = ParticleVector.MultAndAdd(m_velocity, pbestMinusPos, Prefs.pAccCoefficient);
-            m_velocity = ParticleVector.MultAndAdd(m_velocity, gbestMinusPos, Prefs.gAccCoefficient);
+
+            // Random multiplier
+            float randP = (float)m_swarm.Rand.NextDouble();
+            float randG = (float)m_swarm.Rand.NextDouble();
+
+            m_velocity = ParticleVector.MultAndAdd(m_velocity, ParticleVector.Mult(pbestMinusPos, randP), Prefs.pAccCoefficient);
+            m_velocity = ParticleVector.MultAndAdd(m_velocity, ParticleVector.Mult(gbestMinusPos, randG), Prefs.gAccCoefficient);
         }
     }
 }

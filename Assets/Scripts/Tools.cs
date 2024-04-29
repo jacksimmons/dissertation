@@ -441,6 +441,7 @@ public static class PlotTools
         string gnuplotFilePath = Application.persistentDataPath + "/plot.gnuplot";
         string graphFilePath = $"{Application.persistentDataPath}/Plots/{title}{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.png";
 
+        // For Baseline generation
         //Saving.SaveToFile<Baseline>(new(graph.MeanLines[0].Means, graph.MeanLines[0].StandardDeviations), "baseline.json");
         //return;
 

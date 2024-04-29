@@ -138,6 +138,9 @@ public sealed class ExperimentBehaviour : SetupBehaviour
     /// </summary>
     public MeanLine GetBaseline()
     {
+        // For Baseline generation
+        //return new();
+
         int algTypeIndex = Array.IndexOf(Preferences.ALG_TYPES, Preferences.Instance.algorithmType);
         string json = m_baselineDat[algTypeIndex * 2 + (int)Preferences.Instance.yAxis].text;
 

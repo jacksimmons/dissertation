@@ -232,6 +232,8 @@ public sealed class PreferencesHandler : SetupBehaviour
     /// </summary>
     public void SetEnabledFoodsUI()
     {
+        // Set it to be outdated to handle any unhandled updates
+        DatasetReader.SetInstanceOutdated();
         m_enabledFoods = new(DatasetReader.Instance.Output);
         m_enabledFoodsCountTxt.text = $"Enabled foods: {m_enabledFoods.Count}/{DatasetReader.FOOD_ROWS}";
 
