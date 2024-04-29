@@ -315,37 +315,37 @@ public sealed class PreferencesHandler : SetupBehaviour
     /// Toggle all foods enabled or disabled.
     /// </summary>
     /// <param name="enableElseDisable">`true` if enabling all, `false` if disabling all.</param>
-    public void OnAllFoodsToggle(bool enableElseDisable)
-    {
-        // If disable all was selected...
-        if (!enableElseDisable)
-        {
-            // ... need to ensure every food has a food settings, and that it is set to disabled.
-            foreach (Food food in m_enabledFoods)
-            {
-                // Ensure this food is disabled, by checking if it is enabled, and if it is, toggling
-                // its enabled status.
-                bool isBanned = Instance.IsFoodBanned(food.CompositeKey);
-                if (!isBanned)
-                    Instance.ToggleFoodBanned(food.CompositeKey);
-            }
-        }
+    //public void OnAllFoodsToggle(bool enableElseDisable)
+    //{
+    //    // If disable all was selected...
+    //    if (!enableElseDisable)
+    //    {
+    //        // ... need to ensure every food has a food settings, and that it is set to disabled.
+    //        foreach (Food food in m_enabledFoods)
+    //        {
+    //            // Ensure this food is disabled, by checking if it is enabled, and if it is, toggling
+    //            // its enabled status.
+    //            bool isBanned = Instance.IsFoodBanned(food.CompositeKey);
+    //            if (!isBanned)
+    //                Instance.ToggleFoodBanned(food.CompositeKey);
+    //        }
+    //    }
 
-        // If enable all was selected...
-        else
-        {
-            // ... simply set all custom settings to enabled. All foods without custom settings
-            // are enabled anyway.
-            foreach (CustomFoodSettings settings in Instance.customFoodSettings)
-            {
-                settings.Banned = false;
-            }
-        }
+    //    // If enable all was selected...
+    //    else
+    //    {
+    //        // ... simply set all custom settings to enabled. All foods without custom settings
+    //        // are enabled anyway.
+    //        foreach (CustomFoodSettings settings in Instance.customFoodSettings)
+    //        {
+    //            settings.Banned = false;
+    //        }
+    //    }
 
-        // Update the UI, and save these food settings to disk.
-        SetEnabledFoodsUI();
-        Saving.SavePreferences();
-    }
+    //    // Update the UI, and save these food settings to disk.
+    //    SetEnabledFoodsUI();
+    //    Saving.SavePreferences();
+    //}
 
 
     /// <summary>

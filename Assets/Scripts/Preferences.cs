@@ -262,13 +262,12 @@ public sealed class Preferences : ICached, IVerbose
         heightCm = 177.5f;
 
         populationSize = 10;
-        numStartingPortionsPerDay = 1;
         minPortionMass = 1;
         maxPortionMass = 500;
         addFitnessForMass = true;
         algorithmType = ALG_TYPES[0];
-        fitnessApproach = EFitnessApproach.SummedFitness;
 
+        numStartingPortionsPerDay = 1;
         mutationMassChangeMin = 1;
         mutationMassChangeMax = 10;
         changePortionMassMutationProb = 1f;
@@ -276,6 +275,7 @@ public sealed class Preferences : ICached, IVerbose
         selectionPressure = 0.5f;
         numCrossoverPoints = 1;
         selectionMethod = ESelectionMethod.Tournament;
+        fitnessApproach = EFitnessApproach.SummedFitness;
 
         colonyStagnationIters = 50;
         colonyPortions = 10;
