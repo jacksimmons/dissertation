@@ -133,7 +133,15 @@ partial class AlgACO
             if (path.portions.Count <= 1) return;
 
             // A value representing path fitness
-            float increment = Preferences.Instance.pheroImportance / path.TotalFitness.Value;
+            float increment;
+            if (path.TotalFitness.Value == 0)
+            {
+                increment = float.PositiveInfinity;
+            }
+            else
+            {
+                increment = Preferences.Instance.pheroImportance / path.TotalFitness.Value;
+            }
 
             // Increase pheromone for every edge on the path, based on the path's fitness
             for (int j = 1; j < path.portions.Count; j++)

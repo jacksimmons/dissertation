@@ -1,4 +1,6 @@
 // Commented 13/4
+using System.Collections.ObjectModel;
+
 /// <summary>
 /// This algorithm models flocking animals, such as birds.
 /// 
@@ -10,6 +12,7 @@ public partial class AlgPSO : Algorithm
     /// An array containing all the particles in the swarm.
     /// </summary>
     private Particle[] m_particles;
+    public ReadOnlyCollection<Particle> Particles { get; set; }
 
 
     /// <summary>
@@ -28,6 +31,7 @@ public partial class AlgPSO : Algorithm
 
         // Initialise particles
         m_particles = new Particle[Prefs.populationSize];
+        Particles = new(m_particles);
         for (int i = 0; i < m_particles.Length; i++)
         {
             m_particles[i] = new Particle(this);

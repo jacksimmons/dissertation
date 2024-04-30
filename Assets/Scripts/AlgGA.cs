@@ -225,7 +225,7 @@ public partial class AlgGA : Algorithm
         //  Select random individual, if its fitness < bestFitness
         //  Then update bestFitness and set it as the best day.
         // End Repeat
-        // Return best da
+        // Return best day
         for (int i = 0; i < tournamentSize; i++)
         {
             int index = Rand.Next(days.Count);

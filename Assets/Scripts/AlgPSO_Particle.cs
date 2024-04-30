@@ -52,12 +52,11 @@ partial class AlgPSO
         /// </summary>
         public static ParticleVector Mult(ParticleVector vec, float scalar)
         {
-            for (int i = 0; i < vec.m_vector.Length; i++)
-            {
-                vec.m_vector[i] = vec.m_vector[i] * scalar;
-            }
-
-            return vec;
+            // Aim for ka = b + lc.
+            // Let l = k - 1: ka = b + (k-1)c.
+            // Let b = c = a: ka = a + (k-1)a.
+            // ka = ka.
+            return MultAndAdd(vec, vec, scalar - 1);
         }
 
 
@@ -73,6 +72,12 @@ partial class AlgPSO
             if (a.m_vector.Length != b.m_vector.Length)
             {
                 Logger.Warn("PSO: Invalid vector length in addition.");
+                return null;
+            }
+
+            if (!float.IsFinite(multiplier))
+            {
+                Logger.Warn("PSO: Multiplier must be a finite number.");
                 return null;
             }
 
@@ -108,6 +113,20 @@ partial class AlgPSO
 
 
         /// <summary>
+        /// Returns whether the vector provided is a 0-vector (of any dimensionality).
+        /// </summary>
+        public static bool IsZeroVector(ParticleVector a)
+        {
+            foreach (float component in a.m_vector)
+            {
+                if (!MathTools.Approx(component, 0))
+                    return false;
+            }
+            return true;
+        }
+
+
+        /// <summary>
         /// Sets any vector values less than 0 to 0.
         /// </summary>
         public void Normalise()
@@ -124,7 +143,7 @@ partial class AlgPSO
     /// A particle which moves around the search space, where each dimension
     /// is a food from the dataset. This leads to high-dimensional velocities.
     /// </summary>
-    protected class Particle
+    public class Particle
     {
         /// <summary>
         /// The swarm this Particle is a part of.

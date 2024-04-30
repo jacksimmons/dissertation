@@ -1,8 +1,10 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using Unity.VisualScripting;
+using UnityEngine.XR;
 
 
 /// <summary>
@@ -128,6 +130,10 @@ public class Test_GA : Test_HasPopulation
     }
 
 
+    /// <summary>
+    /// Ensures selection works as intended for both selection methods.
+    /// </summary>
+    /// <param name="gaDays">The selection list.</param>
     private void SelectionTest(AlgGA ga, List<Day> gaDays)
     {
         if (gaDays.Count == 1)

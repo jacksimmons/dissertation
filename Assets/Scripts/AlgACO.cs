@@ -118,6 +118,7 @@ public partial class AlgACO : Algorithm
         float fitnessAfter = fitnessTester.Fitness;
 
         // Return a finite diff, if it is finite & not NaN. Otherwise return +Infinity.
+        // This gives a high fitness for large differences in fitness.
         float diff = MathF.Abs(fitnessAfter - fitnessBefore);
         if (float.IsFinite(diff) && !float.IsNaN(diff)) return diff;
         return float.PositiveInfinity;
@@ -128,7 +129,7 @@ public partial class AlgACO : Algorithm
     /// Perform an action on every element in the matrix.
     /// Matrix is expected to have lengths [Prefs.colonyPortions, Prefs.colonyPortions]
     /// </summary>
-    protected static void ActOnMatrix(float[,] mat, Action<int, int, float> act)
+    public static void ActOnMatrix(float[,] mat, Action<int, int, float> act)
     {
         for (int i = 0; i < Prefs.colonyPortions; i++)
         {
@@ -233,7 +234,5 @@ public partial class AlgACO : Algorithm
             m_pheromone[i, worstIndex] = (float)Rand.NextDouble();
             m_pheromone[worstIndex, i] = (float)Rand.NextDouble();
         }
-		
-		// ! Check if pheromone needs resetting here
     }
 }
