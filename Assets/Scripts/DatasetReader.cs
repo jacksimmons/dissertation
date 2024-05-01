@@ -174,7 +174,7 @@ public sealed class DatasetReader
                     if (m_prefs.acceptMissingNutrientValue[i])
                     {
                         // User has opted to ignore missing values for this nutrient.
-                        data.Nutrients[i] = -1;
+                        data.Nutrients[i] = 0;
                         continue;
                     }
                     goto NextFood;

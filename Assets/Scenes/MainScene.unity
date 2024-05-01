@@ -192,13 +192,13 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Accept missing data for nutrients. Can drastically increase dataset size,
-    by not considering certain nutrients. Enabling sets the corresponding constraint
-    type to NullConstraint. Changing that constraint is not recommended while enabled.
+  m_text: 'Accept missing data for nutrients. Can increase dataset size by not requiring
+    certain nutrients. Enabling sets the corresponding constraint type to NullConstraint.
+    Changing that constraint is not recommended while enabled.
 
 
-    Use
-    "Update Dataset" to see how impactful the change is.'
+    Use "Update
+    Dataset" to see how impactful the change is.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -9655,6 +9655,7 @@ MonoBehaviour:
   m_enabledFoodsCountTxt: {fileID: 337867969}
   m_missingDataSettingTemplate: {fileID: 6471530203524100820, guid: 64a431e1ff90146408049c612046cb77, type: 3}
   m_missingNutrientsContent: {fileID: 893912918}
+  m_setup: {fileID: 157356652}
 --- !u!1 &762648333
 GameObject:
   m_ObjectHideFlags: 0

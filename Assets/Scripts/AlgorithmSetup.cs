@@ -242,7 +242,7 @@ public sealed class AlgorithmSetup : SetupBehaviour
     /// <summary>
     /// Sets all of the UI elements' text components, to match the saved preferences.
     /// </summary>
-    private void UpdateUI()
+    public void UpdateUI()
     {
         Preferences p = Prefs;
         ConstraintData[] constraints = p.constraints;

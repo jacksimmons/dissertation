@@ -292,7 +292,7 @@ public class HardConstraint : Constraint, IVerbose
     /// <summary>
     /// A mod(x)-based graph for fitness.
     /// </summary>
-    protected static float ManhattanFitness(float amount, float goal)
+    protected static float ModFitness(float amount, float goal)
     {
         return Math.Abs(amount - goal);
     }
@@ -335,7 +335,7 @@ public class ConvergeConstraint : HardConstraint, IVerbose
             if (float.IsPositiveInfinity(base.GetUnweightedFitness(amount))) return float.PositiveInfinity;
         }
 
-        return ManhattanFitness(amount, goal);
+        return ModFitness(amount, goal);
     }
 
 
@@ -379,7 +379,7 @@ public class MinimiseConstraint : HardConstraint, IVerbose
         }
 
         if (MathTools.Approx(amount, 0)) return 0;
-        return ManhattanFitness(amount, 0);
+        return ModFitness(amount, 0);
         //return ExponentialFitness(amount + max, min + max, max + max, (min + max) / 2);
     }
 

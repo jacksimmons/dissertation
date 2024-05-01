@@ -74,6 +74,9 @@ public sealed class PreferencesHandler : SetupBehaviour
     [SerializeField]
     private GameObject m_missingNutrientsContent;
 
+    [SerializeField]
+    private AlgorithmSetup m_setup;
+
 
     private void Awake()
     {
@@ -116,6 +119,7 @@ public sealed class PreferencesHandler : SetupBehaviour
     {
         Instance.CalculateDefaultConstraints();
         Saving.SavePreferences();
+        m_setup.UpdateUI();
     }
 
 
