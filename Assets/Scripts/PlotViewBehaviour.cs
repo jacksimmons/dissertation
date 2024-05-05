@@ -166,7 +166,7 @@ public sealed class PlotViewBehaviour : MonoBehaviour
     {
         int toBeDeleted = m_activePlotIndex;
 
-        // Start with destroying the Unity object
+        // Destroy the Unity object
         GameObject go = m_plots[toBeDeleted];
         m_plots.RemoveAt(toBeDeleted);
         Destroy(go);
@@ -176,8 +176,19 @@ public sealed class PlotViewBehaviour : MonoBehaviour
         m_paths.RemoveAt(toBeDeleted);
         File.Delete(path);
 
-        // Go to the next plot, if there is one
-        if (m_paths.Count > 0) OnPlotNavBtnPressed(true);
+        // Go to the first plot, if there is one
+        if (m_paths.Count > 0)
+        {
+            // Hide all plots other than the first
+            foreach (GameObject plot in m_plots)
+            {
+                plot.SetActive(false);
+            }
+
+            m_plots[0].SetActive(true);
+            m_activePlotIndex = 0;
+            m_plotNameTxt.text = Path.GetFileName(m_paths[m_activePlotIndex]);
+        }
         // Otherwise, show on UI that no plots remain
         else SetNoPlotsRemaining();
     }

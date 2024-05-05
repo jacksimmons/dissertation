@@ -586,6 +586,13 @@ public static class PlotTools
         try
         {
             File.WriteAllText(gnuplotScriptPath, gnuplotFile);
+
+            // Also need to create the Plots folder if it does not exist.
+            string paths = Path.GetDirectoryName(graphPath);
+            if (!Directory.Exists(paths))
+            {
+                Directory.CreateDirectory(paths);
+            }
         }
         catch
         {

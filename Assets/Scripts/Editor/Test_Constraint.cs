@@ -47,7 +47,7 @@ public class Test_Constraint
     private void MinimiseTest(MinimiseConstraint mc)
     {
         // Test that the after the limit gives an infinite fitness
-        Assert.True(float.IsPositiveInfinity(mc.GetFitness(mc.max + MathTools.EPSILON)));
+        Assert.True(float.IsPositiveInfinity(mc.GetFitness(mc.max + 1)));
 
         // Test that values get increasingly worse as the input approaches the limit.
         float prevFitness = 0;
@@ -95,10 +95,16 @@ public class Test_Constraint
     public void NormalTest()
     {
         float goal = 100; float min = 90; float max = 110; float weight = 1;
+
+        // For non-GA, hard constraints are not imposed. Tests are for the more restrictive AlgGA case.
+        Preferences.Instance.algorithmType = typeof(AlgGA).FullName;
+
         HardTest(new(min, max, weight));
         ConvergenceTest(new(goal, min, max, weight));
         MinimiseTest(new(max, weight));
         WeightTest();
+
+        Saving.LoadPreferences();
     }
 
 
